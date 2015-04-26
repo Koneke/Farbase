@@ -2,6 +2,9 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Graphics;
@@ -21,11 +24,19 @@ namespace Farbase
 
         private List<DrawCall> drawCalls;
 
+        public fbNetClient NetClient;
+
         public fbEngine(fbApplication app)
         {
             App = app;
             drawCalls = new List<DrawCall>();
+        }
 
+        public void StartNetClient()
+        {
+            NetClient = new fbNetClient();
+            Thread networkingThread = new Thread(NetClient.Start);
+            networkingThread.Start();
         }
 
         public void SetSize(int width, int height)
@@ -242,6 +253,9 @@ namespace Farbase
 
         public void Exit()
         {
+            if (NetClient != null)
+                NetClient.ShouldDie = true;
+
             App.Exit();
         }
     }

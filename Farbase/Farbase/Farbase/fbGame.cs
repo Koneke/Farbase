@@ -54,7 +54,6 @@ namespace Farbase
 
     public class Tile
     {
-        public bool Tick;
         public Unit Unit;
         public Station Station;
         public Planet Planet;
@@ -375,17 +374,20 @@ namespace Farbase
 
         public void DrawUI()
         {
-            new TextCall(
-                "Current player: " + game.CurrentPlayer.Name,
-                engine.DefaultFont,
-                new Vector2(10)
-            ).Draw(engine);
+            if (game.CurrentPlayer != null)
+            {
+                new TextCall(
+                    "Current player: " + game.CurrentPlayer.Name,
+                    engine.DefaultFont,
+                    new Vector2(10)
+                ).Draw(engine);
 
-            new TextCall(
-                "Money: " + game.CurrentPlayer.Money + "$",
-                engine.DefaultFont,
-                new Vector2(10, 20)
-            ).Draw(engine);
+                new TextCall(
+                    "Money: " + game.CurrentPlayer.Money + "$",
+                    engine.DefaultFont,
+                    new Vector2(10, 20)
+                ).Draw(engine);
+            }
 
             List<string> logTail =
                 game.Log
@@ -414,7 +416,13 @@ namespace Farbase
         public List<Player> Players;
         public int CurrentPlayerIndex;
         public Player CurrentPlayer
-            { get { return Players[CurrentPlayerIndex]; } }
+        {
+            get
+            {
+                if (Players == null) return null;
+                return Players[CurrentPlayerIndex];
+            }
+        }
 
         public Map Map;
         private const int tileSize = 16;
@@ -447,7 +455,13 @@ namespace Farbase
             Unit.Game = this;
             Station.Game = this;
             Planet.Game = this;
+            fbNetClient.Game = this;
             Initialize();
+        }
+
+        public void CreateMap(int w, int h)
+        {
+            Map = new Map(w, h);
         }
 
         public void Initialize()
@@ -459,7 +473,7 @@ namespace Farbase
             Log = new List<string>();
             Log.Add("Welcome to Farbase.");
 
-            Players = new List<Player>();
+            /*Players = new List<Player>();
             Players.Add(new Player("Lukas", Color.CornflowerBlue));
             Players.Add(new Player("Barbarians", Color.Red));
 
@@ -486,7 +500,7 @@ namespace Farbase
 
             SpawnUnit(worker, Players[0], new Vector2(10, 12));
 
-            SpawnUnit(worker, Players[1], new Vector2(16, 14));
+            SpawnUnit(worker, Players[1], new Vector2(16, 14));*/
         }
 
         public void SpawnUnit(
@@ -522,6 +536,16 @@ namespace Farbase
 
             if (engine.KeyPressed(Keys.Enter))
                 PassTurn();
+
+            if (engine.KeyPressed(Keys.Space))
+            {
+                engine.NetClient.ShouldDie = true;
+            }
+
+            if (engine.KeyPressed(Keys.G))
+            {
+                engine.NetClient.SendQueue.Add("msg:Pop pop!\n");
+            }
 
             if (SelectedUnit != null && SelectedUnit.Owner == CurrentPlayer)
             {
@@ -796,6 +820,9 @@ namespace Farbase
         public void Draw()
         {
             DrawBackground();
+
+            if (Map == null) return;
+
             DrawMap();
             ui.DrawUI();
         }

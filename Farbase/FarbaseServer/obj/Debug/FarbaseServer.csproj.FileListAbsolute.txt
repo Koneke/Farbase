@@ -1,0 +1,6 @@
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\FarbaseServer.exe.config
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\FarbaseServer.exe
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\FarbaseServer.pdb
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\obj\Debug\FarbaseServer.csprojResolveAssemblyReference.cache
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\obj\Debug\FarbaseServer.exe
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\obj\Debug\FarbaseServer.pdb

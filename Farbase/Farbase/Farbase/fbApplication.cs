@@ -54,6 +54,8 @@ namespace Farbase
             Engine.DefaultFont.CharSize = new Vector2(8);
             
             Game = new fbGame(Engine);
+
+            Engine.StartNetClient();
         }
 
         protected override void LoadContent()
