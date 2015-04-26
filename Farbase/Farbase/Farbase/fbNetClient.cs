@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.GamerServices;
 
 namespace Farbase
 {
     public class fbNetClient
     {
+        public static bool Verbose = false;
         public static fbGame Game;
 
         private TcpClient client;
@@ -15,7 +18,7 @@ namespace Farbase
         private ASCIIEncoding encoder;
 
         public bool ShouldDie;
-        public List<string> SendQueue;
+        private List<string> SendQueue;
 
         private void HandleMessage(string message)
         {
@@ -24,22 +27,67 @@ namespace Farbase
             int split = message.IndexOf(':');
             command = message.Substring(0, split);
             args = message.Substring(split + 1, message.Length - (split + 1));
+            List<String> arguments = args.Split(
+                new char[] { ',' },
+                StringSplitOptions.RemoveEmptyEntries
+            ).ToList();
 
-            Game.Log.Add(
-                String.Format("<- s: {0}", message)
-            );
+            if(Verbose)
+                Game.Log.Add(
+                    String.Format("<- s: {0}", message)
+                );
 
+            command = command.ToLower();
+
+            int w, h;
+            int x, y;
+            int id;
             switch (command)
             {
                 case "msg":
                     Game.Log.Add(args);
                     break;
+
                 case "create-world":
-                    int w, h;
                     Int32.TryParse(args.Split(',')[0], out w);
                     Int32.TryParse(args.Split(',')[1], out h);
-                    Game.CreateMap(w, h);
+                    Game.World = new fbWorld(w, h);
                     break;
+
+                case "create-station":
+                    Int32.TryParse(args.Split(',')[0], out x);
+                    Int32.TryParse(args.Split(',')[1], out y);
+                    Game.World.SpawnStation(x, y);
+                    break;
+
+                case "create-planet":
+                    Int32.TryParse(args.Split(',')[0], out x);
+                    Int32.TryParse(args.Split(',')[1], out y);
+                    Game.World.SpawnPlanet(x, y);
+                    break;
+
+                case "new-player":
+                    Int32.TryParse(args, out id);
+                    Game.World.AddPlayer(
+                        new Player(
+                            "Unnamed player",
+                            id,
+                            Color.White
+                        )
+                    );
+                    break;
+
+                case "assign-id":
+                    Int32.TryParse(args, out id);
+                    Game.We = id;
+                    break;
+
+                case "name":
+                    id = Int32.Parse(arguments[0]);
+                    string name = arguments[1];
+                    Game.World.Players[id].Name = name;
+                    break;
+
                 default:
                     Game.Log.Add(
                         "Received {0} command from server," +
@@ -74,7 +122,7 @@ namespace Farbase
                 {
                     if (SendQueue.Count > 0)
                     {
-                        Send(SendQueue[0]);
+                        send(SendQueue[0]);
                         SendQueue.RemoveAt(0);
                     }
                 }
@@ -98,6 +146,11 @@ namespace Farbase
 
         public void Send(string message)
         {
+            SendQueue.Add(message);
+        }
+
+        private void send(string message)
+        {
             byte[] buffer = encoder.GetBytes(message);
             stream.Write(buffer, 0, buffer.Length);
             stream.Flush();
@@ -107,7 +160,7 @@ namespace Farbase
         {
             if (client.Connected)
             {
-                Send("msg:Client disconnecting.");
+                send("msg:Client disconnecting.");
                 client.Close();
             }
             else

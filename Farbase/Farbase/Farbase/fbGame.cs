@@ -9,14 +9,16 @@ namespace Farbase
 {
     public class Player
     {
+        public int ID;
         public string Name;
         public Color Color;
         public List<Unit> Units;
         public int Money;
 
-        public Player(string name, Color color)
+        public Player(string name, int id, Color color)
         {
             Name = name;
+            ID = id;
             Color = color;
 
             Units = new List<Unit>();
@@ -26,17 +28,20 @@ namespace Farbase
     public class Map
     {
         private Tile[,] map;
-        public Vector2 Size;
 
         public Map(int w, int h)
         {
-            Size = new Vector2(w, h);
+            Width = w;
+            Height = h;
 
             map = new Tile[w, h];
             for (int x = 0; x < w; x++)
             for (int y = 0; y < h; y++)
                 map[x, y] = new Tile(x, y);
         }
+
+        public int Width;
+        public int Height;
 
         public Tile At(int x, int y)
         {
@@ -97,7 +102,7 @@ namespace Farbase
 
         public Vector2 Position;
         public Tile Tile
-            { get { return Game.Map.At(Position); } }
+            { get { return Game.World.Map.At(Position); } }
 
         public int Moves;
         public int Attacks;
@@ -134,7 +139,7 @@ namespace Farbase
         public bool CanMoveTo(Vector2 position)
         {
             //only bad condition atm is collision
-            if (Game.Map.At(position).Unit == null)
+            if (Game.World.Map.At(position).Unit == null)
                 return true;
             return false;
         }
@@ -146,8 +151,8 @@ namespace Farbase
             if (Math.Abs(delta.X) > 1 || Math.Abs(delta.Y) > 1)
                 return false;
 
-            if (Game.Map.At(position).Unit != null)
-                if (Game.Map.At(position).Unit.Owner != Owner)
+            if (Game.World.Map.At(position).Unit != null)
+                if (Game.World.Map.At(position).Unit.Owner != Owner)
                     return true;
 
             return false;
@@ -159,7 +164,7 @@ namespace Farbase
 
             Tile.Unit = null;
             Position = position;
-            Game.Map.At(position).Unit = this;
+            Game.World.Map.At(position).Unit = this;
 
             //automaintain selection
             if(selected)
@@ -210,7 +215,7 @@ namespace Farbase
         {
             //we KNOW there's a unit there, since we checked CanAttack.
             //... you checked CanAttack first, right?
-            Unit target = Game.Map.At(position).Unit;
+            Unit target = Game.World.Map.At(position).Unit;
             int totalStrength = Strength + target.Strength;
 
             Random random = new Random();
@@ -241,7 +246,7 @@ namespace Farbase
 
         public Vector2 Position;
         public Tile Tile
-            { get { return Game.Map.At(Position); } }
+            { get { return Game.World.Map.At(Position); } }
     }
 
     public class Planet
@@ -250,7 +255,7 @@ namespace Farbase
 
         public Vector2 Position;
         public Tile Tile
-            { get { return Game.Map.At(Position); } }
+            { get { return Game.World.Map.At(Position); } }
     }
 
     public class fbInterface
@@ -374,7 +379,33 @@ namespace Farbase
 
         public void DrawUI()
         {
-            if (game.CurrentPlayer != null)
+            new TextCall(
+                string.Format(
+                    "Hi, I am {0}<{1}>",
+                    game.World.Players[game.We].Name,
+                    game.We
+                ),
+                engine.DefaultFont,
+                new Vector2(10)
+            ).Draw(engine);
+
+            if (game.World.PlayerIDs.Count > 0)
+            {
+                Player current = game.World.Players
+                    [game.World.PlayerIDs[game.World.CurrentPlayerIndex]];
+
+                new TextCall(
+                    string.Format(
+                        "Current player: {0}<{1}>",
+                        current.Name,
+                        current.ID
+                    ),
+                    engine.DefaultFont,
+                    new Vector2(10, 20)
+                ).Draw(engine);
+            }
+
+            /*if (game.CurrentPlayer != null)
             {
                 new TextCall(
                     "Current player: " + game.CurrentPlayer.Name,
@@ -387,7 +418,7 @@ namespace Farbase
                     engine.DefaultFont,
                     new Vector2(10, 20)
                 ).Draw(engine);
-            }
+            }*/
 
             List<string> logTail =
                 game.Log
@@ -413,6 +444,7 @@ namespace Farbase
         private fbEngine engine;
         private fbInterface ui;
 
+        //phase out
         public List<Player> Players;
         public int CurrentPlayerIndex;
         public Player CurrentPlayer
@@ -424,8 +456,13 @@ namespace Farbase
             }
         }
 
-        public Map Map;
         private const int tileSize = 16;
+
+        //our ID
+        public int We = -1;
+
+        //client side of world
+        public fbWorld World;
 
         public Tile Selection;
         public Unit SelectedUnit
@@ -457,11 +494,6 @@ namespace Farbase
             Planet.Game = this;
             fbNetClient.Game = this;
             Initialize();
-        }
-
-        public void CreateMap(int w, int h)
-        {
-            Map = new Map(w, h);
         }
 
         public void Initialize()
@@ -514,7 +546,7 @@ namespace Farbase
                 position
             );
             u.Replenish();
-            Map.At(position).Unit = u;
+            World.Map.At(position).Unit = u;
             owner.Units.Add(u);
         }
 
@@ -544,7 +576,20 @@ namespace Farbase
 
             if (engine.KeyPressed(Keys.G))
             {
-                engine.NetClient.SendQueue.Add("msg:Pop pop!\n");
+                engine.NetClient.Send("msg:Pop pop!\n");
+                List<string> names =
+                    new List<string>
+                    {
+                        "Captain Zorblax",
+                        "Commander Kneckers"
+                    };
+
+                engine.NetClient.Send(
+                    string.Format(
+                        "login:{0}",
+                        names[We]
+                    )
+                );
             }
 
             if (SelectedUnit != null && SelectedUnit.Owner == CurrentPlayer)
@@ -651,7 +696,7 @@ namespace Farbase
                 if (engine.Active && engine.MouseInside)
                 {
                     Vector2 square = ScreenToGrid(engine.MousePosition);
-                    Selection = Map.At(square);
+                    Selection = World.Map.At(square);
                 }
             }
         }
@@ -666,11 +711,13 @@ namespace Farbase
                 ) / tileSize;
 
             if(
-                square.X >= 0 && square.X < Map.Size.X &&
-                square.Y >= 0 && square.Y < Map.Size.Y
+                square.X >= 0 && square.X < World.Map.Width &&
+                square.Y >= 0 && square.Y < World.Map.Height
             )
                 return square;
 
+            //TODO: THIS IS JUST TO STOP CRASHING
+            return new Vector2(0);
             throw new ArgumentException("Not inside screen.");
         }
 
@@ -691,8 +738,8 @@ namespace Farbase
 
         private void DrawGrid()
         {
-            for (int x = 0; x < Map.Size.X; x++)
-            for (int y = 0; y < Map.Size.Y; y++)
+            for (int x = 0; x < World.Map.Width; x++)
+            for (int y = 0; y < World.Map.Height; y++)
             {
                 engine.Draw(
                     engine.GetTexture("grid"),
@@ -709,7 +756,7 @@ namespace Farbase
 
         private void DrawTile(int x, int y)
         {
-            Tile t = Map.At(x, y);
+            Tile t = World.Map.At(x, y);
             fbRectangle destination =
                 ui.WorldToScreen(
                     new fbRectangle(
@@ -810,8 +857,8 @@ namespace Farbase
         private void DrawMap()
         {
             DrawGrid();
-            for (int x = 0; x < Map.Size.X; x++)
-            for (int y = 0; y < Map.Size.Y; y++)
+            for (int x = 0; x < World.Map.Width; x++)
+            for (int y = 0; y < World.Map.Height; y++)
             {
                 DrawTile(x, y);
             }
@@ -821,7 +868,7 @@ namespace Farbase
         {
             DrawBackground();
 
-            if (Map == null) return;
+            if (World == null) return;
 
             DrawMap();
             ui.DrawUI();

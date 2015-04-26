@@ -4,3 +4,11 @@ C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\FarbaseS
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\obj\Debug\FarbaseServer.csprojResolveAssemblyReference.cache
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\obj\Debug\FarbaseServer.exe
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\obj\Debug\FarbaseServer.pdb
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Farbase.exe
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Microsoft.Xna.Framework.Game.dll
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Microsoft.Xna.Framework.Graphics.dll
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Microsoft.Xna.Framework.dll
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Farbase.pdb
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Microsoft.Xna.Framework.Game.xml
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Microsoft.Xna.Framework.Graphics.xml
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\Microsoft.Xna.Framework.xml

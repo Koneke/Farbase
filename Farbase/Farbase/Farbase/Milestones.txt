@@ -10,3 +10,7 @@ Prototype 2: semi-REACHED.
 	- Worker auto-seeking planet.
 		- The seeking is there, but automatically choosing planet is and auto moving there by itself is not.
 	- Basic log.
+
+Prototype 3:
+	- Server/client connection.
+	- Map data from server.
