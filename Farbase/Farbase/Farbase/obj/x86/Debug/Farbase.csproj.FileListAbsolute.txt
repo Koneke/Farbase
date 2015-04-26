@@ -1,12 +1,23 @@
-c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.exe
-c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.pdb
-c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.csprojResolveAssemblyReference.cache
-c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
-c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.exe
-c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.pdb
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.exe
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.pdb
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.csprojResolveAssemblyReference.cache
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.exe
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.pdb
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\grid.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\planet-bg.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\planet.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\scout.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\station-bg.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\station.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\ui-attackborder.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\ui-move-dingy.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\ui-selection.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\ui-strength-dingy.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\worker.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\48\grid.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\background-dark.jpg
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\background.jpg
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\cross.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\font.png
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\sketch.psd
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.csprojResolveAssemblyReference.cache
