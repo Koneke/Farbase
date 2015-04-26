@@ -3,3 +3,10 @@
 	- Unit movement.
 	- Workers starting their turn at a planet generates money.
 	- Purchasing units at stations.
+
+Prototype 2: semi-REACHED.
+	- Basic combat.
+	- Healing at stations.
+	- Worker auto-seeking planet.
+		- The seeking is there, but automatically choosing planet is and auto moving there by itself is not.
+	- Basic log.

@@ -1,0 +1,9 @@
+﻿Long term goals:
+- Better keyboard input
+	- Read from file as <input> : <keycombo>
+		- e.g. "Build-worker : C-b"
+	- Modifier key support
+		- i.e. a bind might be "C-A-b" or "CA-b" (ctrl-alt-b)
+	- Instead of checking if a key is down or not, the engine keeps track of keyinputs done since last frame.
+- Window based UI
+	- Movable windows within the game with support for images, text and buttons.

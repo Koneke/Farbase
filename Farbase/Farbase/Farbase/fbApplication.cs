@@ -38,12 +38,19 @@ namespace Farbase
             Engine.LoadTexture("planet", "gfx/@/planet.png");
             Engine.LoadTexture("planet-bg", "gfx/@/planet-bg.png");
 
-            Engine.LoadTexture("move-dingy", "gfx/@/ui-move-dingy.png");
+            Engine.LoadTexture(
+                "move-dingy",
+                "gfx/@/ui-move-dingy.png"
+            );
+            Engine.LoadTexture(
+                "strength-dingy",
+                "gfx/@/ui-strength-dingy.png"
+            );
+
             Engine.LoadTexture("selection", "gfx/@/ui-selection.png");
 
             Engine.DefaultFont = new Font();
-            Engine.DefaultFont.FontSheet =
-                Engine.LoadTexture("font", "gfx/font.png");
+            Engine.DefaultFont.FontSheet = Engine.LoadTexture("font", "gfx/font.png");
             Engine.DefaultFont.CharSize = new Vector2(8);
             
             Game = new fbGame(Engine);

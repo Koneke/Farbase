@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -84,6 +85,8 @@ namespace Farbase
 
         public Texture2D Texture;
         public int Moves;
+        public int Attacks;
+        public int Strength;
     }
 
     public class Unit
@@ -98,6 +101,8 @@ namespace Farbase
             { get { return Game.Map.At(Position); } }
 
         public int Moves;
+        public int Attacks;
+        public int Strength;
 
         public Unit(
             UnitType unitType,
@@ -107,6 +112,8 @@ namespace Farbase
             UnitType = unitType;
             Owner = owner;
             Position = position;
+            Moves = UnitType.Moves;
+            Strength = UnitType.Strength;
         }
 
         public void Replenish()
@@ -117,6 +124,12 @@ namespace Farbase
             if(UnitType == UnitType.GetType("worker"))
                 if (Tile.Planet != null)
                     Owner.Money += 10;
+
+            if (Tile.Station != null)
+            {
+                if (Strength < UnitType.Strength)
+                    Strength++;
+            }
         }
 
         public bool CanMoveTo(Vector2 position)
@@ -127,11 +140,99 @@ namespace Farbase
             return false;
         }
 
+        public bool CanAttack(Vector2 position)
+        {
+            Vector2 delta = Position - position;
+            //only neighbours
+            if (Math.Abs(delta.X) > 1 || Math.Abs(delta.Y) > 1)
+                return false;
+
+            if (Game.Map.At(position).Unit != null)
+                if (Game.Map.At(position).Unit.Owner != Owner)
+                    return true;
+
+            return false;
+        }
+
         public void MoveTo(Vector2 position)
         {
+            bool selected = Game.SelectedUnit == this;
+
             Tile.Unit = null;
             Position = position;
             Game.Map.At(position).Unit = this;
+
+            //automaintain selection
+            if(selected)
+                Game.SelectedUnit = this;
+        }
+
+        public Vector2 StepTowards(Vector2 goal)
+        {
+            //return the next move order for the path towards the given point.
+
+            //todo: real pathfinding.
+            //      at the moment, I think the fast naive approach is enough,
+            //      since overall, there's only very, very few possible
+            //      obstacles in the game (namely, only units).
+            //      there's apparently a load of space in space, whoda thunk.
+
+            Vector2 delta = goal - Position;
+            delta.X = delta.X.Clamp(-1, 1);
+            delta.Y = delta.Y.Clamp(-1, 1);
+
+            Vector2 moveOrder = Vector2.Zero;
+
+            if (delta.X == 0 && delta.Y == 0)
+                return moveOrder;
+
+            if (CanMoveTo(Position + delta))
+                return delta;
+
+            if (
+                delta.X != 0 &&
+                CanMoveTo(Position + new Vector2(delta.X, 0))
+            )
+                return new Vector2(delta.X, 0);
+
+            if (CanMoveTo(Position + new Vector2(0, delta.Y)))
+                return new Vector2(0, delta.Y);
+
+            return Vector2.Zero;
+        }
+
+        public void Die()
+        {
+            Owner.Units.Remove(this);
+            Tile.Unit = null;
+        }
+
+        public void Attack(Vector2 position)
+        {
+            //we KNOW there's a unit there, since we checked CanAttack.
+            //... you checked CanAttack first, right?
+            Unit target = Game.Map.At(position).Unit;
+            int totalStrength = Strength + target.Strength;
+
+            Random random = new Random();
+            int roll = random.Next(totalStrength) + 1;
+
+            Game.Log.Add(Strength + " vs. " + roll + "...");
+
+            if (roll <= Strength)
+            {
+                //we win!
+                Game.Log.Add("Victory!");
+                target.Strength -= 1;
+
+                if (target.Strength < 1)
+                    target.Die();
+            }
+            else
+            {
+                Game.Log.Add("Defeat!");
+                Strength -= 1;
+            }
         }
     }
 
@@ -285,6 +386,23 @@ namespace Farbase
                 engine.DefaultFont,
                 new Vector2(10, 20)
             ).Draw(engine);
+
+            List<string> logTail =
+                game.Log
+                    .Skip(Math.Max(0, game.Log.Count - 3))
+                    .ToList();
+            logTail.Reverse();
+
+            Vector2 position = new Vector2(10, engine.GetSize().Y - 10);
+            foreach (string message in logTail)
+            {
+                position -= new Vector2(0, engine.DefaultFont.CharSize.Y + 1);
+                new TextCall(
+                    message,
+                    engine.DefaultFont,
+                    position
+                ).Draw(engine);
+            }
         }
     }
 
@@ -321,6 +439,8 @@ namespace Farbase
             set { Selection = value.Tile; }
         }
 
+        public List<string> Log; 
+
         public fbGame(fbEngine engine)
         {
             this.engine = engine;
@@ -336,6 +456,9 @@ namespace Farbase
 
             ui = new fbInterface(this, engine);
 
+            Log = new List<string>();
+            Log.Add("Welcome to Farbase.");
+
             Players = new List<Player>();
             Players.Add(new Player("Lukas", Color.CornflowerBlue));
             Players.Add(new Player("Barbarians", Color.Red));
@@ -343,15 +466,18 @@ namespace Farbase
             UnitType scout = new UnitType();
             scout.Texture = engine.GetTexture("scout");
             scout.Moves = 2;
+            scout.Strength = 3;
+            scout.Attacks = 1;
             UnitType.RegisterType("scout", scout);
 
             UnitType worker = new UnitType();
             worker.Texture = engine.GetTexture("worker");
             worker.Moves = 1;
+            worker.Strength = 1;
             UnitType.RegisterType("worker", worker);
 
             Map = new Map(80, 45);
-            SpawnUnit(scout, Players[0], new Vector2(8, 12));
+            SpawnUnit(scout, Players[0], new Vector2(9, 11));
 
             Map.At(8, 12).Station = new Station();
             Map.At(9, 12).Station = new Station();
@@ -432,7 +558,11 @@ namespace Farbase
                         //since in reality, the UNIT isn't selected, the TILE is
                         //by moving the unit, it would no longer be selected,
                         //so we have to reselect it.
-                        SelectedUnit = u;
+                        //SelectedUnit = u;
+                    }
+                    else if (u.CanAttack(u.Position + moveOrder))
+                    {
+                        u.Attack(u.Position + moveOrder);
                     }
                 }
             }
@@ -452,6 +582,15 @@ namespace Farbase
                     index = (index + CurrentPlayer.Units.Count - 1)
                         % CurrentPlayer.Units.Count;
                     SelectedUnit = CurrentPlayer.Units[index];
+                }
+
+                if (engine.KeyPressed(Keys.A))
+                {
+                    SelectedUnit.MoveTo(
+                        SelectedUnit.Position +
+                        SelectedUnit.StepTowards(new Vector2(0))
+                    );
+                    SelectedUnit.Moves -= 1;
                 }
             }
 
@@ -621,6 +760,22 @@ namespace Farbase
                         new fbRectangle(
                             u.Position * tileSize
                                 + new Vector2(dingySize.X * i, 0),
+                            dingySize
+                        )
+                    )
+                );
+            }
+
+            for (int i = 0; i < u.Strength; i++)
+            {
+                Vector2 dingySize = engine.GetTextureSize("strength-dingy");
+
+                engine.Draw(
+                    engine.GetTexture("strength-dingy"),
+                    ui.WorldToScreen(
+                        new fbRectangle(
+                            u.Position * tileSize + new Vector2(0, tileSize)
+                                - new Vector2(0, dingySize.Y * (i + 1)),
                             dingySize
                         )
                     )
