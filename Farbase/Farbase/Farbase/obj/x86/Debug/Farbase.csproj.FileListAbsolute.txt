@@ -1,0 +1,6 @@
+c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.exe
+c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.pdb
+c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.csprojResolveAssemblyReference.cache
+c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
+c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.exe
+c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.pdb
