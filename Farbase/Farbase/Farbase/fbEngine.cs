@@ -8,39 +8,11 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Farbase
 {
-    public class DrawCall
-    {
-        public Texture2D Texture;
-        public fbRectangle Destination;
-        public int Depth;
-        public Color Coloring;
-
-        public DrawCall(
-            Texture2D texture,
-            fbRectangle destination,
-            int depth = 0,
-            Color coloring = default(Color)
-        ) {
-            Texture = texture;
-            Destination = destination;
-            Depth = depth;
-
-            Coloring =
-                coloring == default(Color)
-                ? Color.White
-                : coloring;
-        }
-    }
-
     public class fbEngine
     {
         public fbApplication App;
 
-        public fbEngine(fbApplication app)
-        {
-            App = app;
-            drawCalls = new List<DrawCall>();
-        }
+        public Font DefaultFont;
 
         public Dictionary<string, Texture2D> Textures;
         public string GraphicsSet = "16";
@@ -48,6 +20,13 @@ namespace Farbase
         private MouseState? ms, oms;
 
         private List<DrawCall> drawCalls;
+
+        public fbEngine(fbApplication app)
+        {
+            App = app;
+            drawCalls = new List<DrawCall>();
+
+        }
 
         public void SetSize(int width, int height)
         {
@@ -115,6 +94,15 @@ namespace Farbase
             ks = Keyboard.GetState();
         }
 
+        public void Draw(DrawCall dc)
+        {
+            if (dc.Destination.Size.X == -1)
+                dc.Destination.Size.X = dc.Texture.Width;
+            if (dc.Destination.Size.Y == -1)
+                dc.Destination.Size.Y = dc.Texture.Height;
+            drawCalls.Add(dc);
+        }
+
         public void Draw(
             Texture2D texture,
             fbRectangle destination,
@@ -151,11 +139,19 @@ namespace Farbase
 
             foreach(DrawCall dc in drawCalls.OrderByDescending(dc => dc.Depth))
             {
-                App.SpriteBatch.Draw(
-                    dc.Texture,
-                    FromfbRectangle(dc.Destination),
-                    dc.Coloring
-                );
+                if(dc.Source != null)
+                    App.SpriteBatch.Draw(
+                        dc.Texture,
+                        FromfbRectangle(dc.Destination),
+                        FromfbRectangle(dc.Source),
+                        dc.Coloring
+                    );
+                else
+                    App.SpriteBatch.Draw(
+                        dc.Texture,
+                        FromfbRectangle(dc.Destination),
+                        dc.Coloring
+                    );
             }
 
             drawCalls.Clear();

@@ -27,13 +27,24 @@ namespace Farbase
 
             Engine.Textures = new Dictionary<string, Texture2D>();
             Engine.LoadTexture("grid", "gfx/@/grid.png");
-            Engine.LoadTexture("scout", "gfx/@/scout.png");
             Engine.LoadTexture("background", "gfx/background-dark.jpg");
             Engine.LoadTexture("cross", "gfx/cross.png");
+
+            Engine.LoadTexture("scout", "gfx/@/scout.png");
+            Engine.LoadTexture("worker", "gfx/@/worker.png");
+
             Engine.LoadTexture("station", "gfx/@/station.png");
             Engine.LoadTexture("station-bg", "gfx/@/station-bg.png");
             Engine.LoadTexture("planet", "gfx/@/planet.png");
             Engine.LoadTexture("planet-bg", "gfx/@/planet-bg.png");
+
+            Engine.LoadTexture("move-dingy", "gfx/@/ui-move-dingy.png");
+            Engine.LoadTexture("selection", "gfx/@/ui-selection.png");
+
+            Engine.DefaultFont = new Font();
+            Engine.DefaultFont.FontSheet =
+                Engine.LoadTexture("font", "gfx/font.png");
+            Engine.DefaultFont.CharSize = new Vector2(8);
             
             Game = new fbGame(Engine);
         }

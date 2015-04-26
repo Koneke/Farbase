@@ -7,10 +7,10 @@
       <TargetProfile>HiDef</TargetProfile>
       <BuildConfiguration>Debug</BuildConfiguration>
       <CompressContent>false</CompressContent>
-      <RootDirectory>c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\FarbaseContent\</RootDirectory>
-      <LoggerRootDirectory>c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\</LoggerRootDirectory>
-      <IntermediateDirectory>c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\FarbaseContent\obj\x86\Debug\</IntermediateDirectory>
-      <OutputDirectory>c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\Farbase\bin\x86\Debug\Content\</OutputDirectory>
+      <RootDirectory>C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\FarbaseContent\</RootDirectory>
+      <LoggerRootDirectory>C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\</LoggerRootDirectory>
+      <IntermediateDirectory>C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\FarbaseContent\obj\x86\Debug\</IntermediateDirectory>
+      <OutputDirectory>C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\Content\</OutputDirectory>
     </Settings>
     <Assemblies>
       <Assembly>

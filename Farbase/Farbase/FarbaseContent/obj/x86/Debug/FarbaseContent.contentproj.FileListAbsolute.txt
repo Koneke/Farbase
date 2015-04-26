@@ -1,1 +1,2 @@
 c:\users\lukas\documents\visual studio 2012\Projects\Farbase\Farbase\FarbaseContent\obj\x86\Debug\FarbaseContent.contentprojResolveAssemblyReference.cache
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\FarbaseContent\obj\x86\Debug\FarbaseContent.contentprojResolveAssemblyReference.cache

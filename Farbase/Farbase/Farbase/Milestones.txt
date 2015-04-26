@@ -1,0 +1,5 @@
+﻿Prototype 1: REACHED.
+	- Turntaking.
+	- Unit movement.
+	- Workers starting their turn at a planet generates money.
+	- Purchasing units at stations.
