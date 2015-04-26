@@ -1,8 +1,3 @@
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.exe
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.pdb
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.exe
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.pdb
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\grid.png
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\planet-bg.png
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\planet.png
@@ -20,4 +15,8 @@ C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gf
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\cross.png
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\font.png
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\gfx\16\sketch.psd
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.csprojResolveAssemblyReference.cache
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.exe
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\bin\x86\Debug\Farbase.pdb
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.exe
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\Farbase\Farbase\obj\x86\Debug\Farbase.pdb
