@@ -13,12 +13,14 @@ namespace Farbase
         public string Name;
         public Color Color;
         public int Money;
+        public List<int> OwnedUnits; 
 
         public Player(string name, int id, Color color)
         {
             Name = name;
             ID = id;
             Color = color;
+            OwnedUnits = new List<int>();
         }
     }
 
@@ -98,10 +100,19 @@ namespace Farbase
 
         public UnitType UnitType;
         public int Owner;
+        public int ID;
 
-        public Vector2 Position;
+        public int x, y;
+
+        public Vector2 Position
+        {
+            get { return new Vector2(x, y); }
+        }
+
         public Tile Tile
-            { get { return Game.World.Map.At(Position); } }
+            { get {
+                return fbGame.World.Map.At(x, y);
+            } }
 
         public int Moves;
         public int Attacks;
@@ -110,32 +121,37 @@ namespace Farbase
         public Unit(
             UnitType unitType,
             int owner,
+            int id,
             int x,
             int y
-        ) : this(unitType, owner, new Vector2(x, y)) {
-        }
-
-        public Unit(
-            UnitType unitType,
-            int owner,
-            Vector2 position
         ) {
             UnitType = unitType;
             Owner = owner;
-            Position = position;
+            ID = id;
+            this.x = x;
+            this.y = y;
             Moves = UnitType.Moves;
             Attacks = UnitType.Attacks;
             Strength = UnitType.Strength;
         }
 
+        public Unit(
+            UnitType unitType,
+            int owner,
+            int id,
+            Vector2 position
+        ) : this(unitType, owner, id, (int)position.X, (int)position.Y) {
+        }
+
         public void Replenish()
         {
             Moves = UnitType.Moves;
+            Attacks = UnitType.Attacks;
 
             //workers generate cash if they start the turn on a planet
-            if(UnitType == UnitType.GetType("worker"))
+            /*if(UnitType == UnitType.GetType("worker"))
                 if (Tile.Planet != null)
-                    Game.World.Players[Owner].Money += 10;
+                    fbGame.World.Players[Owner].Money += 10;*/
 
             if (Tile.Station != null)
             {
@@ -147,7 +163,7 @@ namespace Farbase
         public bool CanMoveTo(Vector2 position)
         {
             //only bad condition atm is collision
-            if (Game.World.Map.At(position).Unit == null)
+            if (fbGame.World.Map.At(position).Unit == null)
                 return true;
             return false;
         }
@@ -159,24 +175,27 @@ namespace Farbase
             if (Math.Abs(delta.X) > 1 || Math.Abs(delta.Y) > 1)
                 return false;
 
-            if (Game.World.Map.At(position).Unit != null)
-                if (Game.World.Map.At(position).Unit.Owner != Owner)
+            if (fbGame.World.Map.At(position).Unit != null)
+                if (fbGame.World.Map.At(position).Unit.Owner != Owner)
                     return true;
 
             return false;
         }
 
-        public void MoveTo(Vector2 position)
+        //public void MoveTo(Vector2 position)
+        public void MoveTo(int x, int y)
         {
-            bool selected = Game.SelectedUnit == this;
+            //bool selected = Game.Selection == Tile;
 
             Tile.Unit = null;
-            Position = position;
-            Game.World.Map.At(position).Unit = this;
+            //Position = position;
+            this.x = x;
+            this.y = y;
+            fbGame.World.Map.At(x, y).Unit = this;
 
             //automaintain selection
-            if(selected)
-                Game.SelectedUnit = this;
+            /*if(selected)
+                Game.Selection = Tile;*/
         }
 
         public Vector2 StepTowards(Vector2 goal)
@@ -225,7 +244,7 @@ namespace Farbase
         {
             //we KNOW there's a unit there, since we checked CanAttack.
             //... you checked CanAttack first, right?
-            Unit target = Game.World.Map.At(position).Unit;
+            Unit target = fbGame.World.Map.At(position).Unit;
             int totalStrength = Strength + target.Strength;
 
             Random random = new Random();
@@ -256,7 +275,7 @@ namespace Farbase
 
         public Vector2 Position;
         public Tile Tile
-            { get { return Game.World.Map.At(Position); } }
+            { get { return fbGame.World.Map.At(Position); } }
     }
 
     public class Planet
@@ -265,7 +284,7 @@ namespace Farbase
 
         public Vector2 Position;
         public Tile Tile
-            { get { return Game.World.Map.At(Position); } }
+            { get { return fbGame.World.Map.At(Position); } }
     }
 
     public class fbInterface
@@ -392,17 +411,17 @@ namespace Farbase
             new TextCall(
                 string.Format(
                     "Hi, I am {0}<{1}>",
-                    game.World.Players[game.We].Name,
+                    fbGame.World.Players[game.We].Name,
                     game.We
                 ),
                 engine.DefaultFont,
                 new Vector2(10)
             ).Draw(engine);
 
-            if (game.World.PlayerIDs.Count > 0)
+            if (fbGame.World.PlayerIDs.Count > 0)
             {
-                Player current = game.World.Players
-                    [game.World.PlayerIDs[game.World.CurrentPlayerIndex]];
+                Player current = fbGame.World.Players
+                    [fbGame.World.PlayerIDs[fbGame.World.CurrentPlayerIndex]];
 
                 new TextCall(
                     string.Format(
@@ -430,10 +449,13 @@ namespace Farbase
                 ).Draw(engine);
             }*/
 
-            List<string> logTail =
-                game.Log
+            List<string> logTail;
+            lock (game.Log)
+            {
+                logTail = game.Log
                     .Skip(Math.Max(0, game.Log.Count - 3))
                     .ToList();
+            }
             logTail.Reverse();
 
             Vector2 position = new Vector2(10, engine.GetSize().Y - 10);
@@ -472,9 +494,9 @@ namespace Farbase
         public int We = -1;
 
         //client side of world
-        public fbWorld World;
+        public static fbWorld World;
 
-        public Tile Selection;
+        /*public Tile Selection;
         public Unit SelectedUnit
         {
             get
@@ -493,6 +515,9 @@ namespace Farbase
             }
             set { Selection = value.Tile; }
         }
+        */
+
+        public Unit SelectedUnit;
 
         public List<string> Log; 
 
@@ -558,6 +583,9 @@ namespace Farbase
 
             ui.UpdateCamera();
 
+            //if we're still receiving data, wait.
+            if (!engine.NetClient.Ready) return;
+
             if (engine.KeyPressed(Keys.Enter))
             {
                 if(OurTurn)
@@ -609,6 +637,7 @@ namespace Farbase
             }
 
             if (
+                OurTurn &&
                 SelectedUnit != null &&
                 SelectedUnit.Owner == World.CurrentPlayer.ID
             ) {
@@ -638,8 +667,19 @@ namespace Farbase
 
                     if(u.CanMoveTo(u.Position + moveOrder))
                     {
-                        SelectedUnit.Moves -= 1;
-                        SelectedUnit.MoveTo(SelectedUnit.Position + moveOrder);
+                        int x = (int)(u.Position + moveOrder).X;
+                        int y = (int)(u.Position + moveOrder).Y;
+
+                        engine.NetClient.Send(
+                            string.Format(
+                                "move:{0},{1},{2}",
+                                u.ID,
+                                x, y
+                            )
+                        );
+
+                        /*SelectedUnit.Moves -= 1;
+                        SelectedUnit.MoveTo(SelectedUnit.Position + moveOrder);*/
 
                         //make sure to reselect the unit.
                         //since in reality, the UNIT isn't selected, the TILE is
@@ -714,7 +754,8 @@ namespace Farbase
                 if (engine.Active && engine.MouseInside)
                 {
                     Vector2 square = ScreenToGrid(engine.MousePosition);
-                    Selection = World.Map.At(square);
+                    Tile t = World.Map.At(square);
+                    SelectedUnit = t.Unit;
                 }
             }
         }
@@ -814,12 +855,13 @@ namespace Farbase
             //if we have anything fun selected, show it.
             //tiles themselves might be interesting later, but not for now.
             if(
-                Selection == t &&
+                SelectedUnit != null && t.Unit == SelectedUnit
+                /*Selection == t &&
                 (
                     t.Unit != null ||
                     t.Station != null ||
                     t.Planet != null
-                )
+                )*/
             )
                 engine.Draw(
                     engine.GetTexture("selection"),

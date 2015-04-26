@@ -20,7 +20,11 @@ namespace Farbase
         public Dictionary<int, Player> Players; 
         public Map Map;
 
-        public List<Unit> Units; 
+        //only needs to be serverside
+        public int UnitIDCounter;
+
+        public List<Unit> Units;
+        public Dictionary<int, Unit> UnitLookup; 
 
         public fbWorld(int w, int h)
         {
@@ -28,7 +32,9 @@ namespace Farbase
             PlayerIDs = new List<int>();
             CurrentPlayerIndex = 0;
             Map = new Map(w, h);
+
             Units = new List<Unit>();
+            UnitLookup = new Dictionary<int, Unit>();
         }
 
         public void SpawnStation(int x, int y)
@@ -48,17 +54,21 @@ namespace Farbase
         public Unit SpawnUnit(
             String type,
             int owner,
+            int id,
             int x,
             int y
         ) {
             Unit u = new Unit(
                 UnitType.GetType(type),
                 owner,
+                id,
                 x, y
             );
             Map.At(x, y).Unit = u;
 
             Units.Add(u);
+            UnitLookup.Add(u.ID, u);
+            Players[owner].OwnedUnits.Add(id);
             return u;
         }
 
@@ -66,6 +76,14 @@ namespace Farbase
         {
             Players.Add(p.ID, p);
             PlayerIDs.Add(p.ID);
+        }
+
+        public void PassTo(int playerID)
+        {
+            foreach (int id in Players[playerID].OwnedUnits)
+            {
+                UnitLookup[id].Replenish();
+            }
         }
     }
 }

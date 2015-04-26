@@ -58,9 +58,10 @@ namespace FarbaseServer
         {
             SendAll(
                 string.Format(
-                    "create-unit:{0},{1},{2},{3}",
+                    "create-unit:{0},{1},{2},{3},{4}",
                     u.UnitType.Name,
                     u.Owner,
+                    u.ID,
                     (int)u.Position.X,
                     (int)u.Position.Y
                 )
@@ -124,15 +125,59 @@ namespace FarbaseServer
                             World.CurrentPlayerIndex
                         )
                     );
+                    World.PassTo(World.PlayerIDs[World.CurrentPlayerIndex]);
+                    SendAll(
+                        string.Format(
+                            "replenish:{0}",
+                            World.CurrentPlayer.ID
+                        )
+                    );
                     break;
 
                 case "give-test-scout":
                     Unit u = World.SpawnUnit(
                         "scout",
                         source.ID,
+                        //we need to manually update the ID counter
+                        World.UnitIDCounter++,
                         10, 10
                     );
                     BroadcastUnit(u);
+                    break;
+
+                case "move":
+                    int id = Int32.Parse(arguments[0]);
+                    int x = Int32.Parse(arguments[1]);
+                    int y = Int32.Parse(arguments[2]);
+
+                    Unit un;
+                    var a = World.Map.At(x, y);
+                    lock (World)
+                    {
+                        un = World.UnitLookup[id];
+
+                        if (un.Moves > 0)
+                        {
+                            un.MoveTo(x, y);
+                            un.Moves--;
+                        }
+                    }
+
+                    SendAll(
+                        string.Format(
+                            "move:{0},{1},{2}",
+                            un.ID,
+                            x, y
+                        )
+                    );
+                    SendAll(
+                        string.Format(
+                            "set-moves:{0},{1}",
+                            un.ID,
+                            un.Moves
+                        )
+                    );
+
                     break;
 
                 default:
@@ -164,6 +209,9 @@ namespace FarbaseServer
             World.SpawnStation(10, 12);
             World.SpawnPlanet(14, 14);
 
+            //we should probably use the static instead really
+            fbGame.World = World;
+
             netStart();
         }
 
@@ -183,11 +231,11 @@ namespace FarbaseServer
 
             try
             {
-                listener = new TcpListener(IPAddress.Any, 7777);
+                listener = new TcpListener(IPAddress.Any, 7707);
                 listenThread = new Thread(listen);
                 listenThread.Start();
 
-                Console.WriteLine("Running at 7777.");
+                Console.WriteLine("Running at 7707.");
                 Console.WriteLine("Local EP is: " + listener.LocalEndpoint);
                 Console.WriteLine("Waiting...");
 
@@ -241,6 +289,26 @@ namespace FarbaseServer
                 )
             );
 
+            //tell new client about all existing players
+            foreach (int id in World.PlayerIDs)
+            {
+                p.SendMessage(
+                    string.Format(
+                        "new-player:{0}",
+                        id
+                    )
+                );
+
+                p.SendMessage(
+                    string.Format(
+                        "name:{0},{1},{2}",
+                        id,
+                        World.Players[id].Name,
+                        ExtensionMethods.ColorToString(World.Players[id].Color)
+                    )
+                );
+            }
+
             for (int x = 0; x < World.Map.Width; x++)
             for (int y = 0; y < World.Map.Height; y++)
             {
@@ -264,34 +332,15 @@ namespace FarbaseServer
                 {
                     p.SendMessage(
                         string.Format(
-                            "create-unit:{0},{1},{2},{3}",
+                            "create-unit:{0},{1},{2},{3},{4}",
                             u.UnitType.Name,
                             u.Owner,
+                            u.ID,
                             (int)u.Position.X,
                             (int)u.Position.Y
                         )
                     );
                 }
-            }
-
-            //tell new client about all existing players
-            foreach (int id in World.PlayerIDs)
-            {
-                p.SendMessage(
-                    string.Format(
-                        "new-player:{0}",
-                        id
-                    )
-                );
-
-                p.SendMessage(
-                    string.Format(
-                        "name:{0},{1},{2}",
-                        id,
-                        World.Players[id].Name,
-                        ExtensionMethods.ColorToString(World.Players[id].Color)
-                    )
-                );
             }
 
             //tell new client about whose turn it is
@@ -301,6 +350,9 @@ namespace FarbaseServer
                     World.CurrentPlayerIndex
                 )
             );
+
+            //we gucci now
+            p.SendMessage("ready");
         }
 
         private void handleClient(object clientObject)

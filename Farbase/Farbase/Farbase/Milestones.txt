@@ -20,3 +20,4 @@ Prototype 3: REACHED.
 Prototype 4:
 	- Unit movement 2: TCP boogaloo.
 	- Basic combat 2: TCP boogaloo.
+	- Formalize net messages.

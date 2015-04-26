@@ -10,7 +10,7 @@ namespace Farbase
 {
     public class fbNetClient
     {
-        public static bool Verbose = false;
+        public static bool Verbose = true;
         public static fbGame Game;
 
         private TcpClient client;
@@ -19,14 +19,33 @@ namespace Farbase
 
         public bool ShouldDie;
         private List<string> SendQueue;
+        public bool Ready;
+
+        public fbNetClient()
+        {
+            Ready = false;
+        }
 
         private void HandleMessage(string message)
         {
             string command, args;
 
             int split = message.IndexOf(':');
-            command = message.Substring(0, split);
-            args = message.Substring(split + 1, message.Length - (split + 1));
+
+            if (split >= 0)
+            {
+                command = message.Substring(0, split);
+                args = message.Substring(
+                    split + 1,
+                    message.Length - (split + 1)
+                );
+            }
+            else
+            {
+                command = message;
+                args = "";
+            }
+
             List<String> arguments = args.Split(
                 new char[] { ',' },
                 StringSplitOptions.RemoveEmptyEntries
@@ -42,6 +61,7 @@ namespace Farbase
 
             int w, h;
             int x, y;
+            int owner;
             int id;
             switch (command)
             {
@@ -52,38 +72,59 @@ namespace Farbase
                 case "create-world":
                     Int32.TryParse(args.Split(',')[0], out w);
                     Int32.TryParse(args.Split(',')[1], out h);
-                    Game.World = new fbWorld(w, h);
+                    fbGame.World = new fbWorld(w, h);
                     break;
 
                 case "create-station":
                     Int32.TryParse(args.Split(',')[0], out x);
                     Int32.TryParse(args.Split(',')[1], out y);
-                    Game.World.SpawnStation(x, y);
+                    fbGame.World.SpawnStation(x, y);
                     break;
 
                 case "create-planet":
                     Int32.TryParse(args.Split(',')[0], out x);
                     Int32.TryParse(args.Split(',')[1], out y);
-                    Game.World.SpawnPlanet(x, y);
+                    fbGame.World.SpawnPlanet(x, y);
                     break;
 
                 case "create-unit":
                     string type = arguments[0];
-                    id = Int32.Parse(arguments[1]); //owned id
-                    x = Int32.Parse(arguments[2]);
-                    y = Int32.Parse(arguments[3]);
-                    Game.World.SpawnUnit(type, id, x, y);
+                    owner = Int32.Parse(arguments[1]); //owned id
+                    id = Int32.Parse(arguments[2]); //owned id
+                    x = Int32.Parse(arguments[3]);
+                    y = Int32.Parse(arguments[4]);
+                    fbGame.World.SpawnUnit(type, owner, id, x, y);
+                    break;
+
+                case "move":
+                    id = Int32.Parse(arguments[0]);
+                    x = Int32.Parse(arguments[1]);
+                    y = Int32.Parse(arguments[2]);
+
+                    fbGame.World.UnitLookup[id].MoveTo(x, y);
+                    break;
+
+                case "set-moves":
+                    id = Int32.Parse(arguments[0]);
+                    x = Int32.Parse(arguments[1]);
+
+                    fbGame.World.UnitLookup[id].Moves = x;
                     break;
 
                 case "new-player":
                     Int32.TryParse(args, out id);
-                    Game.World.AddPlayer(
+                    fbGame.World.AddPlayer(
                         new Player(
                             "Unnamed player",
                             id,
                             Color.White
                         )
                     );
+                    break;
+
+                case "replenish":
+                    id = Int32.Parse(arguments[0]);
+                    fbGame.World.PassTo(id);
                     break;
 
                 case "assign-id":
@@ -94,7 +135,7 @@ namespace Farbase
                 case "name":
                     id = Int32.Parse(arguments[0]);
                     string name = arguments[1];
-                    Player p = Game.World.Players[id];
+                    Player p = fbGame.World.Players[id];
 
                     Game.Log.Add(
                         string.Format(
@@ -110,20 +151,27 @@ namespace Farbase
 
                 case "current-player":
                     int index = Int32.Parse(arguments[0]);
-                    Game.World.CurrentPlayerIndex = index;
+                    fbGame.World.CurrentPlayerIndex = index;
                     Game.Log.Add(
                         string.Format(
                             "It is now {0}'s turn.",
-                            Game.World.CurrentPlayer.Name
+                            fbGame.World.CurrentPlayer.Name
                         )
                     );
 
                     break;
 
+                case "ready":
+                    Ready = true;
+                    break;
+
                 default:
                     Game.Log.Add(
-                        "Received {0} command from server," +
-                        " but no idea what to do with it."
+                        string.Format(
+                            "Received {0} command from server," +
+                            " but no idea what to do with it.",
+                            command
+                        )
                     );
                     break;
             }
@@ -133,7 +181,7 @@ namespace Farbase
         {
             ShouldDie = false;
             SendQueue = new List<string>();
-            ConnectTo("127.0.0.1", 7777);
+            ConnectTo("127.0.0.1", 7707);
 
             while (!ShouldDie)
             {
