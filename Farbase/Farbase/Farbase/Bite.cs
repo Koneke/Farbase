@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -12,6 +13,28 @@ namespace Farbase
             if (val.CompareTo(min) < 0) return min;
             if (val.CompareTo(max) > 0) return max;
             return val;
+        }
+
+        public static Color ColorFromString(string s)
+        {
+            if (s.Length > 8)
+                throw new ArgumentException();
+
+            Color c = new Color();
+            c.R = byte.Parse(s.Substring(0, 2), NumberStyles.HexNumber);
+            c.G = byte.Parse(s.Substring(2, 2), NumberStyles.HexNumber);
+            c.B = byte.Parse(s.Substring(4, 2), NumberStyles.HexNumber);
+            c.A = byte.Parse(s.Substring(6, 2), NumberStyles.HexNumber);
+
+            return c;
+        }
+
+        public static string ColorToString(Color c)
+        {
+            return string.Format(
+                "{0:X2}{1:X2}{2:X2}{3:X2}",
+                c.R, c.G, c.B, c.A
+            );
         }
     }
 
@@ -91,7 +114,7 @@ namespace Farbase
         {
             for(int i = 0; i < Text.Length; i++)
             {
-                int c = (int)Text[i];
+                int c = Text[i];
                 Vector2 fontSpot =
                     new Vector2(
                         c % 16,

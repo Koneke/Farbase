@@ -32,6 +32,7 @@ namespace Farbase
                 StringSplitOptions.RemoveEmptyEntries
             ).ToList();
 
+
             if(Verbose)
                 Game.Log.Add(
                     String.Format("<- s: {0}", message)
@@ -66,6 +67,14 @@ namespace Farbase
                     Game.World.SpawnPlanet(x, y);
                     break;
 
+                case "create-unit":
+                    string type = arguments[0];
+                    id = Int32.Parse(arguments[1]); //owned id
+                    x = Int32.Parse(arguments[2]);
+                    y = Int32.Parse(arguments[3]);
+                    Game.World.SpawnUnit(type, id, x, y);
+                    break;
+
                 case "new-player":
                     Int32.TryParse(args, out id);
                     Game.World.AddPlayer(
@@ -95,8 +104,8 @@ namespace Farbase
                         )
                     );
 
-                    //Game.World.Players[id].Name = name;
                     p.Name = name;
+                    p.Color = ExtensionMethods.ColorFromString(arguments[2]);
                     break;
 
                 case "current-player":

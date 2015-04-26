@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 
 namespace Farbase
@@ -7,14 +8,19 @@ namespace Farbase
     {
         public List<int> PlayerIDs;
         public int CurrentPlayerIndex;
-
+        public int CurrentID
+        {
+            get { return PlayerIDs[CurrentPlayerIndex]; }
+        }
         public Player CurrentPlayer
         {
-            get { return Players[PlayerIDs[CurrentPlayerIndex]]; }
+            get { return Players[CurrentID]; }
         }
 
         public Dictionary<int, Player> Players; 
         public Map Map;
+
+        public List<Unit> Units; 
 
         public fbWorld(int w, int h)
         {
@@ -22,6 +28,7 @@ namespace Farbase
             PlayerIDs = new List<int>();
             CurrentPlayerIndex = 0;
             Map = new Map(w, h);
+            Units = new List<Unit>();
         }
 
         public void SpawnStation(int x, int y)
@@ -36,6 +43,23 @@ namespace Farbase
             Planet p = new Planet();
             p.Position = new Vector2(x, y);
             Map.At(x, y).Planet = p;
+        }
+
+        public Unit SpawnUnit(
+            String type,
+            int owner,
+            int x,
+            int y
+        ) {
+            Unit u = new Unit(
+                UnitType.GetType(type),
+                owner,
+                x, y
+            );
+            Map.At(x, y).Unit = u;
+
+            Units.Add(u);
+            return u;
         }
 
         public void AddPlayer(Player p)

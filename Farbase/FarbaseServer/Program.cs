@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -53,6 +54,19 @@ namespace FarbaseServer
                 p.SendMessage(message);
         }
 
+        private void BroadcastUnit(Unit u)
+        {
+            SendAll(
+                string.Format(
+                    "create-unit:{0},{1},{2},{3}",
+                    u.UnitType.Name,
+                    u.Owner,
+                    (int)u.Position.X,
+                    (int)u.Position.Y
+                )
+            );
+        }
+
         private void HandleMessage(Player source, string message)
         {
             string command, args;
@@ -72,6 +86,11 @@ namespace FarbaseServer
                 args = "";
             }
 
+            List<String> arguments = args.Split(
+                new char[] { ',' },
+                StringSplitOptions.RemoveEmptyEntries
+            ).ToList();
+
             Console.WriteLine("<- {0}: {1}", source.ID, message);
 
             switch (command)
@@ -81,12 +100,16 @@ namespace FarbaseServer
                     break;
 
                 case "login":
-                    World.Players[source.ID].Name = args;
+                    World.Players[source.ID].Name = arguments[0];
+                    World.Players[source.ID].Color =
+                        ExtensionMethods.ColorFromString(arguments[1]);
+
                     SendAll(
                         string.Format(
-                            "name:{0},{1}",
+                            "name:{0},{1},{2}",
                             source.ID,
-                            args
+                            arguments[0],
+                            arguments[1]
                         )
                     );
                     break;
@@ -103,6 +126,15 @@ namespace FarbaseServer
                     );
                     break;
 
+                case "give-test-scout":
+                    Unit u = World.SpawnUnit(
+                        "scout",
+                        source.ID,
+                        10, 10
+                    );
+                    BroadcastUnit(u);
+                    break;
+
                 default:
                     Console.WriteLine(
                         "Received {0} command from id {1}," +
@@ -116,6 +148,17 @@ namespace FarbaseServer
         public void Start()
         {
             players = new List<Player>();
+
+            UnitType scout = new UnitType();
+            scout.Moves = 2;
+            scout.Strength = 3;
+            scout.Attacks = 1;
+            UnitType.RegisterType("scout", scout);
+
+            UnitType worker = new UnitType();
+            worker.Moves = 1;
+            worker.Strength = 1;
+            UnitType.RegisterType("worker", worker);
 
             World = new fbWorld(80, 45);
             World.SpawnStation(10, 12);
@@ -215,14 +258,25 @@ namespace FarbaseServer
                             x, y
                         )
                     );
+
+                Unit u = World.Map.At(x, y).Unit;
+                if (u != null)
+                {
+                    p.SendMessage(
+                        string.Format(
+                            "create-unit:{0},{1},{2},{3}",
+                            u.UnitType.Name,
+                            u.Owner,
+                            (int)u.Position.X,
+                            (int)u.Position.Y
+                        )
+                    );
+                }
             }
 
             //tell new client about all existing players
             foreach (int id in World.PlayerIDs)
             {
-                ////don't message us about ourselves (again)
-                //if (p.ID == id) continue;
-
                 p.SendMessage(
                     string.Format(
                         "new-player:{0}",
@@ -232,9 +286,10 @@ namespace FarbaseServer
 
                 p.SendMessage(
                     string.Format(
-                        "name:{0},{1}",
+                        "name:{0},{1},{2}",
                         id,
-                        World.Players[id].Name
+                        World.Players[id].Name,
+                        ExtensionMethods.ColorToString(World.Players[id].Color)
                     )
                 );
             }

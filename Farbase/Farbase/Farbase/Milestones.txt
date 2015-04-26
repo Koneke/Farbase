@@ -11,6 +11,12 @@ Prototype 2: semi-REACHED.
 		- The seeking is there, but automatically choosing planet is and auto moving there by itself is not.
 	- Basic log.
 
-Prototype 3:
+Prototype 3: REACHED.
 	- Server/client connection.
 	- Map data from server.
+	- Player login (name/color).
+	- Turntaking 2: TCP boogaloo.
+
+Prototype 4:
+	- Unit movement 2: TCP boogaloo.
+	- Basic combat 2: TCP boogaloo.
