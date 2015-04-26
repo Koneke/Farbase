@@ -58,8 +58,19 @@ namespace FarbaseServer
             string command, args;
 
             int split = message.IndexOf(':');
-            command = message.Substring(0, split);
-            args = message.Substring(split + 1, message.Length - (split + 1));
+            if (split >= 0)
+            {
+                command = message.Substring(0, split);
+                args = message.Substring(
+                    split + 1,
+                    message.Length - (split + 1)
+                    );
+            }
+            else
+            {
+                command = message;
+                args = "";
+            }
 
             Console.WriteLine("<- {0}: {1}", source.ID, message);
 
@@ -76,6 +87,18 @@ namespace FarbaseServer
                             "name:{0},{1}",
                             source.ID,
                             args
+                        )
+                    );
+                    break;
+
+                case "pass":
+                    World.CurrentPlayerIndex =
+                        (World.CurrentPlayerIndex + 1) %
+                        World.PlayerIDs.Count;
+                    SendAll(
+                        string.Format(
+                            "current-player:{0}",
+                            World.CurrentPlayerIndex
                         )
                     );
                     break;
@@ -194,10 +217,11 @@ namespace FarbaseServer
                     );
             }
 
+            //tell new client about all existing players
             foreach (int id in World.PlayerIDs)
             {
-                //don't message us about ourselves (again)
-                if (p.ID == id) continue;
+                ////don't message us about ourselves (again)
+                //if (p.ID == id) continue;
 
                 p.SendMessage(
                     string.Format(
@@ -214,6 +238,14 @@ namespace FarbaseServer
                     )
                 );
             }
+
+            //tell new client about whose turn it is
+            p.SendMessage(
+                string.Format(
+                    "current-player:{0}",
+                    World.CurrentPlayerIndex
+                )
+            );
         }
 
         private void handleClient(object clientObject)
@@ -240,6 +272,7 @@ namespace FarbaseServer
 
             foreach (int id in Player.TcpPlayers.Keys)
             {
+                if (id == p.ID) continue;
                 Player.TcpPlayers[id].SendMessage(
                     string.Format(
                         "new-player:{0}",

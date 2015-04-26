@@ -85,7 +85,30 @@ namespace Farbase
                 case "name":
                     id = Int32.Parse(arguments[0]);
                     string name = arguments[1];
-                    Game.World.Players[id].Name = name;
+                    Player p = Game.World.Players[id];
+
+                    Game.Log.Add(
+                        string.Format(
+                            "{0} is now known as {1}.",
+                            p.Name,
+                            name
+                        )
+                    );
+
+                    //Game.World.Players[id].Name = name;
+                    p.Name = name;
+                    break;
+
+                case "current-player":
+                    int index = Int32.Parse(arguments[0]);
+                    Game.World.CurrentPlayerIndex = index;
+                    Game.Log.Add(
+                        string.Format(
+                            "It is now {0}'s turn.",
+                            Game.World.CurrentPlayer.Name
+                        )
+                    );
+
                     break;
 
                 default:

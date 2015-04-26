@@ -567,7 +567,12 @@ namespace Farbase
             ui.UpdateCamera();
 
             if (engine.KeyPressed(Keys.Enter))
-                PassTurn();
+            {
+                if(OurTurn)
+                    engine.NetClient.Send("pass");
+                else
+                    Log.Add("Not your turn!");
+            }
 
             if (engine.KeyPressed(Keys.Space))
             {
@@ -576,7 +581,6 @@ namespace Farbase
 
             if (engine.KeyPressed(Keys.G))
             {
-                engine.NetClient.Send("msg:Pop pop!\n");
                 List<string> names =
                     new List<string>
                     {
@@ -699,6 +703,10 @@ namespace Farbase
                     Selection = World.Map.At(square);
                 }
             }
+        }
+
+        public bool OurTurn {
+            get { return World.PlayerIDs[World.CurrentPlayerIndex] == We; }
         }
 
         private Vector2 ScreenToGrid(Vector2 position)

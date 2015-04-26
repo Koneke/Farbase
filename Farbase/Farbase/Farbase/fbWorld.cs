@@ -7,6 +7,12 @@ namespace Farbase
     {
         public List<int> PlayerIDs;
         public int CurrentPlayerIndex;
+
+        public Player CurrentPlayer
+        {
+            get { return Players[PlayerIDs[CurrentPlayerIndex]]; }
+        }
+
         public Dictionary<int, Player> Players; 
         public Map Map;
 
