@@ -12,7 +12,6 @@ namespace Farbase
         public int ID;
         public string Name;
         public Color Color;
-        public List<Unit> Units;
         public int Money;
 
         public Player(string name, int id, Color color)
@@ -20,8 +19,6 @@ namespace Farbase
             Name = name;
             ID = id;
             Color = color;
-
-            Units = new List<Unit>();
         }
     }
 
@@ -79,6 +76,7 @@ namespace Farbase
         {
             name = name.ToLower();
             types.Add(name, type);
+            type.Name = name;
         }
 
         public static UnitType GetType(string name)
@@ -87,6 +85,7 @@ namespace Farbase
             return types[name];
         }
 
+        public string Name;
         public Texture2D Texture;
         public int Moves;
         public int Attacks;
@@ -98,7 +97,7 @@ namespace Farbase
         public static fbGame Game;
 
         public UnitType UnitType;
-        public Player Owner;
+        public int Owner;
 
         public Vector2 Position;
         public Tile Tile
@@ -110,13 +109,22 @@ namespace Farbase
 
         public Unit(
             UnitType unitType,
-            Player owner,
+            int owner,
+            int x,
+            int y
+        ) : this(unitType, owner, new Vector2(x, y)) {
+        }
+
+        public Unit(
+            UnitType unitType,
+            int owner,
             Vector2 position
         ) {
             UnitType = unitType;
             Owner = owner;
             Position = position;
             Moves = UnitType.Moves;
+            Attacks = UnitType.Attacks;
             Strength = UnitType.Strength;
         }
 
@@ -127,7 +135,7 @@ namespace Farbase
             //workers generate cash if they start the turn on a planet
             if(UnitType == UnitType.GetType("worker"))
                 if (Tile.Planet != null)
-                    Owner.Money += 10;
+                    Game.World.Players[Owner].Money += 10;
 
             if (Tile.Station != null)
             {
@@ -207,7 +215,9 @@ namespace Farbase
 
         public void Die()
         {
-            Owner.Units.Remove(this);
+            //should not be client side
+            throw new NotImplementedException();
+            //Game.World.Players[Owner].Units.Remove(this);
             Tile.Unit = null;
         }
 
@@ -445,7 +455,7 @@ namespace Farbase
         private fbInterface ui;
 
         //phase out
-        public List<Player> Players;
+        /*public List<Player> Players;
         public int CurrentPlayerIndex;
         public Player CurrentPlayer
         {
@@ -454,7 +464,7 @@ namespace Farbase
                 if (Players == null) return null;
                 return Players[CurrentPlayerIndex];
             }
-        }
+        }*/
 
         private const int tileSize = 16;
 
@@ -505,10 +515,6 @@ namespace Farbase
             Log = new List<string>();
             Log.Add("Welcome to Farbase.");
 
-            /*Players = new List<Player>();
-            Players.Add(new Player("Lukas", Color.CornflowerBlue));
-            Players.Add(new Player("Barbarians", Color.Red));
-
             UnitType scout = new UnitType();
             scout.Texture = engine.GetTexture("scout");
             scout.Moves = 2;
@@ -521,6 +527,10 @@ namespace Farbase
             worker.Moves = 1;
             worker.Strength = 1;
             UnitType.RegisterType("worker", worker);
+
+            /*Players = new List<Player>();
+            Players.Add(new Player("Lukas", Color.CornflowerBlue));
+            Players.Add(new Player("Barbarians", Color.Red));
 
             Map = new Map(80, 45);
             SpawnUnit(scout, Players[0], new Vector2(9, 11));
@@ -535,29 +545,11 @@ namespace Farbase
             SpawnUnit(worker, Players[1], new Vector2(16, 14));*/
         }
 
-        public void SpawnUnit(
-            UnitType type,
-            Player owner,
-            Vector2 position
-        ) {
-            Unit u = new Unit(
-                type,
-                owner,
-                position
-            );
-            u.Replenish();
-            World.Map.At(position).Unit = u;
-            owner.Units.Add(u);
-        }
-
-        public void PassTurn()
+        /*public void PassTurn()
         {
-            CurrentPlayerIndex =
-                (CurrentPlayerIndex + 1) % Players.Count;
-
             foreach (Unit u in CurrentPlayer.Units)
                 u.Replenish();
-        }
+        }*/
 
         public void Update()
         {
@@ -588,16 +580,38 @@ namespace Farbase
                         "Commander Kneckers"
                     };
 
+                List<Color> colors =
+                    new List<Color>
+                    {
+                        Color.Green,
+                        Color.CornflowerBlue
+                    };
+
                 engine.NetClient.Send(
                     string.Format(
-                        "login:{0}",
-                        names[We]
+                        "login:{0},{1}",
+                        names[We],
+                        ExtensionMethods.ColorToString(colors[We])
                     )
                 );
             }
 
-            if (SelectedUnit != null && SelectedUnit.Owner == CurrentPlayer)
+            if (engine.KeyPressed(Keys.H))
             {
+                if (OurTurn)
+                {
+                    engine.NetClient.Send(
+                        string.Format(
+                            "give-test-scout"
+                        )
+                    );
+                }
+            }
+
+            if (
+                SelectedUnit != null &&
+                SelectedUnit.Owner == World.CurrentPlayer.ID
+            ) {
                 Vector2 moveOrder = Vector2.Zero;
 
                 if (engine.KeyPressed(Keys.NumPad2))
@@ -640,7 +654,7 @@ namespace Farbase
                 }
             }
 
-            if (SelectedUnit != null)
+            /*if (SelectedUnit != null)
             {
                 if (engine.KeyPressed(Keys.OemPeriod))
                 {
@@ -665,9 +679,9 @@ namespace Farbase
                     );
                     SelectedUnit.Moves -= 1;
                 }
-            }
+            }*/
 
-            if (engine.KeyPressed(Keys.W))
+            /*if (engine.KeyPressed(Keys.W))
                 if (
                     SelectedStation != null &&
                     SelectedUnit == null &&
@@ -693,7 +707,7 @@ namespace Farbase
                         Selection.Position
                     );
                     CurrentPlayer.Money -= 45;
-                }
+                }*/
 
             if (engine.ButtonPressed(0))
             {
@@ -826,7 +840,7 @@ namespace Farbase
             engine.Draw(
                 u.UnitType.Texture,
                 destination,
-                u.Owner.Color
+                World.Players[u.Owner].Color
             );
 
             for (int i = 0; i < u.Moves; i++)
