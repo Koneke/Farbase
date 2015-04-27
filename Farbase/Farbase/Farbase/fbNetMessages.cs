@@ -77,6 +77,10 @@ namespace Farbase
                     message = new CurrentPlayerMessage(arguments);
                     break;
 
+                case UnreadyMessage.Command:
+                    message = new UnreadyMessage();
+                    break;
+
                 case ReadyMessage.Command:
                     message = new ReadyMessage();
                     break;
@@ -87,6 +91,14 @@ namespace Farbase
 
                 case DevCommandMessage.Command:
                     message = new DevCommandMessage(arguments);
+                    break;
+
+                case AttackMessage.Command:
+                    message = new AttackMessage(arguments);
+                    break;
+
+                case HurtMessage.Command:
+                    message = new HurtMessage(arguments);
                     break;
 
                 default:
@@ -502,6 +514,21 @@ namespace Farbase
         }
     }
 
+    public class UnreadyMessage : fbNetMessage
+    {
+        public const string Command = "unready";
+        public override int GetExpectedArguments() { return 0; }
+        public override string GetMessageType() { return Command; }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}",
+                Command
+            );
+        }
+    }
+
     public class PassMessage : fbNetMessage
     {
         public const string Command = "pass";
@@ -544,4 +571,69 @@ namespace Farbase
             );
         }
     }
+
+    public class AttackMessage : fbNetMessage
+    {
+        public const string Command = "attack";
+        public override string GetMessageType() { return Command; }
+        public override int GetExpectedArguments() { return 2; }
+
+        public int attackerid;
+        public int targetid;
+
+        public AttackMessage(List<string> arguments)
+        {
+            attackerid = Int32.Parse(arguments[0]);
+            targetid = Int32.Parse(arguments[1]);
+        }
+
+        public AttackMessage(int aid, int tid)
+        {
+            attackerid = aid;
+            targetid = tid;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1},{2}",
+                Command,
+                attackerid,
+                targetid
+            );
+        }
+    }
+
+    public class HurtMessage : fbNetMessage
+    {
+        public const string Command = "hurt";
+        public override string GetMessageType() { return Command; }
+        public override int GetExpectedArguments() { return 2; }
+
+        public int id;
+        public int amount;
+
+        public HurtMessage(List<string> arguments)
+        {
+            id = Int32.Parse(arguments[0]);
+            amount = Int32.Parse(arguments[1]);
+        }
+
+        public HurtMessage(int id, int amount)
+        {
+            this.id = id;
+            this.amount = amount;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1},{2}",
+                Command,
+                id,
+                amount
+            );
+        }
+    }
+
 }

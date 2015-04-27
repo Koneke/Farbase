@@ -120,6 +120,14 @@ namespace Farbase
                     HandleMessage((ReadyMessage)message);
                     break;
 
+                case UnreadyMessage.Command:
+                    HandleMessage((UnreadyMessage)message);
+                    break;
+
+                case HurtMessage.Command:
+                    HandleMessage((HurtMessage)message);
+                    break;
+
                 default:
                     //should probably be handled more gracefully in the future,
                     //but works for unknown messages for now.
@@ -220,6 +228,16 @@ namespace Farbase
         private void HandleMessage(ReadyMessage message)
         {
             Ready = true;
+        }
+
+        private void HandleMessage(UnreadyMessage message)
+        {
+            Ready = false;
+        }
+
+        private void HandleMessage(HurtMessage message)
+        {
+            fbGame.World.UnitLookup[message.id].Hurt(message.amount);
         }
 
         public void Start()

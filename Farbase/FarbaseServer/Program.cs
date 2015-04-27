@@ -27,6 +27,11 @@ namespace FarbaseServer
             Stream = client.GetStream();
         }
 
+        public void SendMessage(fbNetMessage message)
+        {
+            SendMessage(message.Format());
+        }
+
         public void SendMessage(string message)
         {
             Console.WriteLine("-> {0}: {1}", ID, message);
@@ -44,16 +49,8 @@ namespace FarbaseServer
             program.Start();
         }
 
+        private Random random;
         private List<Player> players;
-
-        private void SendAll(
-            string message,
-            int except = -1
-        ) {
-            foreach (Player p in players)
-                if (p.ID != except)
-                    p.SendMessage(message);
-        }
 
         private void SendAll(
             fbNetMessage message,
@@ -99,6 +96,10 @@ namespace FarbaseServer
 
                 case DevCommandMessage.Command:
                     HandleMessage((DevCommandMessage)message);
+                    break;
+
+                case AttackMessage.Command:
+                    HandleMessage((AttackMessage)message);
                     break;
 
                 default:
@@ -181,6 +182,32 @@ namespace FarbaseServer
             }
         }
 
+        private void HandleMessage(AttackMessage message)
+        {
+            //please don't do shit until we've resolved combat
+            Player.TcpPlayers[message.Sender]
+                .SendMessage(new UnreadyMessage());
+
+            Unit attacker = fbGame.World.UnitLookup[message.attackerid];
+            Unit target = fbGame.World.UnitLookup[message.targetid];
+
+            int totalStrength = attacker.Strength + target.Strength;
+            int roll = random.Next(totalStrength) + 1;
+
+            Unit loser;
+            if (roll <= attacker.Strength)
+                loser = attacker;
+            else
+                loser = target;
+
+            loser.Hurt(1);
+            SendAll(new HurtMessage(loser.ID, 1));
+
+            //we done here
+            Player.TcpPlayers[message.Sender]
+                .SendMessage(new ReadyMessage());
+        }
+
         private void ReceiveMessage(Player source, string message)
         {
             string command, args;
@@ -192,7 +219,7 @@ namespace FarbaseServer
                 args = message.Substring(
                     split + 1,
                     message.Length - (split + 1)
-                    );
+                );
             }
             else
             {
@@ -216,6 +243,7 @@ namespace FarbaseServer
         public void Start()
         {
             players = new List<Player>();
+            random = new Random();
 
             UnitType scout = new UnitType();
             scout.Moves = 2;
@@ -268,6 +296,7 @@ namespace FarbaseServer
                 Console.WriteLine(e.StackTrace);
             }
         }
+
         private void listen()
         {
             listener.Start();

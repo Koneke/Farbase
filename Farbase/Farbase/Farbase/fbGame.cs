@@ -114,9 +114,11 @@ namespace Farbase
         }
 
         public Tile Tile
-            { get {
+        {
+            get {
                 return fbGame.World.Map.At(x, y);
-            } }
+            }
+        }
 
         public int Moves;
         public int Attacks;
@@ -229,39 +231,16 @@ namespace Farbase
             return Vector2.Zero;
         }
 
-        public void Die()
+        public void Hurt(int amount)
         {
-            //should not be client side
-            throw new NotImplementedException();
-            //Game.World.Players[Owner].Units.Remove(this);
-            Tile.Unit = null;
-        }
-
-        public void Attack(Vector2 position)
-        {
-            //we KNOW there's a unit there, since we checked CanAttack.
-            //... you checked CanAttack first, right?
-            Unit target = fbGame.World.Map.At(position).Unit;
-            int totalStrength = Strength + target.Strength;
-
-            Random random = new Random();
-            int roll = random.Next(totalStrength) + 1;
-
-            Game.Log.Add(Strength + " vs. " + roll + "...");
-
-            if (roll <= Strength)
+            Strength -= amount;
+            if (Strength <= 0)
             {
-                //we win!
-                Game.Log.Add("Victory!");
-                target.Strength -= 1;
-
-                if (target.Strength < 1)
-                    target.Die();
-            }
-            else
-            {
-                Game.Log.Add("Defeat!");
-                Strength -= 1;
+                //fbGame.World.DespawnUnit(this)?
+                fbGame.World.Units.Remove(this);
+                fbGame.World.Map.At(x, y).Unit = null;
+                fbGame.World.UnitLookup.Remove(ID);
+                fbGame.World.Players[Owner].OwnedUnits.Remove(ID);
             }
         }
     }
@@ -444,7 +423,16 @@ namespace Farbase
                     }
                     else if (u.CanAttack(u.Position + moveOrder))
                     {
-                        u.Attack(u.Position + moveOrder);
+                        Vector2 targettile = u.Position + moveOrder;
+                        Unit target = World.Map.At(
+                            (int)targettile.X,
+                            (int)targettile.Y
+                        ).Unit;
+
+                        engine.NetClient.Send(
+                            new AttackMessage(u.ID, target.ID)
+                        );
+                        //u.Attack(u.Position + moveOrder);
                     }
                 }
             }

@@ -17,8 +17,14 @@ Prototype 3: REACHED.
 	- Player login (name/color).
 	- Turntaking 2: TCP boogaloo.
 
-Prototype 4:
+Prototype 4: REACHED.
 	- Unit movement 2: TCP boogaloo.
 	- Basic combat 2: TCP boogaloo.
 	- Formalize net messages.
 	- Fix selection.
+
+Prototype 5:
+	- Network money.
+	- Station ownership.
+	- Unit purchase/building.
+	- Station building?
