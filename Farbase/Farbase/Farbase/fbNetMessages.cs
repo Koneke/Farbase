@@ -7,9 +7,12 @@ namespace Farbase
 {
     public abstract class fbNetMessage
     {
+        public int Sender;
         public bool Trash;
 
-        protected fbNetMessage() {
+        protected fbNetMessage()
+        {
+            Sender = -1; //no explicit sender/it's the server
             Trash = false;
         }
 
@@ -80,6 +83,10 @@ namespace Farbase
 
                 case PassMessage.Command:
                     message = new PassMessage();
+                    break;
+
+                case DevCommandMessage.Command:
+                    message = new DevCommandMessage(arguments);
                     break;
 
                 default:
@@ -219,10 +226,10 @@ namespace Farbase
         public override string GetMessageType() { return Command; }
 
         public string type;
-        public int x;
-        public int y;
         public int id;
         public int owner;
+        public int x;
+        public int y;
 
         public CreateUnitMessage(
             List<string> arguments
@@ -234,14 +241,28 @@ namespace Farbase
             y = Int32.Parse(arguments[4]);
         }
 
+        public CreateUnitMessage(
+            string type,
+            int owner,
+            int id,
+            int x,
+            int y
+        ) {
+            this.type = type;
+            this.owner = owner;
+            this.id = id;
+            this.x = x;
+            this.y = y;
+        }
+
         public override string Format()
         {
             return string.Format(
                 "{0}:{1},{2},{3},{4},{5}",
                 Command,
                 type,
-                x, y,
-                id, owner
+                id, owner,
+                x, y
             );
         }
     }
@@ -300,6 +321,14 @@ namespace Farbase
             amount = Int32.Parse(arguments[1]);
         }
 
+        public SetUnitMovesMessage(
+            int id,
+            int amount
+        ) {
+            this.id = id;
+            this.amount = amount;
+        }
+
         public override string Format()
         {
             return string.Format(
@@ -346,6 +375,12 @@ namespace Farbase
             List<string> arguments
         ) {
             id = Int32.Parse(arguments[0]);
+        }
+
+        public ReplenishPlayerMessage(
+            int id
+        ) {
+            this.id = id;
         }
 
         public override string Format()
@@ -400,6 +435,16 @@ namespace Farbase
             color = ExtensionMethods.ColorFromString(arguments[2]);
         }
 
+        public NameMessage(
+            int id,
+            string name,
+            Color color
+        ) {
+            this.id = id;
+            this.name = name;
+            this.color = color;
+        }
+
         public override string Format()
         {
             return string.Format(
@@ -424,6 +469,12 @@ namespace Farbase
             List<string> arguments
         ) {
             index = Int32.Parse(arguments[0]);
+        }
+
+        public CurrentPlayerMessage(
+            int index
+        ) {
+            this.index = index;
         }
 
         public override string Format()
@@ -454,14 +505,42 @@ namespace Farbase
     public class PassMessage : fbNetMessage
     {
         public const string Command = "pass";
-        public override int GetExpectedArguments() { return 0; }
         public override string GetMessageType() { return Command; }
+        public override int GetExpectedArguments() { return 0; }
 
         public override string Format()
         {
             return string.Format(
                 "{0}",
                 Command
+            );
+        }
+    }
+
+    public class DevCommandMessage : fbNetMessage
+    {
+        public const string Command = "dev";
+        public override string GetMessageType() { return Command; }
+        public override int GetExpectedArguments() { return 1; }
+
+        public int Number;
+
+        public DevCommandMessage(List<string> arguments)
+        {
+            Number = Int32.Parse(arguments[0]);
+        }
+
+        public DevCommandMessage(int number)
+        {
+            Number = number;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1}",
+                Command,
+                Number
             );
         }
     }

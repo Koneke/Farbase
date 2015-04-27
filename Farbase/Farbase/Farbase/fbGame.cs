@@ -372,11 +372,7 @@ namespace Farbase
                     };
 
                 engine.NetClient.Send(
-                    string.Format(
-                        "login:{0},{1}",
-                        names[We],
-                        ExtensionMethods.ColorToString(colors[We])
-                    )
+                    new NameMessage(We, names[We], colors[We])
                 );
             }
 
@@ -385,9 +381,7 @@ namespace Farbase
                 if (OurTurn)
                 {
                     engine.NetClient.Send(
-                        string.Format(
-                            "give-test-scout"
-                        )
+                        new DevCommandMessage(0)
                     );
                 }
             }

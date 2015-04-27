@@ -56,19 +56,18 @@ namespace FarbaseServer
         }
 
         private void SendAll(
-            string message,
-            List<int> exceptions 
+            fbNetMessage message,
+            int except = -1
         ) {
             foreach (Player p in players)
-                if(!exceptions.Contains(p.ID))
-                    p.SendMessage(message);
+                if (p.ID != except)
+                    p.SendMessage(message.Format());
         }
 
         private void BroadcastUnit(Unit u)
         {
             SendAll(
-                string.Format(
-                    "create-unit:{0},{1},{2},{3},{4}",
+                new CreateUnitMessage(
                     u.UnitType.Name,
                     u.Owner,
                     u.ID,
@@ -78,7 +77,111 @@ namespace FarbaseServer
             );
         }
 
-        private void HandleMessage(Player source, string message)
+        private void HandleMessage(fbNetMessage message)
+        {
+            switch (message.GetMessageType())
+            {
+                case MsgMessage.Command:
+                    HandleMessage((MsgMessage)message);
+                    break;
+
+                case NameMessage.Command:
+                    HandleMessage((NameMessage)message);
+                    break;
+
+                case PassMessage.Command:
+                    HandleMessage((PassMessage)message);
+                    break;
+
+                case MoveUnitMessage.Command:
+                    HandleMessage((MoveUnitMessage)message);
+                    break;
+
+                case DevCommandMessage.Command:
+                    HandleMessage((DevCommandMessage)message);
+                    break;
+
+                default:
+                    //should probably be handled more gracefully in the future,
+                    //but works for unknown messages for now.
+                    throw new ArgumentException();
+            }
+        }
+
+        private void HandleMessage(MsgMessage message)
+        {
+            Console.WriteLine(message.Content);
+        }
+
+        private void HandleMessage(NameMessage message)
+        {
+            fbGame.World.Players[message.id].Name = message.name;
+            fbGame.World.Players[message.id].Color = message.color;
+
+            SendAll(message);
+        }
+
+        private void HandleMessage(PassMessage message)
+        {
+            fbGame.World.CurrentPlayerIndex =
+                (fbGame.World.CurrentPlayerIndex + 1) %
+                fbGame.World.PlayerIDs.Count;
+
+            SendAll(
+                new CurrentPlayerMessage(fbGame.World.CurrentPlayerIndex)
+            );
+
+            fbGame.World.ReplenishPlayer(fbGame.World.CurrentID);
+
+            SendAll(new ReplenishPlayerMessage(fbGame.World.CurrentID)
+            );
+        }
+
+        private void HandleMessage(MoveUnitMessage message)
+        {
+            Unit un;
+            //lock necessary?
+            lock (fbGame.World)
+            {
+                un = fbGame.World.UnitLookup[message.id];
+
+                if (un.Moves > 0)
+                {
+                    un.MoveTo(message.x, message.y);
+                    un.Moves--;
+                }
+            }
+
+            //pass along to everyone else
+            SendAll(
+                message,
+                un.Owner
+            );
+
+            SendAll(
+                new SetUnitMovesMessage(un.ID, un.Moves),
+                un.Owner
+            );
+        }
+
+        private void HandleMessage(DevCommandMessage message)
+        {
+            switch (message.Number)
+            {
+                case 0:
+                    Unit u = fbGame.World.SpawnUnit(
+                        "scout",
+                        message.Sender,
+                        //we need to manually update the ID counter
+                        fbGame.World.UnitIDCounter++,
+                        10, 10
+                        );
+                    BroadcastUnit(u);
+                    break;
+            }
+        }
+
+        private void ReceiveMessage(Player source, string message)
         {
             string command, args;
 
@@ -105,105 +208,9 @@ namespace FarbaseServer
             Console.WriteLine("<- {0}: {1}", source.ID, message);
 
             fbNetMessage msg = fbNetMessage.Spawn(command, arguments);
+            msg.Sender = source.ID;
 
-            switch (command)
-            {
-                case "msg":
-                    Console.WriteLine(args);
-                    break;
-
-                case "login":
-                    fbGame.World.Players[source.ID].Name = arguments[0];
-                    fbGame.World.Players[source.ID].Color =
-                        ExtensionMethods.ColorFromString(arguments[1]);
-
-                    SendAll(
-                        string.Format(
-                            "name:{0},{1},{2}",
-                            source.ID,
-                            arguments[0],
-                            arguments[1]
-                        )
-                    );
-                    break;
-
-                case "pass":
-                    fbGame.World.CurrentPlayerIndex =
-                        (fbGame.World.CurrentPlayerIndex + 1) %
-                        fbGame.World.PlayerIDs.Count;
-                    SendAll(
-                        string.Format(
-                            "current-player:{0}",
-                            fbGame.World.CurrentPlayerIndex
-                        )
-                    );
-                    fbGame.World.ReplenishPlayer(fbGame.World.CurrentID);
-                    SendAll(
-                        string.Format(
-                            "replenish:{0}",
-                            fbGame.World.CurrentID
-                        )
-                    );
-                    break;
-
-                case "give-test-scout":
-                    Unit u = fbGame.World.SpawnUnit(
-                        "scout",
-                        source.ID,
-                        //we need to manually update the ID counter
-                        fbGame.World.UnitIDCounter++,
-                        10, 10
-                    );
-                    BroadcastUnit(u);
-                    break;
-
-                case "move":
-                    int id = Int32.Parse(arguments[0]);
-                    int x = Int32.Parse(arguments[1]);
-                    int y = Int32.Parse(arguments[2]);
-
-                    Unit un;
-                    //lock necessary?
-                    lock (fbGame.World)
-                    {
-                        un = fbGame.World.UnitLookup[id];
-
-                        if (un.Moves > 0)
-                        {
-                            un.MoveTo(x, y);
-                            un.Moves--;
-                        }
-                    }
-
-                    //should send to everyone except the source
-                    //which should already have made the movements locally
-                    SendAll(
-                        string.Format(
-                            "move:{0},{1},{2}",
-                            un.ID,
-                            x, y
-                        ),
-                        source.ID
-                    );
-                    SendAll(
-                        string.Format(
-                            "set-moves:{0},{1}",
-                            un.ID,
-                            un.Moves
-                        ),
-                        source.ID
-                    );
-
-                    break;
-
-                default:
-                    Console.WriteLine(
-                        "Received {0} command from id {1}," +
-                        " but no idea what to do with it.",
-                        command, source.ID
-                    );
-                    break;
-            }
+            HandleMessage(msg);
         }
 
         public void Start()
@@ -428,7 +435,7 @@ namespace FarbaseServer
                     foreach (string msg in pmessage.Split('\n'))
                     {
                         if (msg == "" || msg[0] == '\0') continue;
-                        HandleMessage(p, msg);
+                        ReceiveMessage(p, msg);
                     }
                 }
             }

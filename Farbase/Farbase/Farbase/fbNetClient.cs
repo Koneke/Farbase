@@ -119,6 +119,11 @@ namespace Farbase
                 case ReadyMessage.Command:
                     HandleMessage((ReadyMessage)message);
                     break;
+
+                default:
+                    //should probably be handled more gracefully in the future,
+                    //but works for unknown messages for now.
+                    throw new ArgumentException();
             }
         }
 
