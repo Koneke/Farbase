@@ -121,7 +121,7 @@ namespace Farbase
             lock (game.Log)
             {
                 logTail = game.Log
-                    .Skip(Math.Max(0, game.Log.Count - 3))
+                    .Skip(Math.Max(0, game.Log.Count - 10))
                     .ToList();
             }
             logTail.Reverse();

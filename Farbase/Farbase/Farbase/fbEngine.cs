@@ -35,7 +35,7 @@ namespace Farbase
 
         public void StartNetClient()
         {
-            NetClient = new fbNetClient();
+            NetClient = new fbNetClient(app);
             Thread networkingThread = new Thread(NetClient.Start);
             networkingThread.Start();
         }

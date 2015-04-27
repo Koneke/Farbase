@@ -4,13 +4,14 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.GamerServices;
 
 namespace Farbase
 {
     public class fbNetClient
     {
-        public static bool Verbose = true;
+        private fbApplication app;
+
+        public static bool Verbose = false;
         public static fbGame Game;
 
         private TcpClient client;
@@ -21,8 +22,9 @@ namespace Farbase
         private List<string> SendQueue;
         public bool Ready;
 
-        public fbNetClient()
+        public fbNetClient(fbApplication app)
         {
+            this.app = app;
             Ready = false;
         }
 
@@ -47,10 +49,9 @@ namespace Farbase
             }
 
             List<String> arguments = args.Split(
-                new char[] { ',' },
+                new[] { ',' },
                 StringSplitOptions.RemoveEmptyEntries
             ).ToList();
-
 
             if(Verbose)
                 Game.Log.Add(
@@ -59,6 +60,12 @@ namespace Farbase
 
             command = command.ToLower();
 
+            fbNetMessage netmsg = fbNetMessage.Spawn(app, command, arguments);
+
+            //suppress trash, at least for now
+            if(!netmsg.Trash)
+                netmsg.Handle();
+
             int w, h;
             int x, y;
             int owner;
@@ -66,22 +73,26 @@ namespace Farbase
             switch (command)
             {
                 case "msg":
+                    break;
                     Game.Log.Add(args);
                     break;
 
                 case "create-world":
+                    break;
                     Int32.TryParse(args.Split(',')[0], out w);
                     Int32.TryParse(args.Split(',')[1], out h);
                     fbGame.World = new fbWorld(w, h);
                     break;
 
                 case "create-station":
+                    break;
                     Int32.TryParse(args.Split(',')[0], out x);
                     Int32.TryParse(args.Split(',')[1], out y);
                     fbGame.World.SpawnStation(x, y);
                     break;
 
                 case "create-planet":
+                    break;
                     Int32.TryParse(args.Split(',')[0], out x);
                     Int32.TryParse(args.Split(',')[1], out y);
                     fbGame.World.SpawnPlanet(x, y);

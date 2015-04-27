@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -312,10 +311,7 @@ namespace Farbase
         {
             engine.SetSize(1280, 720);
 
-            //ui = new fbInterface(this, engine);
-
             Log = new List<string>();
-            Log.Add("Welcome to Farbase.");
 
             UnitType scout = new UnitType();
             scout.Texture = engine.GetTexture("scout");
@@ -331,16 +327,18 @@ namespace Farbase
             UnitType.RegisterType("worker", worker);
         }
 
+        //this entire thing should probably not exist?
+        //like, this is all interface stuff
         public void Update()
         {
             if (engine.KeyPressed(Keys.Escape))
                 engine.Exit();
 
+            //this should probably be moved out to application level?
             ui.Cam.UpdateCamera();
 
             //if we're still receiving data, wait.
             if (!engine.NetClient.Ready) return;
-
             if (engine.KeyPressed(Keys.Enter))
             {
                 if(OurTurn)
@@ -503,7 +501,6 @@ namespace Farbase
                 if (engine.Active && engine.MouseInside)
                 {
                     Vector2 square = ScreenToGrid(engine.MousePosition);
-                    Tile t = World.Map.At(square);
                     ui.Select(
                         new Vector2i(
                             (int)square.X,

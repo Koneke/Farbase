@@ -255,7 +255,7 @@ namespace FarbaseServer
                 Console.WriteLine("Local EP is: " + listener.LocalEndpoint);
                 Console.WriteLine("Waiting...");
 
-                Console.ReadKey();
+                Console.ReadLine();
                 die = true;
                 listener.Stop();
             }
@@ -288,7 +288,7 @@ namespace FarbaseServer
 
         private void welcomeClient(Player p)
         {
-            p.SendMessage("msg:Hello, client!");
+            p.SendMessage("msg:Welcome to Farbase.");
             p.SendMessage("msg:Your ID is " + p.ID + ".");
             p.SendMessage(
                 string.Format(
@@ -440,6 +440,5 @@ namespace FarbaseServer
                 players.Remove(p);
             }
         }
-
     }
 }
