@@ -110,6 +110,7 @@
     <Compile Include="Bite.cs" />
     <Compile Include="fbEngine.cs" />
     <Compile Include="fbGame.cs" />
+    <Compile Include="fbInterface.cs" />
     <Compile Include="fbNetClient.cs" />
     <Compile Include="fbWorld.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

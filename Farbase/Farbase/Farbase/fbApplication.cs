@@ -11,6 +11,7 @@ namespace Farbase
 
         public fbEngine Engine;
         public fbGame Game;
+        public fbInterface UI;
 
         public fbApplication()
         {
@@ -53,7 +54,8 @@ namespace Farbase
             Engine.DefaultFont.FontSheet = Engine.LoadTexture("font", "gfx/font.png");
             Engine.DefaultFont.CharSize = new Vector2(8);
             
-            Game = new fbGame(Engine);
+            Game = new fbGame(this);
+            UI = new fbInterface(this);
 
             Engine.StartNetClient();
         }

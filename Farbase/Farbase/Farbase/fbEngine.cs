@@ -11,7 +11,10 @@ namespace Farbase
 {
     public class fbEngine
     {
-        public fbApplication App;
+        private fbApplication app;
+
+        private fbGame game { get { return app.Game; } }
+        private fbInterface ui { get { return app.UI; } }
 
         public Font DefaultFont;
 
@@ -26,7 +29,7 @@ namespace Farbase
 
         public fbEngine(fbApplication app)
         {
-            App = app;
+            this.app = app;
             drawCalls = new List<DrawCall>();
         }
 
@@ -39,24 +42,24 @@ namespace Farbase
 
         public void SetSize(int width, int height)
         {
-            App.Graphics.PreferredBackBufferWidth = width;
-            App.Graphics.PreferredBackBufferHeight = height;
-            App.Graphics.ApplyChanges();
+            app.Graphics.PreferredBackBufferWidth = width;
+            app.Graphics.PreferredBackBufferHeight = height;
+            app.Graphics.ApplyChanges();
         }
 
         public Vector2 GetSize()
         {
             return new Vector2(
-                App.Graphics.PreferredBackBufferWidth,
-                App.Graphics.PreferredBackBufferHeight
+                app.Graphics.PreferredBackBufferWidth,
+                app.Graphics.PreferredBackBufferHeight
             );
         }
 
         public float GetAspectRatio()
         {
             return (float)
-                App.Graphics.PreferredBackBufferWidth /
-                App.Graphics.PreferredBackBufferHeight;
+                app.Graphics.PreferredBackBufferWidth /
+                app.Graphics.PreferredBackBufferHeight;
         }
 
         public Texture2D LoadTexture(string name, string path)
@@ -72,7 +75,7 @@ namespace Farbase
 
             using (FileStream stream = new FileStream(path, FileMode.Open))
             {
-                texture = Texture2D.FromStream(App.GraphicsDevice, stream);
+                texture = Texture2D.FromStream(app.GraphicsDevice, stream);
             }
 
             Textures.Add(name, texture);
@@ -138,7 +141,7 @@ namespace Farbase
 
         public void Render()
         {
-            App.SpriteBatch.Begin(
+            app.SpriteBatch.Begin(
                 SpriteSortMode.Deferred,
                 BlendState.NonPremultiplied,
                 SamplerState.PointClamp,
@@ -149,14 +152,14 @@ namespace Farbase
             foreach(DrawCall dc in drawCalls.OrderByDescending(dc => dc.Depth))
             {
                 if(dc.Source != null)
-                    App.SpriteBatch.Draw(
+                    app.SpriteBatch.Draw(
                         dc.Texture,
                         FromfbRectangle(dc.Destination),
                         FromfbRectangle(dc.Source),
                         dc.Coloring
                     );
                 else
-                    App.SpriteBatch.Draw(
+                    app.SpriteBatch.Draw(
                         dc.Texture,
                         FromfbRectangle(dc.Destination),
                         dc.Coloring
@@ -164,10 +167,10 @@ namespace Farbase
             }
 
             drawCalls.Clear();
-            App.SpriteBatch.End();
+            app.SpriteBatch.End();
         }
 
-        public bool Active { get { return App.IsActive; } }
+        public bool Active { get { return app.IsActive; } }
 
         public bool MouseInside {
             get
@@ -254,7 +257,7 @@ namespace Farbase
             if (NetClient != null)
                 NetClient.ShouldDie = true;
 
-            App.Exit();
+            app.Exit();
         }
     }
 }

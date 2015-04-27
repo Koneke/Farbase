@@ -47,6 +47,11 @@ namespace Farbase
             return map[x, y];
         }
 
+        public Tile At(Vector2i p)
+        {
+            return map[p.X, p.Y];
+        }
+
         public Tile At(Vector2 position)
         {
             return map[
@@ -183,19 +188,12 @@ namespace Farbase
         }
 
         //public void MoveTo(Vector2 position)
-        public void MoveTo(int x, int y)
+        public void MoveTo(int tx, int ty)
         {
-            //bool selected = Game.Selection == Tile;
-
             Tile.Unit = null;
-            //Position = position;
-            this.x = x;
-            this.y = y;
-            fbGame.World.Map.At(x, y).Unit = this;
-
-            //automaintain selection
-            /*if(selected)
-                Game.Selection = Tile;*/
+            x = tx;
+            y = ty;
+            fbGame.World.Map.At(tx, ty).Unit = this;
         }
 
         public Vector2 StepTowards(Vector2 goal)
@@ -271,8 +269,6 @@ namespace Farbase
 
     public class Station
     {
-        public static fbGame Game;
-
         public Vector2 Position;
         public Tile Tile
             { get { return fbGame.World.Map.At(Position); } }
@@ -280,213 +276,19 @@ namespace Farbase
 
     public class Planet
     {
-        public static fbGame Game;
-
         public Vector2 Position;
         public Tile Tile
             { get { return fbGame.World.Map.At(Position); } }
     }
 
-    public class fbInterface
-    {
-        private fbGame game;
-        private fbEngine engine;
-
-        public fbInterface(fbGame game, fbEngine engine)
-        {
-            this.game = game;
-            this.engine = engine;
-            Camera = new fbRectangle(Vector2.Zero, engine.GetSize());
-        }
-
-        public fbRectangle Camera;
-        private float cameraScaling
-            { get { return Camera.Size.X / engine.GetSize().X; } }
-
-        private const float keyboardScrollSpeed = 10f;
-        private const float mouseScrollSpeed = 8f;
-        private const float edgeSize = 10f;
-
-        //position ON SCREEN
-        private void ZoomAt(Vector2 position, float amount)
-        {
-            amount *= -1;
-
-            if (
-                position.X < 0 || position.X > engine.GetSize().X ||
-                position.Y < 0 || position.Y > engine.GetSize().Y
-            )
-                throw new ArgumentException("Bad zoom point.");
-
-            Vector2 deltaSize = Camera.Size - Camera.Size + new Vector2(amount);
-            deltaSize.Y = deltaSize.X / engine.GetAspectRatio();
-
-            Vector2 bias = position / engine.GetSize();
-            Camera.Position -= deltaSize * bias;
-            Camera.Size += deltaSize;
-        }
-
-        public void UpdateCamera()
-        {
-            if (engine.KeyPressed(Keys.OemPlus))
-                ZoomAt(engine.GetSize() / 2f, 100f);
-
-            if (engine.KeyPressed(Keys.OemMinus))
-                ZoomAt(engine.GetSize() / 2f, -100f);
-
-            Vector2 keyboardScroll = Vector2.Zero;
-            if (engine.KeyDown(Keys.Right)) keyboardScroll.X += 1;
-            if (engine.KeyDown(Keys.Left)) keyboardScroll.X -= 1;
-            if (engine.KeyDown(Keys.Up)) keyboardScroll.Y -= 1;
-            if (engine.KeyDown(Keys.Down)) keyboardScroll.Y += 1;
-
-            Camera.Position +=
-                keyboardScroll * keyboardScrollSpeed * cameraScaling;
-
-            ZoomAt(engine.MousePosition, engine.MouseWheelDelta * 1f);
-
-            Vector2 mouseScroll = Vector2.Zero;
-            if (engine.Active)
-            {
-                if (engine.MousePosition.X < edgeSize) mouseScroll.X -= 1;
-                if (engine.MousePosition.X > engine.GetSize().X - edgeSize)
-                    mouseScroll.X += 1;
-                if (engine.MousePosition.Y < edgeSize) mouseScroll.Y -= 1;
-                if (engine.MousePosition.Y > engine.GetSize().Y - edgeSize)
-                    mouseScroll.Y += 1;
-            }
-
-            Camera.Position +=
-                mouseScroll * mouseScrollSpeed * cameraScaling;
-        }
-
-        private Rectangle WorldToScreen(Rectangle rectangle)
-        {
-            rectangle.X -= (int)Camera.Position.X;
-            rectangle.Y -= (int)Camera.Position.Y;
-
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            rectangle.X = (int)(rectangle.X * scaleFactor.X);
-            rectangle.Y = (int)(rectangle.Y * scaleFactor.Y);
-            rectangle.Width = (int)(rectangle.Width * scaleFactor.X);
-            rectangle.Height = (int)(rectangle.Height * scaleFactor.Y);
-
-            return rectangle;
-        }
-
-        public fbRectangle WorldToScreen(fbRectangle rectangle)
-        {
-            rectangle.Position -= Camera.Position;
-
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            rectangle.Position *= scaleFactor;
-            rectangle.Size *= scaleFactor;
-
-            return rectangle;
-        }
-
-        public Vector2 ScreenToWorld(
-            Vector2 position
-        ) {
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            return position / scaleFactor + Camera.Position;
-        }
-
-        public Rectangle ScreenToWorld(Rectangle rectangle)
-        {
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            rectangle.X = (int)(rectangle.X / scaleFactor.X);
-            rectangle.Y = (int)(rectangle.Y / scaleFactor.Y);
-            rectangle.Width = (int)(rectangle.Width / scaleFactor.X);
-            rectangle.Height = (int)(rectangle.Height / scaleFactor.Y);
-
-            rectangle.X += (int)Camera.Position.X;
-            rectangle.Y += (int)Camera.Position.Y;
-
-            return rectangle;
-        }
-
-        public void DrawUI()
-        {
-            new TextCall(
-                string.Format(
-                    "Hi, I am {0}<{1}>",
-                    fbGame.World.Players[game.We].Name,
-                    game.We
-                ),
-                engine.DefaultFont,
-                new Vector2(10)
-            ).Draw(engine);
-
-            if (fbGame.World.PlayerIDs.Count > 0)
-            {
-                Player current = fbGame.World.Players
-                    [fbGame.World.PlayerIDs[fbGame.World.CurrentPlayerIndex]];
-
-                new TextCall(
-                    string.Format(
-                        "Current player: {0}<{1}>",
-                        current.Name,
-                        current.ID
-                    ),
-                    engine.DefaultFont,
-                    new Vector2(10, 20)
-                ).Draw(engine);
-            }
-
-            /*if (game.CurrentPlayer != null)
-            {
-                new TextCall(
-                    "Current player: " + game.CurrentPlayer.Name,
-                    engine.DefaultFont,
-                    new Vector2(10)
-                ).Draw(engine);
-
-                new TextCall(
-                    "Money: " + game.CurrentPlayer.Money + "$",
-                    engine.DefaultFont,
-                    new Vector2(10, 20)
-                ).Draw(engine);
-            }*/
-
-            List<string> logTail;
-            lock (game.Log)
-            {
-                logTail = game.Log
-                    .Skip(Math.Max(0, game.Log.Count - 3))
-                    .ToList();
-            }
-            logTail.Reverse();
-
-            Vector2 position = new Vector2(10, engine.GetSize().Y - 10);
-            foreach (string message in logTail)
-            {
-                position -= new Vector2(0, engine.DefaultFont.CharSize.Y + 1);
-                new TextCall(
-                    message,
-                    engine.DefaultFont,
-                    position
-                ).Draw(engine);
-            }
-        }
-    }
-
     public class fbGame
     {
-        private fbEngine engine;
-        private fbInterface ui;
+        private fbApplication app;
+
+        private fbEngine engine { get { return app.Engine; } }
+        private fbInterface ui { get { return app.UI; } }
 
         //phase out
-        /*public List<Player> Players;
-        public int CurrentPlayerIndex;
-        public Player CurrentPlayer
-        {
-            get
-            {
-                if (Players == null) return null;
-                return Players[CurrentPlayerIndex];
-            }
-        }*/
 
         private const int tileSize = 16;
 
@@ -496,37 +298,12 @@ namespace Farbase
         //client side of world
         public static fbWorld World;
 
-        /*public Tile Selection;
-        public Unit SelectedUnit
-        {
-            get
-            {
-                if (Selection == null) return null;
-                return Selection.Unit;
-            }
-            set { Selection = value.Tile; }
-        }
-        public Station SelectedStation
-        {
-            get
-            {
-                if (Selection == null) return null;
-                return Selection.Station;
-            }
-            set { Selection = value.Tile; }
-        }
-        */
-
-        public Unit SelectedUnit;
-
         public List<string> Log; 
 
-        public fbGame(fbEngine engine)
+        public fbGame(fbApplication app)
         {
-            this.engine = engine;
+            this.app = app;
             Unit.Game = this;
-            Station.Game = this;
-            Planet.Game = this;
             fbNetClient.Game = this;
             Initialize();
         }
@@ -535,7 +312,7 @@ namespace Farbase
         {
             engine.SetSize(1280, 720);
 
-            ui = new fbInterface(this, engine);
+            //ui = new fbInterface(this, engine);
 
             Log = new List<string>();
             Log.Add("Welcome to Farbase.");
@@ -552,36 +329,14 @@ namespace Farbase
             worker.Moves = 1;
             worker.Strength = 1;
             UnitType.RegisterType("worker", worker);
-
-            /*Players = new List<Player>();
-            Players.Add(new Player("Lukas", Color.CornflowerBlue));
-            Players.Add(new Player("Barbarians", Color.Red));
-
-            Map = new Map(80, 45);
-            SpawnUnit(scout, Players[0], new Vector2(9, 11));
-
-            Map.At(8, 12).Station = new Station();
-            Map.At(9, 12).Station = new Station();
-
-            Map.At(14, 14).Planet = new Planet();
-
-            SpawnUnit(worker, Players[0], new Vector2(10, 12));
-
-            SpawnUnit(worker, Players[1], new Vector2(16, 14));*/
         }
-
-        /*public void PassTurn()
-        {
-            foreach (Unit u in CurrentPlayer.Units)
-                u.Replenish();
-        }*/
 
         public void Update()
         {
             if (engine.KeyPressed(Keys.Escape))
                 engine.Exit();
 
-            ui.UpdateCamera();
+            ui.Cam.UpdateCamera();
 
             //if we're still receiving data, wait.
             if (!engine.NetClient.Ready) return;
@@ -638,8 +393,8 @@ namespace Farbase
 
             if (
                 OurTurn &&
-                SelectedUnit != null &&
-                SelectedUnit.Owner == World.CurrentPlayer.ID
+                ui.SelectedUnit != null &&
+                ui.SelectedUnit.Owner == World.CurrentPlayer.ID
             ) {
                 Vector2 moveOrder = Vector2.Zero;
 
@@ -661,9 +416,9 @@ namespace Farbase
                 if (engine.KeyPressed(Keys.NumPad3))
                     moveOrder = new Vector2(1, 1);
 
-                if (moveOrder != Vector2.Zero && SelectedUnit.Moves > 0)
+                if (moveOrder != Vector2.Zero && ui.SelectedUnit.Moves > 0)
                 {
-                    Unit u = SelectedUnit;
+                    Unit u = ui.SelectedUnit;
 
                     if(u.CanMoveTo(u.Position + moveOrder))
                     {
@@ -678,14 +433,8 @@ namespace Farbase
                             )
                         );
 
-                        /*SelectedUnit.Moves -= 1;
-                        SelectedUnit.MoveTo(SelectedUnit.Position + moveOrder);*/
-
-                        //make sure to reselect the unit.
-                        //since in reality, the UNIT isn't selected, the TILE is
-                        //by moving the unit, it would no longer be selected,
-                        //so we have to reselect it.
-                        //SelectedUnit = u;
+                        u.Moves -= 1;
+                        u.MoveTo(x, y);
                     }
                     else if (u.CanAttack(u.Position + moveOrder))
                     {
@@ -755,7 +504,12 @@ namespace Farbase
                 {
                     Vector2 square = ScreenToGrid(engine.MousePosition);
                     Tile t = World.Map.At(square);
-                    SelectedUnit = t.Unit;
+                    ui.Select(
+                        new Vector2i(
+                            (int)square.X,
+                            (int)square.Y
+                        )
+                    );
                 }
             }
         }
@@ -766,7 +520,7 @@ namespace Farbase
 
         private Vector2 ScreenToGrid(Vector2 position)
         {
-            Vector2 worldPoint = ui.ScreenToWorld(position);
+            Vector2 worldPoint = ui.Cam.ScreenToWorld(position);
             Vector2 square =
                 new Vector2(
                     worldPoint.X - (worldPoint.X % tileSize),
@@ -789,7 +543,7 @@ namespace Farbase
             Vector2 position =
                 -engine.GetTextureSize("background") / 2f +
                 engine.GetSize() / 2f;
-            position -= ui.Camera.Position / 10f;
+            position -= ui.Cam.Camera.Position / 10f;
 
             engine.Draw(
                 engine.GetTexture("background"),
@@ -806,7 +560,7 @@ namespace Farbase
             {
                 engine.Draw(
                     engine.GetTexture("grid"),
-                    ui.WorldToScreen(
+                    ui.Cam.WorldToScreen(
                         new fbRectangle(
                             new Vector2(x, y) * tileSize,
                             tileSize,
@@ -821,7 +575,7 @@ namespace Farbase
         {
             Tile t = World.Map.At(x, y);
             fbRectangle destination =
-                ui.WorldToScreen(
+                ui.Cam.WorldToScreen(
                     new fbRectangle(
                         new Vector2(x, y) * tileSize,
                         tileSize,
@@ -854,15 +608,7 @@ namespace Farbase
 
             //if we have anything fun selected, show it.
             //tiles themselves might be interesting later, but not for now.
-            if(
-                SelectedUnit != null && t.Unit == SelectedUnit
-                /*Selection == t &&
-                (
-                    t.Unit != null ||
-                    t.Station != null ||
-                    t.Planet != null
-                )*/
-            )
+            if(ui.SelectedUnit != null && t.Unit == ui.SelectedUnit)
                 engine.Draw(
                     engine.GetTexture("selection"),
                     destination
@@ -872,7 +618,7 @@ namespace Farbase
         private void DrawUnit(Unit u)
         {
             fbRectangle destination =
-                ui.WorldToScreen(
+                ui.Cam.WorldToScreen(
                     new fbRectangle(
                         u.Position * tileSize,
                         new Vector2(tileSize)
@@ -891,7 +637,7 @@ namespace Farbase
 
                 engine.Draw(
                     engine.GetTexture("move-dingy"),
-                    ui.WorldToScreen(
+                    ui.Cam.WorldToScreen(
                         new fbRectangle(
                             u.Position * tileSize
                                 + new Vector2(dingySize.X * i, 0),
@@ -907,7 +653,7 @@ namespace Farbase
 
                 engine.Draw(
                     engine.GetTexture("strength-dingy"),
-                    ui.WorldToScreen(
+                    ui.Cam.WorldToScreen(
                         new fbRectangle(
                             u.Position * tileSize + new Vector2(0, tileSize)
                                 - new Vector2(0, dingySize.Y * (i + 1)),

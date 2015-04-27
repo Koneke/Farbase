@@ -48,10 +48,22 @@ namespace FarbaseServer
 
         private Farbase.fbWorld World;
 
-        private void SendAll(string message)
-        {
+        private void SendAll(
+            string message,
+            int except = -1
+        ) {
             foreach (Player p in players)
-                p.SendMessage(message);
+                if (p.ID != except)
+                    p.SendMessage(message);
+        }
+
+        private void SendAll(
+            string message,
+            List<int> exceptions 
+        ) {
+            foreach (Player p in players)
+                if(!exceptions.Contains(p.ID))
+                    p.SendMessage(message);
         }
 
         private void BroadcastUnit(Unit u)
@@ -163,19 +175,23 @@ namespace FarbaseServer
                         }
                     }
 
+                    //should send to everyone except the source
+                    //which should already have made the movements locally
                     SendAll(
                         string.Format(
                             "move:{0},{1},{2}",
                             un.ID,
                             x, y
-                        )
+                        ),
+                        source.ID
                     );
                     SendAll(
                         string.Format(
                             "set-moves:{0},{1}",
                             un.ID,
                             un.Moves
-                        )
+                        ),
+                        source.ID
                     );
 
                     break;
