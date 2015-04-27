@@ -1,5 +1,3 @@
-using System;
-
 namespace Farbase
 {
 #if WINDOWS || XBOX
@@ -8,7 +6,7 @@ namespace Farbase
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static void Main(string[] args)
+        static void Main()
         {
             using (fbApplication game = new fbApplication())
             {

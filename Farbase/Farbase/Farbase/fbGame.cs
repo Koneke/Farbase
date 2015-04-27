@@ -431,6 +431,12 @@ namespace Farbase
                             )
                         );
 
+                        //we want to send this instead later
+                        //currently becomes the exact same string,
+                        //but I want to give the actual message object to send
+                        //instead of the string
+                        //new MoveUnitMessage(app, u.ID, x, y).Format();
+
                         u.Moves -= 1;
                         u.MoveTo(x, y);
                     }

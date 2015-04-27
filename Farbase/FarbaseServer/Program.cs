@@ -46,7 +46,7 @@ namespace FarbaseServer
 
         private List<Player> players;
 
-        private Farbase.fbWorld World;
+        private fbWorld World;
 
         private void SendAll(
             string message,
@@ -100,7 +100,7 @@ namespace FarbaseServer
             }
 
             List<String> arguments = args.Split(
-                new char[] { ',' },
+                new[] { ',' },
                 StringSplitOptions.RemoveEmptyEntries
             ).ToList();
 
@@ -137,7 +137,9 @@ namespace FarbaseServer
                             World.CurrentPlayerIndex
                         )
                     );
-                    World.ReplenishPlayer(World.PlayerIDs[World.CurrentPlayerIndex]);
+                    World.ReplenishPlayer(
+                        World.PlayerIDs[World.CurrentPlayerIndex]
+                    );
                     SendAll(
                         string.Format(
                             "replenish:{0}",
@@ -163,7 +165,7 @@ namespace FarbaseServer
                     int y = Int32.Parse(arguments[2]);
 
                     Unit un;
-                    var a = World.Map.At(x, y);
+                    //lock necessary?
                     lock (World)
                     {
                         un = World.UnitLookup[id];
