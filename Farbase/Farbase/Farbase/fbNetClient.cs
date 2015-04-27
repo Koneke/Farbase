@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
@@ -27,7 +28,7 @@ namespace Farbase
             Ready = false;
         }
 
-        private void HandleMessage(string message)
+        private void ReceiveMessage(string message)
         {
             string command, args;
 
@@ -59,8 +60,161 @@ namespace Farbase
 
             command = command.ToLower();
 
-            fbNetMessage netmsg = fbNetMessage.Spawn(app, command, arguments);
-            netmsg.ClientSideHandle(app);
+            fbNetMessage netmsg = fbNetMessage.Spawn(command, arguments);
+            HandleMessage(netmsg);
+        }
+
+        private void HandleMessage(fbNetMessage message)
+        {
+            switch (message.GetMessageType())
+            {
+                case MsgMessage.Command:
+                    HandleMessage((MsgMessage)message);
+                    break;
+
+                case CreateWorldMessage.Command:
+                    HandleMessage((CreateWorldMessage)message);
+                    break;
+
+                case CreateStationMessage.Command:
+                    HandleMessage((CreateStationMessage)message);
+                    break;
+
+                case CreatePlanetMessage.Command:
+                    HandleMessage((CreatePlanetMessage)message);
+                    break;
+
+                case CreateUnitMessage.Command:
+                    HandleMessage((CreateUnitMessage)message);
+                    break;
+
+                case MoveUnitMessage.Command:
+                    HandleMessage((MoveUnitMessage)message);
+                    break;
+
+                case SetUnitMovesMessage.Command:
+                    HandleMessage((SetUnitMovesMessage)message);
+                    break;
+
+                case NewPlayerMessage.Command:
+                    HandleMessage((NewPlayerMessage)message);
+                    break;
+
+                case ReplenishPlayerMessage.Command:
+                    HandleMessage((ReplenishPlayerMessage)message);
+                    break;
+
+                case AssignIDMessage.Command:
+                    HandleMessage((AssignIDMessage)message);
+                    break;
+
+                case NameMessage.Command:
+                    HandleMessage((NameMessage)message);
+                    break;
+
+                case CurrentPlayerMessage.Command:
+                    HandleMessage((CurrentPlayerMessage)message);
+                    break;
+
+                case ReadyMessage.Command:
+                    HandleMessage((ReadyMessage)message);
+                    break;
+            }
+        }
+
+        private void HandleMessage(MsgMessage message)
+        {
+            app.Game.Log.Add(message.Content);
+        }
+
+        private void HandleMessage(CreateWorldMessage message)
+        {
+            fbGame.World = new fbWorld(message.w, message.h);
+        }
+
+        private void HandleMessage(CreateStationMessage message)
+        {
+            fbGame.World.SpawnStation(message.x, message.y);
+        }
+
+        private void HandleMessage(CreatePlanetMessage message)
+        {
+            fbGame.World.SpawnPlanet(message.x, message.y);
+        }
+
+        private void HandleMessage(CreateUnitMessage message)
+        {
+            fbGame.World.SpawnUnit(
+                message.type,
+                message.owner,
+                message.id,
+                message.x,
+                message.y
+            );
+        }
+
+        private void HandleMessage(MoveUnitMessage message)
+        {
+            fbGame.World.UnitLookup[message.id].MoveTo(message.x, message.y);
+        }
+
+        private void HandleMessage(SetUnitMovesMessage message)
+        {
+            fbGame.World.UnitLookup[message.id].Moves = message.amount;
+        }
+
+        private void HandleMessage(NewPlayerMessage message)
+        {
+            fbGame.World.AddPlayer(
+                new Player(
+                    "Unnnamed player",
+                    message.id,
+                    Color.White
+                )
+            );
+        }
+
+        private void HandleMessage(ReplenishPlayerMessage message)
+        {
+            fbGame.World.ReplenishPlayer(message.id);
+        }
+
+        private void HandleMessage(AssignIDMessage message)
+        {
+            app.Game.We = message.id;
+        }
+
+        private void HandleMessage(NameMessage message)
+        {
+            Player p = fbGame.World.Players[message.id];
+
+            app.Game.Log.Add(
+                string.Format(
+                    "{0}<{2}> is now known as {1}<{2}>.",
+                    p.Name,
+                    message.name,
+                    message.id
+                )
+            );
+
+            p.Name = message.name;
+            p.Color = message.color;
+        }
+
+        private void HandleMessage(CurrentPlayerMessage message)
+        {
+            fbGame.World.CurrentPlayerIndex = message.index;
+            app.Game.Log.Add(
+                string.Format(
+                    "It is now {0}'s turn.",
+                    fbGame.World.CurrentPlayer.Name
+                )
+            );
+        }
+
+        private void HandleMessage(ReadyMessage message)
+        {
+            Ready = true;
         }
 
         public void Start()
@@ -80,7 +234,7 @@ namespace Farbase
                     foreach (string msg in message.Split('\n'))
                     {
                         if (msg == "") continue;
-                        HandleMessage(msg);
+                        ReceiveMessage(msg);
                     }
                 }
 
@@ -108,6 +262,11 @@ namespace Farbase
             client = new TcpClient();
             client.Connect(ip, port);
             stream = client.GetStream();
+        }
+
+        public void Send(fbNetMessage message)
+        {
+            SendQueue.Add(message.Format());
         }
 
         public void Send(string message)

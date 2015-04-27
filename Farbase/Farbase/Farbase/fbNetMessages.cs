@@ -13,14 +13,12 @@ namespace Farbase
             Trash = false;
         }
 
+        public abstract string GetMessageType();
         public abstract int GetExpectedArguments();
-
-        public abstract void ClientSideHandle(fbApplication app);
 
         public abstract string Format();
 
         public static fbNetMessage Spawn(
-            fbApplication app,
             string command,
             List<string> arguments
         ) {
@@ -113,18 +111,19 @@ namespace Farbase
     public class MsgMessage : fbNetMessage
     {
         public const string Command = "msg";
-        private string content;
+        public string Content;
 
         public override int GetExpectedArguments() { return 1; }
+        public override string GetMessageType() { return Command; }
 
         public MsgMessage(List<string> arguments)
         {
-            content = arguments[0];
+            Content = arguments[0];
         }
 
-        public override void ClientSideHandle(fbApplication app)
+        public MsgMessage(string text)
         {
-            app.Game.Log.Add(content);
+            Content = text;
         }
 
         public override string Format()
@@ -132,7 +131,7 @@ namespace Farbase
             return string.Format(
                 "{0}:{1}",
                 Command,
-                content
+                Content
             );
         }
     }
@@ -141,18 +140,15 @@ namespace Farbase
     {
         public const string Command = "create-world";
         public override int GetExpectedArguments() { return 2; }
+        public override string GetMessageType() { return Command; }
 
-        private int w, h;
+        public int w;
+        public int h;
 
         public CreateWorldMessage(List<string> arguments)
         {
             w = Int32.Parse(arguments[0]);
             h = Int32.Parse(arguments[1]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World = new fbWorld(w, h);
         }
 
         public override string Format()
@@ -169,18 +165,15 @@ namespace Farbase
     {
         public const string Command = "create-station";
         public override int GetExpectedArguments() { return 2; }
+        public override string GetMessageType() { return Command; }
 
-        private int x, y;
+        public int x;
+        public int y;
 
         public CreateStationMessage(List<string> arguments)
         {
             x = Int32.Parse(arguments[0]);
             y = Int32.Parse(arguments[1]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.SpawnStation(x, y);
         }
 
         public override string Format()
@@ -197,19 +190,16 @@ namespace Farbase
     {
         public const string Command = "create-planet";
         public override int GetExpectedArguments() { return 2; }
+        public override string GetMessageType() { return Command; }
 
-        private int x, y;
+        public int x;
+        public int y;
 
         public CreatePlanetMessage(
             List<string> arguments
         ) {
             x = Int32.Parse(arguments[0]);
             y = Int32.Parse(arguments[1]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.SpawnPlanet(x, y);
         }
 
         public override string Format()
@@ -226,9 +216,13 @@ namespace Farbase
     {
         public const string Command = "create-unit";
         public override int GetExpectedArguments() { return 5; }
+        public override string GetMessageType() { return Command; }
 
-        private string type;
-        private int x, y, id, owner;
+        public string type;
+        public int x;
+        public int y;
+        public int id;
+        public int owner;
 
         public CreateUnitMessage(
             List<string> arguments
@@ -238,11 +232,6 @@ namespace Farbase
             id = Int32.Parse(arguments[2]);
             x = Int32.Parse(arguments[3]);
             y = Int32.Parse(arguments[4]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.SpawnUnit(type, owner, id, x, y);
         }
 
         public override string Format()
@@ -261,8 +250,11 @@ namespace Farbase
     {
         public const string Command = "move";
         public override int GetExpectedArguments() { return 3; }
+        public override string GetMessageType() { return Command; }
 
-        private int id, x, y;
+        public int id;
+        public int x;
+        public int y;
 
         public MoveUnitMessage(
             List<string> arguments
@@ -282,11 +274,6 @@ namespace Farbase
             this.y = y;
         }
 
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.UnitLookup[id].MoveTo(x, y);
-        }
-
         public override string Format()
         {
             return string.Format(
@@ -301,19 +288,16 @@ namespace Farbase
     {
         public const string Command = "set-moves";
         public override int GetExpectedArguments() { return 2; }
+        public override string GetMessageType() { return Command; }
 
-        private int id, amount;
+        public int id;
+        public int amount;
 
         public SetUnitMovesMessage(
             List<string> arguments
         ) {
             id = Int32.Parse(arguments[0]);
             amount = Int32.Parse(arguments[1]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.UnitLookup[id].Moves = amount;
         }
 
         public override string Format()
@@ -330,24 +314,14 @@ namespace Farbase
     {
         public const string Command = "new-player";
         public override int GetExpectedArguments() { return 1; }
+        public override string GetMessageType() { return Command; }
 
-        private int id;
+        public int id;
 
         public NewPlayerMessage(
             List<string> arguments
         ) {
             id = Int32.Parse(arguments[0]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.AddPlayer(
-                new Player(
-                    "Unnnamed player",
-                    id,
-                    Color.White
-                )
-            );
         }
 
         public override string Format()
@@ -364,20 +338,15 @@ namespace Farbase
     {
         public const string Command = "replenish";
         public override int GetExpectedArguments() { return 1; }
+        public override string GetMessageType() { return Command; }
 
-        private int id;
+        public int id;
 
         public ReplenishPlayerMessage(
             List<string> arguments
         ) {
             id = Int32.Parse(arguments[0]);
         }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.ReplenishPlayer(id);
-        }
-
 
         public override string Format()
         {
@@ -393,18 +362,14 @@ namespace Farbase
     {
         public const string Command = "assign-id";
         public override int GetExpectedArguments() { return 1; }
+        public override string GetMessageType() { return Command; }
 
-        private int id;
+        public int id;
 
         public AssignIDMessage(
             List<string> arguments
         ) {
             id = Int32.Parse(arguments[0]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            app.Game.We = id;
         }
 
         public override string Format()
@@ -421,10 +386,11 @@ namespace Farbase
     {
         public const string Command = "name";
         public override int GetExpectedArguments() { return 3; }
+        public override string GetMessageType() { return Command; }
 
-        private int id;
-        private string name;
-        private Color color;
+        public int id;
+        public string name;
+        public Color color;
 
         public NameMessage(
             List<string> arguments
@@ -432,23 +398,6 @@ namespace Farbase
             id = Int32.Parse(arguments[0]);
             name = arguments[1];
             color = ExtensionMethods.ColorFromString(arguments[2]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            Player p = fbGame.World.Players[id];
-
-            app.Game.Log.Add(
-                string.Format(
-                    "{0}<{2}> is now known as {1}<{2}>.",
-                    p.Name,
-                    name,
-                    id
-                )
-            );
-
-            p.Name = name;
-            p.Color = color;
         }
 
         public override string Format()
@@ -467,24 +416,14 @@ namespace Farbase
     {
         public const string Command = "current-player";
         public override int GetExpectedArguments() { return 1; }
+        public override string GetMessageType() { return Command; }
 
-        private int index;
+        public int index;
 
         public CurrentPlayerMessage(
             List<string> arguments
         ) {
             index = Int32.Parse(arguments[0]);
-        }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            fbGame.World.CurrentPlayerIndex = index;
-            app.Game.Log.Add(
-                string.Format(
-                    "It is now {0}'s turn.",
-                    fbGame.World.CurrentPlayer.Name
-                )
-            );
         }
 
         public override string Format()
@@ -501,13 +440,7 @@ namespace Farbase
     {
         public const string Command = "ready";
         public override int GetExpectedArguments() { return 0; }
-
-        public ReadyMessage() { }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            app.Engine.NetClient.Ready = true;
-        }
+        public override string GetMessageType() { return Command; }
 
         public override string Format()
         {
@@ -522,17 +455,7 @@ namespace Farbase
     {
         public const string Command = "pass";
         public override int GetExpectedArguments() { return 0; }
-
-        public PassMessage() { }
-
-        public override void ClientSideHandle(fbApplication app)
-        {
-            //semi-weird spot here, this is a message strictly sent
-            //  client -> server
-            //handle has, SO FAR, only been used client side
-            //we might want to make a ClientHandle() and ServerHandle()
-            throw new NotImplementedException();
-        }
+        public override string GetMessageType() { return Command; }
 
         public override string Format()
         {

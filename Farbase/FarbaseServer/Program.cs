@@ -46,8 +46,6 @@ namespace FarbaseServer
 
         private List<Player> players;
 
-        private fbWorld World;
-
         private void SendAll(
             string message,
             int except = -1
@@ -106,6 +104,8 @@ namespace FarbaseServer
 
             Console.WriteLine("<- {0}: {1}", source.ID, message);
 
+            fbNetMessage msg = fbNetMessage.Spawn(command, arguments);
+
             switch (command)
             {
                 case "msg":
@@ -113,8 +113,8 @@ namespace FarbaseServer
                     break;
 
                 case "login":
-                    World.Players[source.ID].Name = arguments[0];
-                    World.Players[source.ID].Color =
+                    fbGame.World.Players[source.ID].Name = arguments[0];
+                    fbGame.World.Players[source.ID].Color =
                         ExtensionMethods.ColorFromString(arguments[1]);
 
                     SendAll(
@@ -128,32 +128,30 @@ namespace FarbaseServer
                     break;
 
                 case "pass":
-                    World.CurrentPlayerIndex =
-                        (World.CurrentPlayerIndex + 1) %
-                        World.PlayerIDs.Count;
+                    fbGame.World.CurrentPlayerIndex =
+                        (fbGame.World.CurrentPlayerIndex + 1) %
+                        fbGame.World.PlayerIDs.Count;
                     SendAll(
                         string.Format(
                             "current-player:{0}",
-                            World.CurrentPlayerIndex
+                            fbGame.World.CurrentPlayerIndex
                         )
                     );
-                    World.ReplenishPlayer(
-                        World.PlayerIDs[World.CurrentPlayerIndex]
-                    );
+                    fbGame.World.ReplenishPlayer(fbGame.World.CurrentID);
                     SendAll(
                         string.Format(
                             "replenish:{0}",
-                            World.CurrentPlayer.ID
+                            fbGame.World.CurrentID
                         )
                     );
                     break;
 
                 case "give-test-scout":
-                    Unit u = World.SpawnUnit(
+                    Unit u = fbGame.World.SpawnUnit(
                         "scout",
                         source.ID,
                         //we need to manually update the ID counter
-                        World.UnitIDCounter++,
+                        fbGame.World.UnitIDCounter++,
                         10, 10
                     );
                     BroadcastUnit(u);
@@ -166,9 +164,9 @@ namespace FarbaseServer
 
                     Unit un;
                     //lock necessary?
-                    lock (World)
+                    lock (fbGame.World)
                     {
-                        un = World.UnitLookup[id];
+                        un = fbGame.World.UnitLookup[id];
 
                         if (un.Moves > 0)
                         {
@@ -223,12 +221,9 @@ namespace FarbaseServer
             worker.Strength = 1;
             UnitType.RegisterType("worker", worker);
 
-            World = new fbWorld(80, 45);
-            World.SpawnStation(10, 12);
-            World.SpawnPlanet(14, 14);
-
-            //we should probably use the static instead really
-            fbGame.World = World;
+            fbGame.World = new fbWorld(80, 45);
+            fbGame.World.SpawnStation(10, 12);
+            fbGame.World.SpawnPlanet(14, 14);
 
             netStart();
         }
@@ -302,13 +297,13 @@ namespace FarbaseServer
             p.SendMessage(
                 string.Format(
                     "create-world:{0},{1}",
-                    World.Map.Width,
-                    World.Map.Height
+                    fbGame.World.Map.Width,
+                    fbGame.World.Map.Height
                 )
             );
 
             //tell new client about all existing players
-            foreach (int id in World.PlayerIDs)
+            foreach (int id in fbGame.World.PlayerIDs)
             {
                 p.SendMessage(
                     string.Format(
@@ -321,23 +316,25 @@ namespace FarbaseServer
                     string.Format(
                         "name:{0},{1},{2}",
                         id,
-                        World.Players[id].Name,
-                        ExtensionMethods.ColorToString(World.Players[id].Color)
+                        fbGame.World.Players[id].Name,
+                        ExtensionMethods.ColorToString(
+                            fbGame.World.Players[id].Color
+                        )
                     )
                 );
             }
 
-            for (int x = 0; x < World.Map.Width; x++)
-            for (int y = 0; y < World.Map.Height; y++)
+            for (int x = 0; x < fbGame.World.Map.Width; x++)
+            for (int y = 0; y < fbGame.World.Map.Height; y++)
             {
-                if (World.Map.At(x, y).Station != null)
+                if (fbGame.World.Map.At(x, y).Station != null)
                     p.SendMessage(
                         string.Format(
                             "create-station:{0},{1}",
                             x, y
                         )
                     );
-                if (World.Map.At(x, y).Planet != null)
+                if (fbGame.World.Map.At(x, y).Planet != null)
                     p.SendMessage(
                         string.Format(
                             "create-planet:{0},{1}",
@@ -345,7 +342,7 @@ namespace FarbaseServer
                         )
                     );
 
-                Unit u = World.Map.At(x, y).Unit;
+                Unit u = fbGame.World.Map.At(x, y).Unit;
                 if (u != null)
                 {
                     p.SendMessage(
@@ -365,7 +362,7 @@ namespace FarbaseServer
             p.SendMessage(
                 string.Format(
                     "current-player:{0}",
-                    World.CurrentPlayerIndex
+                    fbGame.World.CurrentPlayerIndex
                 )
             );
 
@@ -383,7 +380,7 @@ namespace FarbaseServer
                 players.Add(p);
                 Player.TcpPlayers.Add(p.ID, p);
 
-                World.AddPlayer(
+                fbGame.World.AddPlayer(
                     new Farbase.Player(
                         "Unnamed player",
                         p.ID,

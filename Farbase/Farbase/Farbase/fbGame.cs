@@ -341,8 +341,11 @@ namespace Farbase
             if (!engine.NetClient.Ready) return;
             if (engine.KeyPressed(Keys.Enter))
             {
-                if(OurTurn)
-                    engine.NetClient.Send("pass");
+                if (OurTurn)
+                {
+                    //engine.NetClient.Send("pass");
+                    engine.NetClient.Send(new PassMessage());
+                }
                 else
                     Log.Add("Not your turn!");
             }
@@ -387,6 +390,11 @@ namespace Farbase
                         )
                     );
                 }
+            }
+
+            if (engine.KeyPressed(Keys.X))
+            {
+                engine.NetClient.Send(new MsgMessage("Hi!"));
             }
 
             if (
