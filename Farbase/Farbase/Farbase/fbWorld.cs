@@ -78,7 +78,7 @@ namespace Farbase
             PlayerIDs.Add(p.ID);
         }
 
-        public void PassTo(int playerID)
+        public void ReplenishPlayer(int playerID)
         {
             foreach (int id in Players[playerID].OwnedUnits)
             {

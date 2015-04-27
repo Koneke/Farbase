@@ -11,7 +11,7 @@ namespace Farbase
     {
         private fbApplication app;
 
-        public static bool Verbose = false;
+        public static bool Verbose = true;
         public static fbGame Game;
 
         private TcpClient client;
@@ -61,131 +61,7 @@ namespace Farbase
             command = command.ToLower();
 
             fbNetMessage netmsg = fbNetMessage.Spawn(app, command, arguments);
-
-            //suppress trash, at least for now
-            if(!netmsg.Trash)
-                netmsg.Handle();
-
-            int w, h;
-            int x, y;
-            int owner;
-            int id;
-            switch (command)
-            {
-                case "msg":
-                    break;
-                    Game.Log.Add(args);
-                    break;
-
-                case "create-world":
-                    break;
-                    Int32.TryParse(args.Split(',')[0], out w);
-                    Int32.TryParse(args.Split(',')[1], out h);
-                    fbGame.World = new fbWorld(w, h);
-                    break;
-
-                case "create-station":
-                    break;
-                    Int32.TryParse(args.Split(',')[0], out x);
-                    Int32.TryParse(args.Split(',')[1], out y);
-                    fbGame.World.SpawnStation(x, y);
-                    break;
-
-                case "create-planet":
-                    break;
-                    Int32.TryParse(args.Split(',')[0], out x);
-                    Int32.TryParse(args.Split(',')[1], out y);
-                    fbGame.World.SpawnPlanet(x, y);
-                    break;
-
-                case "create-unit":
-                    string type = arguments[0];
-                    owner = Int32.Parse(arguments[1]); //owned id
-                    id = Int32.Parse(arguments[2]); //owned id
-                    x = Int32.Parse(arguments[3]);
-                    y = Int32.Parse(arguments[4]);
-                    fbGame.World.SpawnUnit(type, owner, id, x, y);
-                    break;
-
-                case "move":
-                    id = Int32.Parse(arguments[0]);
-                    x = Int32.Parse(arguments[1]);
-                    y = Int32.Parse(arguments[2]);
-
-                    fbGame.World.UnitLookup[id].MoveTo(x, y);
-                    break;
-
-                case "set-moves":
-                    id = Int32.Parse(arguments[0]);
-                    x = Int32.Parse(arguments[1]);
-
-                    fbGame.World.UnitLookup[id].Moves = x;
-                    break;
-
-                case "new-player":
-                    Int32.TryParse(args, out id);
-                    fbGame.World.AddPlayer(
-                        new Player(
-                            "Unnamed player",
-                            id,
-                            Color.White
-                        )
-                    );
-                    break;
-
-                case "replenish":
-                    id = Int32.Parse(arguments[0]);
-                    fbGame.World.PassTo(id);
-                    break;
-
-                case "assign-id":
-                    Int32.TryParse(args, out id);
-                    Game.We = id;
-                    break;
-
-                case "name":
-                    id = Int32.Parse(arguments[0]);
-                    string name = arguments[1];
-                    Player p = fbGame.World.Players[id];
-
-                    Game.Log.Add(
-                        string.Format(
-                            "{0} is now known as {1}.",
-                            p.Name,
-                            name
-                        )
-                    );
-
-                    p.Name = name;
-                    p.Color = ExtensionMethods.ColorFromString(arguments[2]);
-                    break;
-
-                case "current-player":
-                    int index = Int32.Parse(arguments[0]);
-                    fbGame.World.CurrentPlayerIndex = index;
-                    Game.Log.Add(
-                        string.Format(
-                            "It is now {0}'s turn.",
-                            fbGame.World.CurrentPlayer.Name
-                        )
-                    );
-
-                    break;
-
-                case "ready":
-                    Ready = true;
-                    break;
-
-                default:
-                    Game.Log.Add(
-                        string.Format(
-                            "Received {0} command from server," +
-                            " but no idea what to do with it.",
-                            command
-                        )
-                    );
-                    break;
-            }
+            netmsg.Handle();
         }
 
         public void Start()
@@ -245,6 +121,11 @@ namespace Farbase
             byte[] buffer = encoder.GetBytes(message);
             stream.Write(buffer, 0, buffer.Length);
             stream.Flush();
+
+            if(Verbose)
+                Game.Log.Add(
+                    String.Format("-> s: {0}", message)
+                );
         }
 
         public void Close()

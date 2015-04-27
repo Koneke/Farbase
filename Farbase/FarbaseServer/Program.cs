@@ -137,7 +137,7 @@ namespace FarbaseServer
                             World.CurrentPlayerIndex
                         )
                     );
-                    World.PassTo(World.PlayerIDs[World.CurrentPlayerIndex]);
+                    World.ReplenishPlayer(World.PlayerIDs[World.CurrentPlayerIndex]);
                     SendAll(
                         string.Format(
                             "replenish:{0}",
