@@ -60,7 +60,7 @@ namespace Farbase
             command = command.ToLower();
 
             fbNetMessage netmsg = fbNetMessage.Spawn(app, command, arguments);
-            netmsg.Handle();
+            netmsg.ClientSideHandle(app);
         }
 
         public void Start()

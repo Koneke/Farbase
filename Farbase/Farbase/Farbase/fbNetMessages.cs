@@ -7,20 +7,15 @@ namespace Farbase
 {
     public abstract class fbNetMessage
     {
-        protected fbApplication application;
-
         public bool Trash;
 
-        protected fbNetMessage(
-            fbApplication app
-        ) {
-            application = app;
+        protected fbNetMessage() {
             Trash = false;
         }
 
         public abstract int GetExpectedArguments();
 
-        public abstract void Handle();
+        public abstract void ClientSideHandle(fbApplication app);
 
         public abstract string Format();
 
@@ -34,59 +29,59 @@ namespace Farbase
             switch (command)
             {
                 case MsgMessage.Command:
-                    message = new MsgMessage(app, arguments);
+                    message = new MsgMessage(arguments);
                     break;
 
                 case CreateWorldMessage.Command:
-                    message = new CreateWorldMessage(app, arguments);
+                    message = new CreateWorldMessage(arguments);
                     break;
 
                 case CreateStationMessage.Command:
-                    message = new CreateStationMessage(app, arguments);
+                    message = new CreateStationMessage(arguments);
                     break;
 
                 case CreatePlanetMessage.Command:
-                    message = new CreatePlanetMessage(app, arguments);
+                    message = new CreatePlanetMessage(arguments);
                     break;
 
                 case CreateUnitMessage.Command:
-                    message = new CreateUnitMessage(app, arguments);
+                    message = new CreateUnitMessage(arguments);
                     break;
 
                 case MoveUnitMessage.Command:
-                    message = new MoveUnitMessage(app, arguments);
+                    message = new MoveUnitMessage(arguments);
                     break;
 
                 case SetUnitMovesMessage.Command:
-                    message = new SetUnitMovesMessage(app, arguments);
+                    message = new SetUnitMovesMessage(arguments);
                     break;
 
                 case NewPlayerMessage.Command:
-                    message = new NewPlayerMessage(app, arguments);
+                    message = new NewPlayerMessage(arguments);
                     break;
 
                 case ReplenishPlayerMessage.Command:
-                    message = new ReplenishPlayerMessage(app, arguments);
+                    message = new ReplenishPlayerMessage(arguments);
                     break;
 
                 case AssignIDMessage.Command:
-                    message = new AssignIDMessage(app, arguments);
+                    message = new AssignIDMessage(arguments);
                     break;
 
                 case NameMessage.Command:
-                    message = new NameMessage(app, arguments);
+                    message = new NameMessage(arguments);
                     break;
 
                 case CurrentPlayerMessage.Command:
-                    message = new CurrentPlayerMessage(app, arguments);
+                    message = new CurrentPlayerMessage(arguments);
                     break;
 
                 case ReadyMessage.Command:
-                    message = new ReadyMessage(app);
+                    message = new ReadyMessage();
                     break;
 
                 case PassMessage.Command:
-                    message = new PassMessage(app);
+                    message = new PassMessage();
                     break;
 
                 default:
@@ -102,10 +97,7 @@ namespace Farbase
                         );
 
                     arguments = new List<string> { msg };
-                    message = new MsgMessage(
-                        app,
-                        arguments
-                    );
+                    message = new MsgMessage(arguments);
 
                     message.Trash = true;
                     break;
@@ -125,16 +117,14 @@ namespace Farbase
 
         public override int GetExpectedArguments() { return 1; }
 
-        public MsgMessage(
-            fbApplication application,
-            List<string> arguments
-        ) : base(application) {
+        public MsgMessage(List<string> arguments)
+        {
             content = arguments[0];
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
-            application.Game.Log.Add(content);
+            app.Game.Log.Add(content);
         }
 
         public override string Format()
@@ -154,15 +144,13 @@ namespace Farbase
 
         private int w, h;
 
-        public CreateWorldMessage(
-            fbApplication app,
-            List<string> arguments
-        ) : base(app) {
+        public CreateWorldMessage(List<string> arguments)
+        {
             w = Int32.Parse(arguments[0]);
             h = Int32.Parse(arguments[1]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World = new fbWorld(w, h);
         }
@@ -184,15 +172,13 @@ namespace Farbase
 
         private int x, y;
 
-        public CreateStationMessage(
-            fbApplication app,
-            List<string> arguments
-        ) : base(app) {
+        public CreateStationMessage(List<string> arguments)
+        {
             x = Int32.Parse(arguments[0]);
             y = Int32.Parse(arguments[1]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.SpawnStation(x, y);
         }
@@ -215,14 +201,13 @@ namespace Farbase
         private int x, y;
 
         public CreatePlanetMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             x = Int32.Parse(arguments[0]);
             y = Int32.Parse(arguments[1]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.SpawnPlanet(x, y);
         }
@@ -246,9 +231,8 @@ namespace Farbase
         private int x, y, id, owner;
 
         public CreateUnitMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             type = arguments[0];
             owner = Int32.Parse(arguments[1]);
             id = Int32.Parse(arguments[2]);
@@ -256,7 +240,7 @@ namespace Farbase
             y = Int32.Parse(arguments[4]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.SpawnUnit(type, owner, id, x, y);
         }
@@ -281,26 +265,24 @@ namespace Farbase
         private int id, x, y;
 
         public MoveUnitMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             id = Int32.Parse(arguments[0]);
             x = Int32.Parse(arguments[1]);
             y = Int32.Parse(arguments[2]);
         }
 
         public MoveUnitMessage(
-            fbApplication app,
             int id,
             int x,
             int y
-        ) : base(app) {
+        ) {
             this.id = id;
             this.x = x;
             this.y = y;
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.UnitLookup[id].MoveTo(x, y);
         }
@@ -323,14 +305,13 @@ namespace Farbase
         private int id, amount;
 
         public SetUnitMovesMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             id = Int32.Parse(arguments[0]);
             amount = Int32.Parse(arguments[1]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.UnitLookup[id].Moves = amount;
         }
@@ -353,13 +334,12 @@ namespace Farbase
         private int id;
 
         public NewPlayerMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             id = Int32.Parse(arguments[0]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.AddPlayer(
                 new Player(
@@ -388,13 +368,12 @@ namespace Farbase
         private int id;
 
         public ReplenishPlayerMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             id = Int32.Parse(arguments[0]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.ReplenishPlayer(id);
         }
@@ -418,15 +397,14 @@ namespace Farbase
         private int id;
 
         public AssignIDMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             id = Int32.Parse(arguments[0]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
-            application.Game.We = id;
+            app.Game.We = id;
         }
 
         public override string Format()
@@ -449,19 +427,18 @@ namespace Farbase
         private Color color;
 
         public NameMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             id = Int32.Parse(arguments[0]);
             name = arguments[1];
             color = ExtensionMethods.ColorFromString(arguments[2]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             Player p = fbGame.World.Players[id];
 
-            application.Game.Log.Add(
+            app.Game.Log.Add(
                 string.Format(
                     "{0}<{2}> is now known as {1}<{2}>.",
                     p.Name,
@@ -494,16 +471,15 @@ namespace Farbase
         private int index;
 
         public CurrentPlayerMessage(
-            fbApplication app,
             List<string> arguments
-        ) : base(app) {
+        ) {
             index = Int32.Parse(arguments[0]);
         }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             fbGame.World.CurrentPlayerIndex = index;
-            application.Game.Log.Add(
+            app.Game.Log.Add(
                 string.Format(
                     "It is now {0}'s turn.",
                     fbGame.World.CurrentPlayer.Name
@@ -526,11 +502,11 @@ namespace Farbase
         public const string Command = "ready";
         public override int GetExpectedArguments() { return 0; }
 
-        public ReadyMessage(fbApplication app) : base (app) { }
+        public ReadyMessage() { }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
-            application.Engine.NetClient.Ready = true;
+            app.Engine.NetClient.Ready = true;
         }
 
         public override string Format()
@@ -547,9 +523,9 @@ namespace Farbase
         public const string Command = "pass";
         public override int GetExpectedArguments() { return 0; }
 
-        public PassMessage(fbApplication app) : base(app) { }
+        public PassMessage() { }
 
-        public override void Handle()
+        public override void ClientSideHandle(fbApplication app)
         {
             //semi-weird spot here, this is a message strictly sent
             //  client -> server
