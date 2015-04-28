@@ -2,6 +2,7 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -9,12 +10,34 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Farbase
 {
+    public abstract class Event
+    {
+        public abstract string GetEventType();
+    }
+
+    public class NameEvent : Event
+    {
+        public const string EventType = "name";
+        public override string GetEventType() { return EventType; }
+
+        public int ID;
+        public string Name;
+        public Color Color;
+
+        public NameEvent(
+            int id,
+            String name,
+            Color color
+        ) {
+            ID = id;
+            Name = name;
+            Color = color;
+        }
+    }
+
     public class fbEngine
     {
         private fbApplication app;
-
-        private fbGame game { get { return app.Game; } }
-        private fbInterface ui { get { return app.UI; } }
 
         public Font DefaultFont;
 
@@ -22,6 +45,8 @@ namespace Farbase
         public string GraphicsSet = "16";
         private KeyboardState? ks, oks;
         private MouseState? ms, oms;
+
+        private List<Event> eventQueue; 
 
         private List<DrawCall> drawCalls;
 
@@ -31,6 +56,37 @@ namespace Farbase
         {
             this.app = app;
             drawCalls = new List<DrawCall>();
+            eventQueue = new List<Event>();
+        }
+
+        public void QueueEvent(Event e)
+        {
+            eventQueue.Add(e);
+        }
+
+        public List<Event> Poll(string type)
+        {
+            type = type.ToLower();
+            List<Event> matchingEvents =
+                eventQueue
+                    .Where(e => e.GetEventType() == type)
+                    .ToList();
+
+            foreach (Event e in matchingEvents)
+                eventQueue.Remove(e);
+
+            return matchingEvents;
+        }
+
+        public List<Event> Peek(string type)
+        {
+            type = type.ToLower();
+            List<Event> matchingEvents =
+                eventQueue
+                    .Where(e => e.GetEventType() == type)
+                    .ToList();
+
+            return matchingEvents;
         }
 
         public void StartNetClient()
@@ -102,6 +158,7 @@ namespace Farbase
         {
             oms = ms;
             ms = Mouse.GetState();
+
             oks = ks;
             ks = Keyboard.GetState();
         }
@@ -245,7 +302,11 @@ namespace Farbase
             if (ks == null || oks == null) return false;
             return ks.Value.IsKeyDown(key) && !oks.Value.IsKeyDown(key);
         }
-
+        public bool KeyReleased(Keys key)
+        {
+            if (ks == null || oks == null) return false;
+            return oks.Value.IsKeyDown(key) && !ks.Value.IsKeyDown(key);
+        }
         public bool KeyDown(Keys key)
         {
             if (ks == null || oks == null) return false;

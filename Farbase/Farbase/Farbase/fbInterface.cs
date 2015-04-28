@@ -74,12 +74,12 @@ namespace Farbase
             }
         }
 
-        public fbCamera Cam;
+        public fbCamera Camera;
 
         public fbInterface(fbApplication app)
         {
             this.app = app;
-            Cam = new fbCamera(app);
+            Camera = new fbCamera(app);
         }
 
         public void Select(Vector2i position)
@@ -106,7 +106,7 @@ namespace Farbase
             Vector2 position =
                 -engine.GetTextureSize("background") / 2f +
                 engine.GetSize() / 2f;
-            position -= Cam.Camera.Position / 10f;
+            position -= Camera.Camera.Position / 10f;
 
             engine.Draw(
                 engine.GetTexture("background"),
@@ -123,7 +123,7 @@ namespace Farbase
             {
                 engine.Draw(
                     engine.GetTexture("grid"),
-                    Cam.WorldToScreen(
+                    Camera.WorldToScreen(
                         new fbRectangle(
                             new Vector2(x, y) * tileSize,
                             tileSize,
@@ -138,7 +138,7 @@ namespace Farbase
         {
             Tile t = fbGame.World.Map.At(x, y);
             fbRectangle destination =
-                Cam.WorldToScreen(
+                Camera.WorldToScreen(
                     new fbRectangle(
                         new Vector2(x, y) * tileSize,
                         tileSize,
@@ -182,7 +182,7 @@ namespace Farbase
         private void DrawUnit(Unit u)
         {
             fbRectangle destination =
-                Cam.WorldToScreen(
+                Camera.WorldToScreen(
                     new fbRectangle(
                         u.Position * tileSize,
                         new Vector2(tileSize)
@@ -201,7 +201,7 @@ namespace Farbase
 
                 engine.Draw(
                     engine.GetTexture("move-dingy"),
-                    Cam.WorldToScreen(
+                    Camera.WorldToScreen(
                         new fbRectangle(
                             u.Position * tileSize
                                 + new Vector2(dingySize.X * i, 0),
@@ -217,7 +217,7 @@ namespace Farbase
 
                 engine.Draw(
                     engine.GetTexture("strength-dingy"),
-                    Cam.WorldToScreen(
+                    Camera.WorldToScreen(
                         new fbRectangle(
                             u.Position * tileSize + new Vector2(0, tileSize)
                                 - new Vector2(0, dingySize.Y * (i + 1)),
@@ -243,7 +243,7 @@ namespace Farbase
                     "Hi, I am {0}<{1}>",
                     fbGame.World.Players[game.We].Name,
                     game.We
-                    ),
+                ),
                 engine.DefaultFont,
                 new Vector2(10)
             ).Draw(engine);
@@ -283,6 +283,234 @@ namespace Farbase
                     position
                 ).Draw(engine);
             }
+        }
+
+        public void Update()
+        {
+            if (engine.KeyPressed(Keys.Escape)) engine.Exit();
+            Camera.Update();
+
+            //no (important) interaction if we're waiting for data.
+            if (!engine.NetClient.Ready) return;
+
+            HandleEvents();
+            Input();
+        }
+
+        public void HandleEvents()
+        {
+            //peek, and then let it fall through to the game itself which
+            //handles the renaming.
+            //we're doing it like this because the game should NOT need
+            //a reference to the interface
+
+            foreach (Event e in engine.Peek("name"))
+            {
+                NameEvent ne = (NameEvent)e;
+                game.Log.Add(
+                    string.Format(
+                        "{0}<{2}> is now known as {1}<{2}>.",
+                        fbGame.World.Players[ne.ID].Name,
+                        ne.Name,
+                        ne.ID
+                    )
+                );
+            }
+        }
+
+        public void Input()
+        {
+            if (engine.KeyPressed(Keys.Enter))
+            {
+                if (game.OurTurn)
+                {
+                    engine.NetClient.Send(new PassMessage());
+                }
+                else
+                    game.Log.Add("Not your turn!");
+            }
+
+            if (engine.KeyPressed(Keys.Space))
+            {
+                engine.NetClient.ShouldDie = true;
+            }
+
+            if (engine.KeyPressed(Keys.G))
+            {
+                List<string> names =
+                    new List<string>
+                    {
+                        "Captain Zorblax",
+                        "Commander Kneckers"
+                    };
+
+                List<Color> colors =
+                    new List<Color>
+                    {
+                        Color.Green,
+                        Color.CornflowerBlue
+                    };
+
+                engine.NetClient.Send(
+                    new NameMessage(game.We, names[game.We], colors[game.We])
+                );
+            }
+
+            if (engine.KeyPressed(Keys.H))
+            {
+                if (game.OurTurn)
+                {
+                    engine.NetClient.Send(
+                        new DevCommandMessage(0)
+                    );
+                }
+            }
+
+            if (
+                game.OurTurn &&
+                SelectedUnit != null &&
+                SelectedUnit.Owner == fbGame.World.CurrentPlayer.ID
+            ) {
+                Vector2 moveOrder = Vector2.Zero;
+
+                if (engine.KeyPressed(Keys.NumPad2))
+                    moveOrder = new Vector2(0, 1);
+                if (engine.KeyPressed(Keys.NumPad4))
+                    moveOrder = new Vector2(-1, 0);
+                if (engine.KeyPressed(Keys.NumPad8))
+                    moveOrder = new Vector2(0, -1);
+                if (engine.KeyPressed(Keys.NumPad6))
+                    moveOrder = new Vector2(1, 0);
+
+                if (engine.KeyPressed(Keys.NumPad1))
+                    moveOrder = new Vector2(-1, 1);
+                if (engine.KeyPressed(Keys.NumPad7))
+                    moveOrder = new Vector2(-1, -1);
+                if (engine.KeyPressed(Keys.NumPad9))
+                    moveOrder = new Vector2(1, -1);
+                if (engine.KeyPressed(Keys.NumPad3))
+                    moveOrder = new Vector2(1, 1);
+
+                if (moveOrder != Vector2.Zero && SelectedUnit.Moves > 0)
+                {
+                    Unit u = SelectedUnit;
+
+                    if(u.CanMoveTo(u.Position + moveOrder))
+                    {
+                        int x = (int)(u.Position + moveOrder).X;
+                        int y = (int)(u.Position + moveOrder).Y;
+
+                        engine.NetClient.Send(new MoveUnitMessage(u.ID, x, y));
+
+                        u.Moves -= 1;
+                        u.MoveTo(x, y);
+                    }
+                    else if (u.CanAttack(u.Position + moveOrder))
+                    {
+                        Vector2 targettile = u.Position + moveOrder;
+                        Unit target = fbGame.World.Map.At(
+                            (int)targettile.X,
+                            (int)targettile.Y
+                        ).Unit;
+
+                        engine.NetClient.Send(
+                            new AttackMessage(u.ID, target.ID)
+                        );
+                    }
+                }
+            }
+
+            /*if (SelectedUnit != null)
+            {
+                if (engine.KeyPressed(Keys.OemPeriod))
+                {
+                    int index = CurrentPlayer.Units.IndexOf(SelectedUnit);
+                    index = (index + 1) % CurrentPlayer.Units.Count;
+                    SelectedUnit = CurrentPlayer.Units[index];
+                }
+
+                if (engine.KeyPressed(Keys.OemComma))
+                {
+                    int index = CurrentPlayer.Units.IndexOf(SelectedUnit);
+                    index = (index + CurrentPlayer.Units.Count - 1)
+                        % CurrentPlayer.Units.Count;
+                    SelectedUnit = CurrentPlayer.Units[index];
+                }
+
+                if (engine.KeyPressed(Keys.A))
+                {
+                    SelectedUnit.MoveTo(
+                        SelectedUnit.Position +
+                        SelectedUnit.StepTowards(new Vector2(0))
+                    );
+                    SelectedUnit.Moves -= 1;
+                }
+            }*/
+
+            /*if (engine.KeyPressed(Keys.W))
+                if (
+                    SelectedStation != null &&
+                    SelectedUnit == null &&
+                    CurrentPlayer.Money >= 25
+                ) {
+                    SpawnUnit(
+                        UnitType.GetType("worker"),
+                        CurrentPlayer,
+                        Selection.Position
+                    );
+                    CurrentPlayer.Money -= 25;
+                }
+
+            if (engine.KeyPressed(Keys.B))
+                if (
+                    SelectedStation != null &&
+                    SelectedUnit == null &&
+                    CurrentPlayer.Money >= 45
+                ) {
+                    SpawnUnit(
+                        UnitType.GetType("scout"),
+                        CurrentPlayer,
+                        Selection.Position
+                    );
+                    CurrentPlayer.Money -= 45;
+                }*/
+
+            if (engine.ButtonPressed(0))
+            {
+                if (engine.Active && engine.MouseInside)
+                {
+                    Vector2? square = ScreenToGrid(engine.MousePosition);
+
+                    //null means we clicked on the screen, but outside the grid.
+                    if (square != null)
+                    {
+                        Select(
+                            new Vector2i(
+                                (int)square.Value.X,
+                                (int)square.Value.Y
+                                )
+                            );
+                    }
+                }
+            }
+        }
+
+        private Vector2? ScreenToGrid(Vector2 position)
+        {
+            Vector2 worldPoint = Camera.ScreenToWorld(position);
+            Vector2 square =
+                new Vector2(
+                    worldPoint.X - (worldPoint.X % tileSize),
+                    worldPoint.Y - (worldPoint.Y % tileSize)
+                ) / tileSize;
+
+            if(
+                square.X >= 0 && square.X < fbGame.World.Map.Width &&
+                square.Y >= 0 && square.Y < fbGame.World.Map.Height
+            )
+                return square;
+
+            return null;
         }
     }
 
@@ -329,7 +557,7 @@ namespace Farbase
             Camera.Size += deltaSize;
         }
 
-        public void UpdateCamera()
+        public void Update()
         {
             if (engine.KeyPressed(Keys.OemPlus))
                 ZoomAt(engine.GetSize() / 2f, 100f);

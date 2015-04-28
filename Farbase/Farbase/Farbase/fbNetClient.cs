@@ -199,19 +199,9 @@ namespace Farbase
 
         private void HandleMessage(NameMessage message)
         {
-            Player p = fbGame.World.Players[message.id];
-
-            app.Game.Log.Add(
-                string.Format(
-                    "{0}<{2}> is now known as {1}<{2}>.",
-                    p.Name,
-                    message.name,
-                    message.id
-                )
+            app.Engine.QueueEvent(
+                new NameEvent(message.id, message.name, message.color)
             );
-
-            p.Name = message.name;
-            p.Color = message.color;
         }
 
         private void HandleMessage(CurrentPlayerMessage message)
