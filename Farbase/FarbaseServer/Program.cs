@@ -10,21 +10,21 @@ using Microsoft.Xna.Framework;
 
 namespace FarbaseServer
 {
-    class Player
+    class Client
     {
-        public static Dictionary<int, Player> TcpPlayers =
-            new Dictionary<int, Player>();
+        public static Dictionary<int, Client> TcpPlayers =
+            new Dictionary<int, Client>();
         public static int IDCounter = 0;
 
         public int ID;
-        public TcpClient Client;
+        public TcpClient tcpClient;
         public NetworkStream Stream;
 
-        public Player(TcpClient client)
+        public Client(TcpClient client)
         {
             ID = IDCounter++;
-            Client = client;
-            Stream = client.GetStream();
+            tcpClient = client;
+            Stream = tcpClient.GetStream();
         }
 
         public void SendMessage(fbNetMessage message)
@@ -50,13 +50,13 @@ namespace FarbaseServer
         }
 
         private Random random;
-        private List<Player> players;
+        private List<Client> players;
 
         private void SendAll(
             fbNetMessage message,
             int except = -1
         ) {
-            foreach (Player p in players)
+            foreach (Client p in players)
                 if (p.ID != except)
                     p.SendMessage(message.Format());
         }
@@ -100,6 +100,10 @@ namespace FarbaseServer
 
                 case AttackMessage.Command:
                     HandleMessage((AttackMessage)message);
+                    break;
+
+                case BuildUnitMessage.Command:
+                    HandleMessage((BuildUnitMessage)message);
                     break;
 
                 default:
@@ -185,7 +189,7 @@ namespace FarbaseServer
         private void HandleMessage(AttackMessage message)
         {
             //please don't do shit until we've resolved combat
-            Player.TcpPlayers[message.Sender]
+            Client.TcpPlayers[message.Sender]
                 .SendMessage(new UnreadyMessage());
 
             Unit attacker = fbGame.World.UnitLookup[message.attackerid];
@@ -204,11 +208,16 @@ namespace FarbaseServer
             SendAll(new HurtMessage(loser.ID, 1));
 
             //we done here
-            Player.TcpPlayers[message.Sender]
+            Client.TcpPlayers[message.Sender]
                 .SendMessage(new ReadyMessage());
         }
 
-        private void ReceiveMessage(Player source, string message)
+        private void HandleMessage(BuildUnitMessage message)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ReceiveMessage(Client source, string message)
         {
             string command, args;
 
@@ -242,7 +251,7 @@ namespace FarbaseServer
 
         public void Start()
         {
-            players = new List<Player>();
+            players = new List<Client>();
             random = new Random();
 
             UnitType scout = new UnitType();
@@ -319,7 +328,7 @@ namespace FarbaseServer
             }
         }
 
-        private void welcomeClient(Player p)
+        private void welcomeClient(Client p)
         {
             p.SendMessage("msg:Welcome to Farbase.");
             p.SendMessage("msg:Your ID is " + p.ID + ".");
@@ -408,16 +417,16 @@ namespace FarbaseServer
 
         private void handleClient(object clientObject)
         {
-            Player p;
+            Client p;
 
             lock (players)
             {
-                p = new Player((TcpClient)clientObject);
+                p = new Client((TcpClient)clientObject);
                 players.Add(p);
-                Player.TcpPlayers.Add(p.ID, p);
+                Client.TcpPlayers.Add(p.ID, p);
 
                 fbGame.World.AddPlayer(
-                    new Farbase.Player(
+                    new Player(
                         "Unnamed player",
                         p.ID,
                         Color.CornflowerBlue
@@ -428,10 +437,10 @@ namespace FarbaseServer
             //set up world
             welcomeClient(p);
 
-            foreach (int id in Player.TcpPlayers.Keys)
+            foreach (int id in Client.TcpPlayers.Keys)
             {
                 if (id == p.ID) continue;
-                Player.TcpPlayers[id].SendMessage(
+                Client.TcpPlayers[id].SendMessage(
                     string.Format(
                         "new-player:{0}",
                         p.ID
@@ -469,7 +478,7 @@ namespace FarbaseServer
                 }
             }
 
-            p.Client.Close();
+            p.tcpClient.Close();
             lock (players)
             {
                 players.Remove(p);

@@ -54,6 +54,8 @@ namespace Farbase
         private fbGame game { get { return app.Game; } }
         private fbEngine engine { get { return app.Engine; } }
 
+        private const int tileSize = 16;
+
         private ISelection selection;
         public Tile SelectedTile
         {
@@ -72,6 +74,14 @@ namespace Farbase
             }
         }
 
+        public fbCamera Cam;
+
+        public fbInterface(fbApplication app)
+        {
+            this.app = app;
+            Cam = new fbCamera(app);
+        }
+
         public void Select(Vector2i position)
         {
             Tile t = fbGame.World.Map.At(position);
@@ -81,15 +91,152 @@ namespace Farbase
                 selection = new TileSelection(t);
         }
 
-        public fbCamera Cam;
-
-        public fbInterface(fbApplication app)
+        public void Draw()
         {
-            this.app = app;
-            Cam = new fbCamera(app);
+            DrawBackground();
+
+            if (fbGame.World == null) return;
+
+            DrawMap();
+            DrawUI();
         }
 
-        public void DrawUI()
+        private void DrawBackground()
+        {
+            Vector2 position =
+                -engine.GetTextureSize("background") / 2f +
+                engine.GetSize() / 2f;
+            position -= Cam.Camera.Position / 10f;
+
+            engine.Draw(
+                engine.GetTexture("background"),
+                new fbRectangle(position, new Vector2(-1)),
+                new Color(0.3f, 0.3f, 0.3f),
+                1000
+            );
+        }
+
+        private void DrawGrid()
+        {
+            for (int x = 0; x < fbGame.World.Map.Width; x++)
+            for (int y = 0; y < fbGame.World.Map.Height; y++)
+            {
+                engine.Draw(
+                    engine.GetTexture("grid"),
+                    Cam.WorldToScreen(
+                        new fbRectangle(
+                            new Vector2(x, y) * tileSize,
+                            tileSize,
+                            tileSize
+                        )
+                    )
+                );
+            }
+        }
+
+        private void DrawTile(int x, int y)
+        {
+            Tile t = fbGame.World.Map.At(x, y);
+            fbRectangle destination =
+                Cam.WorldToScreen(
+                    new fbRectangle(
+                        new Vector2(x, y) * tileSize,
+                        tileSize,
+                        tileSize
+                    )
+                );
+
+            if (t.Station != null)
+            {
+                engine.Draw(
+                    t.Unit == null
+                    ? engine.GetTexture("station")
+                    : engine.GetTexture("station-bg"),
+                    destination
+                );
+            }
+
+            if (t.Planet != null)
+            {
+                engine.Draw(
+                    t.Unit == null
+                    ? engine.GetTexture("planet")
+                    : engine.GetTexture("planet-bg"),
+                    destination
+                );
+            }
+
+            if (t.Unit != null)
+                DrawUnit(t.Unit);
+
+            if(
+                (SelectedUnit != null && t.Unit == SelectedUnit) ||
+                (SelectedTile == t && t.Station != null)
+            )
+                engine.Draw(
+                    engine.GetTexture("selection"),
+                    destination
+                );
+        }
+
+        private void DrawUnit(Unit u)
+        {
+            fbRectangle destination =
+                Cam.WorldToScreen(
+                    new fbRectangle(
+                        u.Position * tileSize,
+                        new Vector2(tileSize)
+                    )
+                );
+
+            engine.Draw(
+                u.UnitType.Texture,
+                destination,
+                fbGame.World.Players[u.Owner].Color
+            );
+
+            for (int i = 0; i < u.Moves; i++)
+            {
+                Vector2 dingySize = engine.GetTextureSize("move-dingy");
+
+                engine.Draw(
+                    engine.GetTexture("move-dingy"),
+                    Cam.WorldToScreen(
+                        new fbRectangle(
+                            u.Position * tileSize
+                                + new Vector2(dingySize.X * i, 0),
+                            dingySize
+                        )
+                    )
+                );
+            }
+
+            for (int i = 0; i < u.Strength; i++)
+            {
+                Vector2 dingySize = engine.GetTextureSize("strength-dingy");
+
+                engine.Draw(
+                    engine.GetTexture("strength-dingy"),
+                    Cam.WorldToScreen(
+                        new fbRectangle(
+                            u.Position * tileSize + new Vector2(0, tileSize)
+                                - new Vector2(0, dingySize.Y * (i + 1)),
+                            dingySize
+                        )
+                    )
+                );
+            }
+        }
+
+        private void DrawMap()
+        {
+            DrawGrid();
+            for (int x = 0; x < fbGame.World.Map.Width; x++)
+            for (int y = 0; y < fbGame.World.Map.Height; y++)
+                DrawTile(x, y);
+        }
+
+        private void DrawUI()
         {
             new TextCall(
                 string.Format(
@@ -99,7 +246,7 @@ namespace Farbase
                     ),
                 engine.DefaultFont,
                 new Vector2(10)
-                ).Draw(engine);
+            ).Draw(engine);
 
             if (fbGame.World.PlayerIDs.Count > 0)
             {
@@ -111,10 +258,10 @@ namespace Farbase
                         "Current player: {0}<{1}>",
                         current.Name,
                         current.ID
-                        ),
+                    ),
                     engine.DefaultFont,
                     new Vector2(10, 20)
-                    ).Draw(engine);
+                ).Draw(engine);
             }
 
             List<string> logTail;

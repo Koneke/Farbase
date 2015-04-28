@@ -80,7 +80,7 @@ namespace Farbase
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            Game.Draw();
+            UI.Draw();
             Engine.Render();
             base.Draw(gameTime);
         }

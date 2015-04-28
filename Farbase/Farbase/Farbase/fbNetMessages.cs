@@ -101,6 +101,10 @@ namespace Farbase
                     message = new HurtMessage(arguments);
                     break;
 
+                case BuildUnitMessage.Command:
+                    message = new BuildUnitMessage(arguments);
+                    break;
+
                 default:
                     string argline = "";
                     if (arguments.Count > 0)
@@ -636,4 +640,42 @@ namespace Farbase
         }
     }
 
+    public class BuildUnitMessage : fbNetMessage
+    {
+        //type, station-x, station-y
+
+        public const string Command = "build-unit";
+        public override string GetMessageType() { return Command; }
+        public override int GetExpectedArguments() { return 3; }
+
+        public string type;
+        public int x, y;
+
+        public BuildUnitMessage(
+            List<string> arguments
+        ) {
+            type = arguments[0];
+            x = Int32.Parse(arguments[1]);
+            y = Int32.Parse(arguments[2]);
+        }
+
+        public BuildUnitMessage(
+            string type,
+            int x, int y
+        ) {
+            this.type = type;
+            this.x = x;
+            this.y = y;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1},{2},{3}",
+                Command,
+                type,
+                x, y
+            );
+        }
+    }
 }

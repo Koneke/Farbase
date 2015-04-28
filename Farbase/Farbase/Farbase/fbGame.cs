@@ -266,13 +266,14 @@ namespace Farbase
         private fbEngine engine { get { return app.Engine; } }
         private fbInterface ui { get { return app.UI; } }
 
-        //phase out
-
         private const int tileSize = 16;
 
         //our ID
         public int We = -1;
 
+        public bool OurTurn {
+            get { return World.PlayerIDs[World.CurrentPlayerIndex] == We; }
+        }
         //client side of world
         public static fbWorld World;
 
@@ -363,11 +364,6 @@ namespace Farbase
                         new DevCommandMessage(0)
                     );
                 }
-            }
-
-            if (engine.KeyPressed(Keys.X))
-            {
-                engine.NetClient.Send(new MsgMessage("Hi!"));
             }
 
             if (
@@ -496,22 +492,23 @@ namespace Farbase
             {
                 if (engine.Active && engine.MouseInside)
                 {
-                    Vector2 square = ScreenToGrid(engine.MousePosition);
-                    ui.Select(
-                        new Vector2i(
-                            (int)square.X,
-                            (int)square.Y
-                        )
-                    );
+                    Vector2? square = ScreenToGrid(engine.MousePosition);
+
+                    //null means we clicked on the screen, but outside the grid.
+                    if (square != null)
+                    {
+                        ui.Select(
+                            new Vector2i(
+                                (int)square.Value.X,
+                                (int)square.Value.Y
+                                )
+                            );
+                    }
                 }
             }
         }
 
-        public bool OurTurn {
-            get { return World.PlayerIDs[World.CurrentPlayerIndex] == We; }
-        }
-
-        private Vector2 ScreenToGrid(Vector2 position)
+        private Vector2? ScreenToGrid(Vector2 position)
         {
             Vector2 worldPoint = ui.Cam.ScreenToWorld(position);
             Vector2 square =
@@ -526,156 +523,7 @@ namespace Farbase
             )
                 return square;
 
-            //TODO: THIS IS JUST TO STOP CRASHING
-            return new Vector2(0);
-            throw new ArgumentException("Not inside screen.");
-        }
-
-        private void DrawBackground()
-        {
-            Vector2 position =
-                -engine.GetTextureSize("background") / 2f +
-                engine.GetSize() / 2f;
-            position -= ui.Cam.Camera.Position / 10f;
-
-            engine.Draw(
-                engine.GetTexture("background"),
-                new fbRectangle(position, new Vector2(-1)),
-                new Color(0.3f, 0.3f, 0.3f),
-                1000
-            );
-        }
-
-        private void DrawGrid()
-        {
-            for (int x = 0; x < World.Map.Width; x++)
-            for (int y = 0; y < World.Map.Height; y++)
-            {
-                engine.Draw(
-                    engine.GetTexture("grid"),
-                    ui.Cam.WorldToScreen(
-                        new fbRectangle(
-                            new Vector2(x, y) * tileSize,
-                            tileSize,
-                            tileSize
-                        )
-                    )
-                );
-            }
-        }
-
-        private void DrawTile(int x, int y)
-        {
-            Tile t = World.Map.At(x, y);
-            fbRectangle destination =
-                ui.Cam.WorldToScreen(
-                    new fbRectangle(
-                        new Vector2(x, y) * tileSize,
-                        tileSize,
-                        tileSize
-                    )
-                );
-
-            if (t.Station != null)
-            {
-                engine.Draw(
-                    t.Unit == null
-                    ? engine.GetTexture("station")
-                    : engine.GetTexture("station-bg"),
-                    destination
-                );
-            }
-
-            if (t.Planet != null)
-            {
-                engine.Draw(
-                    t.Unit == null
-                    ? engine.GetTexture("planet")
-                    : engine.GetTexture("planet-bg"),
-                    destination
-                );
-            }
-
-            if (t.Unit != null)
-                DrawUnit(t.Unit);
-
-            //if we have anything fun selected, show it.
-            //tiles themselves might be interesting later, but not for now.
-            if(ui.SelectedUnit != null && t.Unit == ui.SelectedUnit)
-                engine.Draw(
-                    engine.GetTexture("selection"),
-                    destination
-                );
-        }
-
-        private void DrawUnit(Unit u)
-        {
-            fbRectangle destination =
-                ui.Cam.WorldToScreen(
-                    new fbRectangle(
-                        u.Position * tileSize,
-                        new Vector2(tileSize)
-                    )
-                );
-
-            engine.Draw(
-                u.UnitType.Texture,
-                destination,
-                World.Players[u.Owner].Color
-            );
-
-            for (int i = 0; i < u.Moves; i++)
-            {
-                Vector2 dingySize = engine.GetTextureSize("move-dingy");
-
-                engine.Draw(
-                    engine.GetTexture("move-dingy"),
-                    ui.Cam.WorldToScreen(
-                        new fbRectangle(
-                            u.Position * tileSize
-                                + new Vector2(dingySize.X * i, 0),
-                            dingySize
-                        )
-                    )
-                );
-            }
-
-            for (int i = 0; i < u.Strength; i++)
-            {
-                Vector2 dingySize = engine.GetTextureSize("strength-dingy");
-
-                engine.Draw(
-                    engine.GetTexture("strength-dingy"),
-                    ui.Cam.WorldToScreen(
-                        new fbRectangle(
-                            u.Position * tileSize + new Vector2(0, tileSize)
-                                - new Vector2(0, dingySize.Y * (i + 1)),
-                            dingySize
-                        )
-                    )
-                );
-            }
-        }
-
-        private void DrawMap()
-        {
-            DrawGrid();
-            for (int x = 0; x < World.Map.Width; x++)
-            for (int y = 0; y < World.Map.Height; y++)
-            {
-                DrawTile(x, y);
-            }
-        }
-
-        public void Draw()
-        {
-            DrawBackground();
-
-            if (World == null) return;
-
-            DrawMap();
-            ui.DrawUI();
+            return null;
         }
     }
-
 }
