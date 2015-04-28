@@ -105,6 +105,10 @@ namespace Farbase
                     message = new BuildUnitMessage(arguments);
                     break;
 
+                case SetMoneyMessage.Command:
+                    message = new SetMoneyMessage(arguments);
+                    break;
+
                 default:
                     string argline = "";
                     if (arguments.Count > 0)
@@ -277,8 +281,10 @@ namespace Farbase
                 "{0}:{1},{2},{3},{4},{5}",
                 Command,
                 type,
-                id, owner,
-                x, y
+                owner,
+                id,
+                x,
+                y
             );
         }
     }
@@ -675,6 +681,40 @@ namespace Farbase
                 Command,
                 type,
                 x, y
+            );
+        }
+    }
+
+    public class SetMoneyMessage : fbNetMessage
+    {
+        public const string Command = "set-money";
+        public override string GetMessageType() { return Command; }
+        public override int GetExpectedArguments() { return 2; }
+
+        public int id, amount;
+
+        public SetMoneyMessage(
+            List<string> arguments
+        ) {
+            id = Int32.Parse(arguments[0]);
+            amount = Int32.Parse(arguments[1]);
+        }
+
+        public SetMoneyMessage(
+            int id,
+            int amount
+        ) {
+            this.id = id;
+            this.amount = amount;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1},{2}",
+                Command,
+                id,
+                amount
             );
         }
     }

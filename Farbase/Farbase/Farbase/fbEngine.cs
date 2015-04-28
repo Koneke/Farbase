@@ -2,7 +2,6 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -10,31 +9,6 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Farbase
 {
-    public abstract class Event
-    {
-        public abstract string GetEventType();
-    }
-
-    public class NameEvent : Event
-    {
-        public const string EventType = "name";
-        public override string GetEventType() { return EventType; }
-
-        public int ID;
-        public string Name;
-        public Color Color;
-
-        public NameEvent(
-            int id,
-            String name,
-            Color color
-        ) {
-            ID = id;
-            Name = name;
-            Color = color;
-        }
-    }
-
     public class fbEngine
     {
         private fbApplication app;

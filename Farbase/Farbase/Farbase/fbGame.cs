@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace Farbase
 {
@@ -34,7 +32,7 @@ namespace Farbase
             map = new Tile[w, h];
             for (int x = 0; x < w; x++)
             for (int y = 0; y < h; y++)
-                map[x, y] = new Tile(x, y);
+                map[x, y] = new Tile(this, x, y);
         }
 
         public int Width;
@@ -42,33 +40,53 @@ namespace Farbase
 
         public Tile At(int x, int y)
         {
+            if (x < 0 || y < 0 || x >= Width || y >= Height)
+                return null;
             return map[x, y];
         }
 
         public Tile At(Vector2i p)
         {
-            return map[p.X, p.Y];
+            return At(p.X, p.Y);
         }
 
         public Tile At(Vector2 position)
         {
-            return map[
+            return At(
                 (int)position.X,
                 (int)position.Y
-            ];
+            );
         }
     }
 
     public class Tile
     {
+        private Map map;
         public Unit Unit;
         public Station Station;
         public Planet Planet;
-        public Vector2 Position;
+        public Vector2i Position;
 
-        public Tile(int x, int y)
+        public Tile(Map map, int x, int y)
         {
-            Position = new Vector2(x, y);
+            this.map = map;
+            Position = new Vector2i(x, y);
+        }
+
+        public List<Tile> GetNeighbours()
+        {
+            List<Tile> neighbours = new List<Tile>();
+
+            for (int x = -1; x < 1; x++)
+            for (int y = -1; y < 1; y++)
+                if (!(x == 0 && y == 0))
+                {
+                    Tile t = map.At(x, y);
+                    if (t != null)
+                        neighbours.Add(t);
+                }
+
+            return neighbours;
         }
     }
 
@@ -122,25 +140,36 @@ namespace Farbase
             scout.Moves = 2;
             scout.Strength = 3;
             scout.Attacks = 1;
+            scout.Cost = 10;
             UnitType.RegisterType("scout", scout);
 
             UnitType worker = new UnitType();
             worker.Texture = engine.GetTexture("worker");
             worker.Moves = 1;
             worker.Strength = 1;
+            worker.Cost = 5;
             UnitType.RegisterType("worker", worker);
         }
 
         public void Update()
         {
-            foreach (Event e in engine.Poll("name"))
+            foreach (Event e in engine.Poll(NameEvent.EventType))
                 HandleEvent((NameEvent)e);
+
+            foreach (Event e in engine.Poll(UnitMoveEvent.EventType))
+                HandleEvent((UnitMoveEvent)e);
         }
 
-        public void HandleEvent(NameEvent e)
+        public void HandleEvent(NameEvent ne)
         {
-            World.Players[e.ID].Name = e.Name;
-            World.Players[e.ID].Color = e.Color;
+            World.Players[ne.ID].Name = ne.Name;
+            World.Players[ne.ID].Color = ne.Color;
+        }
+
+        public void HandleEvent(UnitMoveEvent ume)
+        {
+            Unit u = World.UnitLookup[ume.ID];
+            u.MoveTo(ume.x, ume.y);
         }
     }
 }

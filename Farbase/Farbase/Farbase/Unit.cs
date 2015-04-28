@@ -25,6 +25,7 @@ namespace Farbase
 
         public string Name;
         public Texture2D Texture;
+        public int Cost;
         public int Moves;
         public int Attacks;
         public int Strength;

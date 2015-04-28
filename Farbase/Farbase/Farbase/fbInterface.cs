@@ -29,7 +29,7 @@ namespace Farbase
         }
     }
 
-    public class UnitSelection : ISelection
+    /*public class UnitSelection : ISelection
     {
         private Unit selected;
 
@@ -45,7 +45,7 @@ namespace Farbase
                 (int)selected.Position.Y
             );
         }
-    }
+    }*/
 
     public class fbInterface
     {
@@ -85,10 +85,10 @@ namespace Farbase
         public void Select(Vector2i position)
         {
             Tile t = fbGame.World.Map.At(position);
-            if(t.Unit != null)
+            /*if(t.Unit != null)
                 selection = new UnitSelection(t.Unit);
-            else
-                selection = new TileSelection(t);
+            else*/
+            selection = new TileSelection(t);
         }
 
         public void Draw()
@@ -277,11 +277,25 @@ namespace Farbase
             foreach (string message in logTail)
             {
                 position -= new Vector2(0, engine.DefaultFont.CharSize.Y + 1);
+
                 new TextCall(
                     message,
                     engine.DefaultFont,
                     position
                 ).Draw(engine);
+            }
+
+            position = new Vector2(engine.GetSize().X - 10, 0);
+            foreach (int id in fbGame.World.PlayerIDs)
+            {
+                position += new Vector2(0, engine.DefaultFont.CharSize.Y + 1);
+                Player p = fbGame.World.Players[id];
+
+                new TextCall(
+                    p.Name + ": "+ p.Money + "$",
+                    engine.DefaultFont,
+                    position
+                ).RightAlign().Draw(engine);
             }
         }
 
@@ -293,8 +307,8 @@ namespace Farbase
             //no (important) interaction if we're waiting for data.
             if (!engine.NetClient.Ready) return;
 
-            HandleEvents();
             Input();
+            HandleEvents();
         }
 
         public void HandleEvents()
@@ -304,7 +318,7 @@ namespace Farbase
             //we're doing it like this because the game should NOT need
             //a reference to the interface
 
-            foreach (Event e in engine.Peek("name"))
+            foreach (Event e in engine.Peek(NameEvent.EventType))
             {
                 NameEvent ne = (NameEvent)e;
                 game.Log.Add(
@@ -315,6 +329,20 @@ namespace Farbase
                         ne.ID
                     )
                 );
+            }
+
+            foreach (Event e in engine.Peek(UnitMoveEvent.EventType))
+            {
+                if (SelectedUnit == null) break;
+
+                //if the moving unit is the one we're having selected,
+                //stick to it.
+
+                UnitMoveEvent ume = (UnitMoveEvent)e;
+                if (SelectedUnit.ID == ume.ID)
+                    selection = new TileSelection(
+                        fbGame.World.Map.At(ume.x, ume.y)
+                    );
             }
         }
 
@@ -403,7 +431,8 @@ namespace Farbase
                         engine.NetClient.Send(new MoveUnitMessage(u.ID, x, y));
 
                         u.Moves -= 1;
-                        u.MoveTo(x, y);
+                        //u.MoveTo(x, y);
+                        engine.QueueEvent(new UnitMoveEvent(u.ID, x, y));
                     }
                     else if (u.CanAttack(u.Position + moveOrder))
                     {
@@ -459,10 +488,24 @@ namespace Farbase
                         Selection.Position
                     );
                     CurrentPlayer.Money -= 25;
-                }
+                }*/
 
             if (engine.KeyPressed(Keys.B))
                 if (
+                    SelectedTile.Station != null &&
+                    SelectedTile.Unit == null &&
+                    fbGame.World.Players[game.We].Money >=
+                        UnitType.GetType("scout").Cost
+                ) {
+                    engine.NetClient.Send(
+                        new BuildUnitMessage(
+                            "scout",
+                            SelectedTile.Position.X,
+                            SelectedTile.Position.Y
+                        )
+                    );
+                }
+            /*if (
                     SelectedStation != null &&
                     SelectedUnit == null &&
                     CurrentPlayer.Money >= 45

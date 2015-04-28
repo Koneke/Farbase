@@ -108,6 +108,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bite.cs" />
+    <Compile Include="Events.cs" />
     <Compile Include="fbEngine.cs" />
     <Compile Include="fbGame.cs" />
     <Compile Include="fbInterface.cs" />

@@ -128,6 +128,10 @@ namespace Farbase
                     HandleMessage((HurtMessage)message);
                     break;
 
+                case SetMoneyMessage.Command:
+                    HandleMessage((SetMoneyMessage)message);
+                    break;
+
                 default:
                     //should probably be handled more gracefully in the future,
                     //but works for unknown messages for now.
@@ -168,7 +172,10 @@ namespace Farbase
 
         private void HandleMessage(MoveUnitMessage message)
         {
-            fbGame.World.UnitLookup[message.id].MoveTo(message.x, message.y);
+            app.Engine.QueueEvent(
+                new UnitMoveEvent(message.id, message.x, message.y)
+            );
+            //fbGame.World.UnitLookup[message.id].MoveTo(message.x, message.y);
         }
 
         private void HandleMessage(SetUnitMovesMessage message)
@@ -189,7 +196,7 @@ namespace Farbase
 
         private void HandleMessage(ReplenishPlayerMessage message)
         {
-            fbGame.World.ReplenishPlayer(message.id);
+            fbGame.World.PassTo(message.id);
         }
 
         private void HandleMessage(AssignIDMessage message)
@@ -228,6 +235,11 @@ namespace Farbase
         private void HandleMessage(HurtMessage message)
         {
             fbGame.World.UnitLookup[message.id].Hurt(message.amount);
+        }
+
+        private void HandleMessage(SetMoneyMessage message)
+        {
+            fbGame.World.Players[message.id].Money = message.amount;
         }
 
         public void Start()

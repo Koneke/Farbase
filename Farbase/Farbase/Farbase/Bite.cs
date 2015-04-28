@@ -95,6 +95,11 @@ namespace Farbase
         //currently only fixed size, because it's a million times easier.
         public Vector2 CharSize;
         public Texture2D FontSheet;
+
+        public Vector2 Measure(string s)
+        {
+            return CharSize * new Vector2(s.Length, 1);
+        }
     }
 
     public class TextCall
@@ -147,6 +152,12 @@ namespace Farbase
                     )
                 );
             }
+        }
+
+        public TextCall RightAlign()
+        {
+            Position.X -= Font.Measure(Text).X;
+            return this;
         }
     }
 

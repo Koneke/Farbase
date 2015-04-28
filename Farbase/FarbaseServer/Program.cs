@@ -136,9 +136,10 @@ namespace FarbaseServer
                 new CurrentPlayerMessage(fbGame.World.CurrentPlayerIndex)
             );
 
-            fbGame.World.ReplenishPlayer(fbGame.World.CurrentID);
+            fbGame.World.PassTo(fbGame.World.CurrentID);
 
-            SendAll(new ReplenishPlayerMessage(fbGame.World.CurrentID)
+            SendAll(
+                new ReplenishPlayerMessage(fbGame.World.CurrentID)
             );
         }
 
@@ -180,8 +181,10 @@ namespace FarbaseServer
                         //we need to manually update the ID counter
                         fbGame.World.UnitIDCounter++,
                         10, 10
-                        );
+                    );
                     BroadcastUnit(u);
+
+                    SendAll(new SetMoneyMessage(message.Sender, 10));
                     break;
             }
         }
@@ -214,7 +217,26 @@ namespace FarbaseServer
 
         private void HandleMessage(BuildUnitMessage message)
         {
-            throw new NotImplementedException();
+            BroadcastUnit(
+                fbGame.World.SpawnUnit(
+                    message.type,
+                    message.Sender,
+                    fbGame.World.UnitIDCounter++,
+                    message.x,
+                    message.y
+                )
+            );
+
+            int newMoney =
+                fbGame.World.Players[message.Sender].Money -
+                UnitType.GetType(message.type).Cost;
+
+            SendAll(
+                new SetMoneyMessage(
+                    message.Sender,
+                    newMoney
+                )
+            );
         }
 
         private void ReceiveMessage(Client source, string message)

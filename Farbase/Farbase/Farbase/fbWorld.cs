@@ -17,7 +17,7 @@ namespace Farbase
             get { return Players[CurrentID]; }
         }
 
-        public Dictionary<int, Player> Players; 
+        public Dictionary<int, Player> Players;
         public Map Map;
 
         //only needs to be serverside
@@ -78,7 +78,7 @@ namespace Farbase
             PlayerIDs.Add(p.ID);
         }
 
-        public void ReplenishPlayer(int playerID)
+        public void PassTo(int playerID)
         {
             foreach (int id in Players[playerID].OwnedUnits)
             {
