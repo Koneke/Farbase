@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -97,7 +98,15 @@ namespace Farbase
 
         public Vector2 Measure(string s)
         {
-            return CharSize * new Vector2(s.Length, 1);
+            int newLineCount = s.Count(c => c == '\n');
+
+            string longestLine =
+                s.Split('\n')
+                    .OrderByDescending(str => str.Length)
+                    .ElementAt(0);
+
+            return CharSize
+                * new Vector2(longestLine.Length, 1 + newLineCount);
         }
     }
 
@@ -128,9 +137,18 @@ namespace Farbase
 
         public void Draw(fbEngine engine)
         {
+            int col = 0;
+            int row = 0;
             for(int i = 0; i < Text.Length; i++)
             {
                 int c = Text[i];
+                if (c == '\n')
+                {
+                    col = 0;
+                    row++;
+                    continue;
+                }
+
                 Vector2 fontSpot =
                     new Vector2(
                         c % 16,
@@ -142,7 +160,8 @@ namespace Farbase
                     new DrawCall(
                         Font.FontSheet,
                         new fbRectangle(
-                            Position + new Vector2(Font.CharSize.X * i, 0),
+                            Position +
+                                Font.CharSize * new Vector2(col++, row),
                             Font.CharSize
                         ),
                         new fbRectangle(fontSpot, Font.CharSize),
@@ -193,6 +212,14 @@ namespace Farbase
             return new fbRectangle(
                 Position + new Vector2(amount / 2f),
                 Size - new Vector2(amount)
+            );
+        }
+
+        public fbRectangle Grow(int amount)
+        {
+            return new fbRectangle(
+                Position - new Vector2(amount / 2f),
+                Size + new Vector2(amount)
             );
         }
 

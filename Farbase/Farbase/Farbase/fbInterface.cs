@@ -69,6 +69,8 @@ namespace Farbase
 
         private Widget BuildCard;
 
+        private string tooltip;
+
         public fbInterface(
             fbGame game,
             fbEngine engine
@@ -109,20 +111,24 @@ namespace Farbase
                     .SetAlign(HAlignment.Right, VAlignment.Bottom);
 
             foreach (UnitType ut in UnitType.UnitTypes)
+            {
+                UnitType unitType = ut;
                 ((SideBySideWidgets)BuildCard)
                     .AddChild(
                         new TextureButton(
                             ut.Name,
-                            () => TryBuildUnit(ut.Name),
+                            () => TryBuildUnit(unitType.Name),
                             engine,
                             this,
                             2f
                         )
-                            .Padding(2)
-                            .SetCondition(
-                                () => game.LocalPlayer.Money > ut.Cost
-                            )
+                        .Padding(2)
+                        .SetCondition(
+                            () => game.LocalPlayer.Money > unitType.Cost
+                        )
+                        .SetTooltip("Build " + ut.Name)
                     );
+            }
 
             widgets.Add(BuildCard);
         }
@@ -138,7 +144,7 @@ namespace Farbase
             ;
 
             b.AddChild(
-                new Label(" == testlabel == ", engine, this)
+                new Label(" == test\nlabel == ", engine, this)
                     .Margins(2)
                     .SetAlign(HAlignment.Center)
             );
@@ -148,6 +154,9 @@ namespace Farbase
                     .Margins(2)
                     .Padding(5)
                     .SetAlign(HAlignment.Right)
+                    .SetTooltip(
+                        "I'M A VERY\nLONG AND COMPLEX\nTOOLTIP"
+                    )
             );
 
             b.AddChild(
@@ -377,6 +386,39 @@ namespace Farbase
 
         private void DrawUI()
         {
+            if (tooltip != null)
+            {
+                Vector2 tooltipSize = engine.DefaultFont.Measure(tooltip);
+
+                Vector2 tooltipPosition =
+                    new Vector2(
+                        engine.MousePosition.X
+                            .Clamp(
+                                20,
+                                engine.GetSize().X - (tooltipSize.X + 20)
+                            ),
+                        engine.MousePosition.Y
+                            - (tooltipSize.Y + 5)
+                    );
+
+                new DrawCall(
+                    engine.GetTexture("blank"),
+                    new fbRectangle(
+                        tooltipPosition,
+                        tooltipSize
+                    ).Grow(4),
+                    -999,
+                    DefaultTheme.Background.Color
+                ).Draw(engine);
+
+                new TextCall(
+                    tooltip,
+                    engine.DefaultFont,
+                    tooltipPosition,
+                    -1000
+                ).Draw(engine);
+            }
+
             new TextCall(
                 string.Format(
                     "Hi, I am {0}<{1}>",
@@ -462,6 +504,13 @@ namespace Farbase
         public void UpdateUI()
         {
             BuildCard.Visible = SelectedStation != null;
+
+            tooltip = null;
+            foreach(Widget w in widgets)
+                if(w.IsHovered)
+                    if (w is ContainerWidget)
+                        tooltip = ((ContainerWidget)w).GetHovered().Tooltip;
+                    else tooltip = w.Tooltip;
         }
 
         public void HandleEvents()

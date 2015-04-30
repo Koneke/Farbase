@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 
 namespace Farbase
@@ -92,6 +91,7 @@ namespace Farbase
         public VAlignment VAlignment;
 
         private int borderWidth;
+        //private float backgroundAlpha
 
         private Theme theme;
         public Theme Theme {
@@ -102,6 +102,8 @@ namespace Farbase
         public int Depth {
             get { return Parent == null ? -1 : Parent.Depth + depth; }
         }
+
+        public string Tooltip;
 
         protected Widget(
             fbEngine engine,
@@ -323,6 +325,12 @@ namespace Farbase
             return this;
         }
 
+        public Widget SetTooltip(string tooltip)
+        {
+            Tooltip = tooltip;
+            return this;
+        }
+
         public virtual void OnClick() { }
     }
 
@@ -359,6 +367,20 @@ namespace Farbase
         {
             foreach(Widget c in Children)
                 if (c.IsHovered) c.OnClick();
+        }
+
+        public Widget GetHovered()
+        {
+            if (!IsHovered) return null;
+
+            foreach(Widget c in Children)
+                if (c.IsHovered)
+                {
+                    if (c is ContainerWidget)
+                        return ((ContainerWidget)c).GetHovered();
+                    return c;
+                }
+            return this;
         }
     }
 
