@@ -147,7 +147,7 @@ namespace Farbase
                         ),
                         new fbRectangle(fontSpot, Font.CharSize),
                         Depth,
-                        Color.White
+                        Coloring
                     )
                 );
             }

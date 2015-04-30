@@ -56,7 +56,8 @@ namespace Farbase
 
         private fbCamera Camera;
 
-        private List<Widget> widgets; 
+        private List<Widget> widgets;
+        public Theme DefaultTheme;
 
         public fbInterface(
             fbGame game,
@@ -67,25 +68,44 @@ namespace Farbase
             Camera = new fbCamera(engine);
             widgets = new List<Widget>();
 
+            DefaultTheme = new Theme(
+                new ColorSet(Color.White, Color.DarkGray, Color.Gray),
+                new ColorSet(Color.Black, Color.DarkGray, Color.DarkGray),
+                new ColorSet(Color.White, Color.White, Color.Gray)
+            );
+
             ListBox b =
                 (ListBox)
-                new ListBox(engine)
+                new ListBox(engine, this)
                     .Margins(40)
                     .Padding(10, 5)
                     .SetAlign(Alignment.Right)
+                    .SetTheme(DefaultTheme)
             ;
 
             b.AddChild(
-                new Button(engine, "test", null)
+                new Button(engine, this, "test", null)
                     .Margins(2)
                     .Padding(5)
                     .SetAlign(Alignment.Right)
+                    .SetTheme(DefaultTheme)
+                    .SetVisible(false)
             );
 
             b.AddChild(
-                new Button(engine, "saturnus", null)
+                new Button(engine, this, "lots of text", null)
                     .Margins(2)
                     .Padding(5)
+                    .SetAlign(Alignment.Right)
+                    .SetTheme(DefaultTheme)
+                    .SetDisabled(true)
+            );
+
+            b.AddChild(
+                new Button(engine, this, "saturnus", null)
+                    .Margins(2)
+                    .Padding(5)
+                    .SetTheme(DefaultTheme)
             );
 
             widgets.Add(b);
@@ -311,6 +331,8 @@ namespace Farbase
         {
             foreach (Widget w in widgets)
             {
+                if (!w.Visible) continue;
+
                 Vector2 position = new Vector2(0);
 
                 if(w.Alignment == Alignment.Right)

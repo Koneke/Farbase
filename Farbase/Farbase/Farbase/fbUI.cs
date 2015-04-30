@@ -6,16 +6,47 @@ namespace Farbase
 {
     public enum Alignment { Left, Right }
 
+    public class ColorSet
+    {
+        public Color Color, Hover, Disabled;
+
+        public ColorSet(Color c, Color h, Color d)
+        {
+            Color = c;
+            Hover = h;
+            Disabled = d;
+        }
+    }
+
+    public class Theme
+    {
+        public ColorSet Content;
+        public ColorSet Background;
+        public ColorSet Borders;
+
+        public Theme(
+            ColorSet cs,
+            ColorSet bgcs,
+            ColorSet bcs
+        ) {
+            Content = cs;
+            Background = bgcs;
+            Borders = bcs;
+        }
+    }
+
     public abstract class Widget
     {
+        protected fbInterface ui;
         protected fbEngine engine;
 
         public ContainerWidget Parent;
 
+        public bool Visible;
+        public bool Disabled; //for interactive widgets
+
         public int TopMargin, RightMargin, BottomMargin, LeftMargin;
         public int TopPadding, RightPadding, BottomPadding, LeftPadding;
-
-        public Alignment Alignment;
 
         public Vector2 MarginSize
         {
@@ -45,13 +76,23 @@ namespace Farbase
             get { return new Vector2(LeftPadding, TopPadding); }
         }
 
+        public Alignment Alignment;
+
+        private Theme theme;
+        public Theme Theme {
+            get { return theme ?? ui.DefaultTheme; }
+        }
+
         public int Depth;
 
         protected Widget(
             fbEngine engine,
+            fbInterface ui,
             int depth = -1
         ) {
             this.engine = engine;
+            this.ui = ui;
+            Visible = true;
             Depth = depth;
         }
 
@@ -133,6 +174,51 @@ namespace Farbase
                     .Contains(engine.MousePosition);
             }
         }
+
+        public Widget SetTheme(Theme cs)
+        {
+            theme = cs;
+            return this;
+        }
+
+        protected Color GetColor(bool ignoreHover = false)
+        {
+            if (Disabled) return Theme.Content.Disabled;
+
+            return IsHovered && !ignoreHover
+                ? theme.Content.Hover
+                : theme.Content.Color;
+        }
+
+        protected Color GetBackgroundColor(bool ignoreHover = false)
+        {
+            if (Disabled) return Theme.Background.Disabled;
+
+            return IsHovered && !ignoreHover
+                ? theme.Background.Hover
+                : theme.Background.Color;
+        }
+
+        protected Color GetBorderColor(bool ignoreHover = false)
+        {
+            if (Disabled) return Theme.Borders.Disabled;
+
+            return IsHovered && !ignoreHover
+                ? theme.Borders.Hover
+                : theme.Borders.Color;
+        }
+
+        public Widget SetVisible(bool visible)
+        {
+            Visible = visible;
+            return this;
+        }
+
+        public Widget SetDisabled(bool disabled)
+        {
+            Disabled = disabled;
+            return this;
+        }
     }
 
     public abstract class ContainerWidget : Widget
@@ -141,8 +227,9 @@ namespace Farbase
         protected List<Widget> children;
 
         protected ContainerWidget(
-            fbEngine engine
-        ) : base(engine) {
+            fbEngine engine,
+            fbInterface ui
+        ) : base(engine, ui) {
         }
 
         public List<Widget> GetChildren() { return children; }
@@ -162,8 +249,9 @@ namespace Farbase
     public class ListBox : ContainerWidget
     {
         public ListBox(
-            fbEngine engine
-        ) : base(engine) {
+            fbEngine engine,
+            fbInterface ui
+        ) : base(engine, ui) {
             children = new List<Widget>();
         }
 
@@ -172,6 +260,8 @@ namespace Farbase
             Vector2 size = new Vector2(0);
             foreach (Widget w in children)
             {
+                if (!w.Visible) continue;
+
                 Vector2 childSize = w.GetSize();
 
                 if (childSize.X > size.X)
@@ -200,7 +290,10 @@ namespace Farbase
             Vector2 position = ownPosition + TopLeftMargin + TopLeftPadding;
 
             for (int i = 0; i < childIndex; i++)
-                position.Y += children[i].GetSize().Y;
+            {
+                if(children[i].Visible)
+                    position.Y += children[i].GetSize().Y;
+            }
 
             if (child.Alignment == Alignment.Right)
                 position.X =
@@ -222,20 +315,21 @@ namespace Farbase
                 engine.GetTexture("blank"),
                 destination,
                 Depth,
-                Color.White
+                GetBorderColor(true)
             ).Draw(engine);
 
             new DrawCall(
                 engine.GetTexture("blank"),
                 destination.Shrink(2),
                 Depth,
-                Color.Black
+                GetBackgroundColor(true)
             ).Draw(engine);
 
             Vector2 position = destination.Position;
 
             foreach (Widget c in children)
             {
+                if (!c.Visible) continue;
                 c.Render(GetChildPosition(c));
                 position.Y += c.GetSize().Y;
             }
@@ -250,8 +344,10 @@ namespace Farbase
 
         public Button(
             fbEngine engine,
-            string label, Event reaction
-        ) : base(engine) {
+            fbInterface ui,
+            string label,
+            Event reaction
+        ) : base(engine, ui) {
             this.label = label;
             this.reaction = reaction;
         }
@@ -282,16 +378,14 @@ namespace Farbase
                 engine.GetTexture("blank"),
                 destination,
                 depth,
-                Color.White
+                GetBorderColor()
             ).Draw(engine);
 
             new DrawCall(
                 engine.GetTexture("blank"),
                 destination.Shrink(2),
                 depth - 1,
-                IsHovered
-                    ? Color.DarkGray
-                    : Color.Black
+                GetBackgroundColor()
             ).Draw(engine);
 
             new TextCall(
@@ -299,7 +393,8 @@ namespace Farbase
                 engine.DefaultFont,
                 destination.Position + GetSizeInternal() / 2
                     - engine.DefaultFont.Measure(label) / 2,
-                depth - 2
+                depth - 2,
+                GetColor()
             ).Draw(engine);
         }
     }
