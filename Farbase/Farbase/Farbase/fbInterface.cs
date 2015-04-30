@@ -90,32 +90,32 @@ namespace Farbase
                 (ListBox)
                 new ListBox(engine, this)
                     .Margins(40)
-                    .Padding(10, 10)
-                    .SetAlign(Alignment.Right)
+                    .Padding(10)
+                    .SetAlign(HAlignment.Right)
             ;
 
             b.AddChild(
                 new Label(" == testlabel == ", engine, this)
                     .Margins(2)
-                    .SetAlign(Alignment.Center)
+                    .SetAlign(HAlignment.Center)
             );
 
             b.AddChild(
-                new Button(engine, this, "alignment!")
+                new Button("alignment!", null, engine, this)
                     .Margins(2)
                     .Padding(5)
-                    .SetAlign(Alignment.Right)
+                    .SetAlign(HAlignment.Right)
             );
 
             b.AddChild(
-                new Button(engine, this, "greyed out")
+                new Button("greyed out", null, engine, this)
                     .Margins(2)
                     .Padding(5)
                     .SetDisabled(true)
             );
 
             b.AddChild(
-                new Button(engine, this, "lots and lots of text")
+                new Button("lots and lots of text", null, engine, this)
                     .Margins(2)
                     .Padding(5)
             );
@@ -124,12 +124,12 @@ namespace Farbase
                 new WidgetPair(
                     engine,
                     this,
-                    new Button(engine, this, "foo").Padding(5),
-                    new Button(engine, this, "bar").Padding(5),
+                    new Button("foo", null, engine, this).Padding(5),
+                    new Button("bar", null, engine, this).Padding(5),
                     7
                 )
                     .Margins(2)
-                    .SetAlign(Alignment.Center)
+                    .SetAlign(HAlignment.Center)
             );
 
             b.AddChild(
@@ -141,7 +141,7 @@ namespace Farbase
                     7
                 )
                     .Margins(2)
-                    .SetAlign(Alignment.Left)
+                    .SetAlign(HAlignment.Left)
             );
 
             b.AddChild(
@@ -153,10 +153,39 @@ namespace Farbase
                     7
                 )
                     .Margins(2)
-                    .SetAlign(Alignment.Left)
+                    .SetAlign(HAlignment.Left)
             );
 
             widgets.Add(b);
+
+            ListBox foo =
+                (ListBox)
+                new ListBox(engine, this)
+                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
+                    .Margins(40)
+                    .Padding(10)
+            ;
+
+            foo.AddChild(
+                new Label(" - Another label - ", engine, this)
+                    .SetAlign(HAlignment.Center)
+            );
+
+            foo.AddChild(
+                new Button(
+                    "I'm aligned to the bottom!",
+                    () => {
+                        game.Log.Add("foo!");
+                    },
+                    engine,
+                    this
+                )
+                    .Margins(2)
+                    .Padding(5)
+                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
+            );
+
+            widgets.Add(foo);
         }
 
         public void Select(Vector2i position)
@@ -589,7 +618,20 @@ namespace Farbase
                     );
                 }
 
+            //handled more gracefully in the future, hopefully...
+            bool passClickToWorld = true;
+
             if (engine.ButtonPressed(0))
+            {
+                foreach(Widget w in widgets)
+                    if (w.IsHovered)
+                    {
+                        w.OnClick();
+                        passClickToWorld = false;
+                    }
+            }
+
+            if (engine.ButtonPressed(0) && passClickToWorld)
             {
                 if (engine.Active && engine.MouseInside)
                 {
