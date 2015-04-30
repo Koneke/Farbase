@@ -63,8 +63,7 @@ namespace Farbase
             fbRectangle destination,
             int depth = 0,
             Color coloring = default(Color)
-        ) : this(texture, destination, null, depth, coloring)
-        { }
+        ) : this(texture, destination, null, depth, coloring) { }
 
         public DrawCall(
             Texture2D texture,
@@ -86,7 +85,7 @@ namespace Farbase
 
         public void Draw(fbEngine engine)
         {
-            throw new NotImplementedException();
+            engine.Draw(this);
         }
     }
 
@@ -188,6 +187,21 @@ namespace Farbase
             Position = new Vector2(x, y);
             Size = new Vector2(width, height);
         }
-    }
 
+        public fbRectangle Shrink(int amount)
+        {
+            return new fbRectangle(
+                Position + new Vector2(amount / 2f),
+                Size - new Vector2(amount)
+            );
+        }
+
+        public bool Contains(Vector2 mousePosition)
+        {
+            Vector2 relativePosition = (mousePosition - Position);
+            return
+                relativePosition.X > 0 && relativePosition.Y > 0 &&
+                relativePosition.X < Size.X && relativePosition.Y < Size.Y;
+        }
+    }
 }
