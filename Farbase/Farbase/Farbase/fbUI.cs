@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 
 namespace Farbase
@@ -44,7 +45,15 @@ namespace Farbase
         public ContainerWidget Parent;
 
         public bool Visible;
-        public bool Disabled; //for interactive widgets
+
+        public bool Disabled
+        {
+            get {
+                return condition != null && !condition();
+            }
+        }
+
+        public Func<bool> condition; 
 
         public abstract bool IsInteractive();
 
@@ -82,6 +91,8 @@ namespace Farbase
         public HAlignment HAlignment;
         public VAlignment VAlignment;
 
+        private int borderWidth;
+
         private Theme theme;
         public Theme Theme {
             get { return theme ?? ui.DefaultTheme; }
@@ -99,9 +110,9 @@ namespace Farbase
         ) {
             this.engine = engine;
             this.ui = ui;
-            Disabled = false;
             Visible = true;
             this.depth = depth;
+            borderWidth = 1;
         }
 
         public abstract Vector2 GetSize();
@@ -238,9 +249,9 @@ namespace Farbase
             return this;
         }
 
-        public Widget SetDisabled(bool disabled)
+        public Widget SetCondition(Func<bool> enabledCondition)
         {
-            Disabled = disabled;
+            condition = enabledCondition;
             return this;
         }
 
@@ -265,7 +276,7 @@ namespace Farbase
                 engine.GetTexture("blank"),
                 new fbRectangle(
                     GetScreenPosition() + TopLeftMargin,
-                    new Vector2(GetSizeInternal().X, 1)
+                    new Vector2(GetSizeInternal().X, borderWidth)
                 ),
                 Depth,
                 GetBorderColor()
@@ -276,8 +287,8 @@ namespace Farbase
                 new fbRectangle(
                     GetScreenPosition()
                         + TopLeftMargin
-                        + new Vector2(0, GetSizeInternal().Y - 1),
-                    new Vector2(GetSizeInternal().X, 1)
+                        + new Vector2(0, GetSizeInternal().Y - borderWidth),
+                    new Vector2(GetSizeInternal().X, borderWidth)
                 ),
                 Depth,
                 GetBorderColor()
@@ -287,7 +298,7 @@ namespace Farbase
                 engine.GetTexture("blank"),
                 new fbRectangle(
                     GetScreenPosition() + TopLeftMargin,
-                    new Vector2(1, GetSizeInternal().Y)
+                    new Vector2(borderWidth, GetSizeInternal().Y)
                 ),
                 Depth,
                 GetBorderColor()
@@ -298,12 +309,18 @@ namespace Farbase
                 new fbRectangle(
                     GetScreenPosition()
                         + TopLeftMargin
-                        + new Vector2(GetSizeInternal().X - 1, 0),
-                    new Vector2(1, GetSizeInternal().Y)
+                        + new Vector2(GetSizeInternal().X - borderWidth, 0),
+                    new Vector2(borderWidth, GetSizeInternal().Y)
                 ),
                 Depth,
                 GetBorderColor()
             ).Draw(engine);
+        }
+
+        public Widget SetBorder(int thickness)
+        {
+            borderWidth = thickness;
+            return this;
         }
 
         public virtual void OnClick() { }
@@ -313,29 +330,27 @@ namespace Farbase
     {
         public bool AutoSize;
         protected List<Widget> Children;
-        protected int ChildLimit;
 
         protected ContainerWidget(
             fbEngine engine,
             fbInterface ui
         ) : base(engine, ui) {
-            ChildLimit = -1;
             Children = new List<Widget>();
         }
 
         public List<Widget> GetChildren() { return Children; }
-        public void AddChild(Widget w)
+        public ContainerWidget AddChild(Widget w)
         {
-            if (Children.Count < ChildLimit || ChildLimit == -1)
-            {
-                w.Parent = this;
-                Children.Add(w);
-            }
-            else throw new Exception();
+            w.Parent = this;
+            Children.Add(w);
+
+            return this;
         }
-        public void RemoveChild(Widget w) {
+        public ContainerWidget RemoveChild(Widget w) {
             w.Parent = null;
             Children.Remove(w);
+
+            return this;
         }
 
         public abstract Vector2 GetChildPosition(Widget child);
@@ -515,20 +530,15 @@ namespace Farbase
         public override void OnClick() { }
     }
 
-    public class WidgetPair : ContainerWidget
+    public class SideBySideWidgets : ContainerWidget
     {
         private int internalPadding;
 
-        public WidgetPair(
+        public SideBySideWidgets(
             fbEngine engine,
             fbInterface ui,
-            Widget a = null,
-            Widget b = null,
             int internalPadding = 0
         ) : base(engine, ui) {
-            ChildLimit = 2;
-            if (a != null) AddChild(a);
-            if (b != null) AddChild(b);
             this.internalPadding = internalPadding;
         }
 
@@ -561,6 +571,9 @@ namespace Farbase
 
         public override void Render()
         {
+            DrawBorders();
+            DrawBackground();
+
             foreach (Widget c in Children)
                 if(c.Visible)
                     c.Render();
@@ -629,6 +642,44 @@ namespace Farbase
         public override void OnClick()
         {
             Checked = !Checked;
+        }
+    }
+
+    public class TextureButton : Button
+    {
+        private string texture;
+        private float scale;
+
+        public TextureButton(
+            string texture,
+            Action reaction,
+            fbEngine engine,
+            fbInterface ui,
+            float scale = 1f
+        ) : base("", reaction, engine, ui) {
+            this.texture = texture;
+            this.scale = scale;
+        }
+
+        public override Vector2 GetSizeInternal()
+        {
+            return engine.GetTextureSize(texture) * scale + PaddingSize;
+        }
+
+        public override void Render()
+        {
+            DrawBackground();
+            DrawBorders();
+
+            new DrawCall(
+                engine.GetTexture(texture),
+                new fbRectangle(
+                    GetScreenPosition() + TopLeftMargin + TopLeftPadding,
+                    engine.GetTextureSize(texture) * scale
+                ),
+                Depth,
+                Color.White
+            ).Draw(engine);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -9,6 +10,11 @@ namespace Farbase
     {
         private static Dictionary<string, UnitType> types =
             new Dictionary<string, UnitType>();
+
+        public static List<UnitType> UnitTypes
+        {
+            get { return types.Values.ToList(); }
+        }
 
         public static void RegisterType(string name, UnitType type)
         {

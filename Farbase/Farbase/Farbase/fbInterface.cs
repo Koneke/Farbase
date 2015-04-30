@@ -53,11 +53,21 @@ namespace Farbase
                 return SelectedTile.Unit;
             }
         }
+        private Station SelectedStation
+        {
+            get
+            {
+                if (selection == null) return null;
+                return SelectedTile.Station;
+            }
+        }
 
         private fbCamera Camera;
 
         private List<Widget> widgets;
         public Theme DefaultTheme;
+
+        private Widget BuildCard;
 
         public fbInterface(
             fbGame game,
@@ -86,6 +96,39 @@ namespace Farbase
                 )
             );
 
+            SetupUI();
+            //SetupTestUI();
+        }
+
+        public void SetupUI()
+        {
+            BuildCard =
+                new SideBySideWidgets(engine, this, 5)
+                    .Margins(40)
+                    .Padding(5)
+                    .SetAlign(HAlignment.Right, VAlignment.Bottom);
+
+            foreach (UnitType ut in UnitType.UnitTypes)
+                ((SideBySideWidgets)BuildCard)
+                    .AddChild(
+                        new TextureButton(
+                            ut.Name,
+                            () => TryBuildUnit(ut.Name),
+                            engine,
+                            this,
+                            2f
+                        )
+                            .Padding(2)
+                            .SetCondition(
+                                () => game.LocalPlayer.Money > ut.Cost
+                            )
+                    );
+
+            widgets.Add(BuildCard);
+        }
+
+        public void SetupTestUI()
+        {
             ListBox b =
                 (ListBox)
                 new ListBox(engine, this)
@@ -111,7 +154,7 @@ namespace Farbase
                 new Button("greyed out", null, engine, this)
                     .Margins(2)
                     .Padding(5)
-                    .SetDisabled(true)
+                    .SetCondition(() => false)
             );
 
             b.AddChild(
@@ -121,39 +164,30 @@ namespace Farbase
             );
 
             b.AddChild(
-                new WidgetPair(
-                    engine,
-                    this,
-                    new Button("foo", null, engine, this).Padding(5),
-                    new Button("bar", null, engine, this).Padding(5),
-                    7
-                )
+                new SideBySideWidgets(engine, this, 7)
+                    .AddChild(new Button("foo", null, engine, this).Padding(5))
+                    .AddChild(new Button("bar", null, engine, this).Padding(5))
                     .Margins(2)
                     .SetAlign(HAlignment.Center)
+                    .SetBorder(0)
             );
 
             b.AddChild(
-                new WidgetPair(
-                    engine,
-                    this,
-                    new CheckBox(engine, this).Padding(2),
-                    new Label("test", engine, this),
-                    7
-                )
+                new SideBySideWidgets(engine, this, 7)
+                    .AddChild(new CheckBox(engine, this).Padding(2))
+                    .AddChild(new Label("test", engine, this))
                     .Margins(2)
                     .SetAlign(HAlignment.Left)
+                    .SetBorder(0)
             );
 
             b.AddChild(
-                new WidgetPair(
-                    engine,
-                    this,
-                    new CheckBox(engine, this).Padding(2),
-                    new Label("some other option", engine, this),
-                    7
-                )
+                new SideBySideWidgets(engine, this, 7)
+                    .AddChild(new CheckBox(engine, this).Padding(2))
+                    .AddChild(new Label("some other option", engine, this))
                     .Margins(2)
                     .SetAlign(HAlignment.Left)
+                    .SetBorder(0)
             );
 
             widgets.Add(b);
@@ -419,8 +453,15 @@ namespace Farbase
             //no (important) interaction if we're waiting for data.
             if (!engine.NetClient.Ready) return;
 
+            UpdateUI();
+
             Input();
             HandleEvents();
+        }
+
+        public void UpdateUI()
+        {
+            BuildCard.Visible = SelectedStation != null;
         }
 
         public void HandleEvents()
@@ -667,6 +708,24 @@ namespace Farbase
                 return square;
 
             return null;
+        }
+
+        private void TryBuildUnit(string type)
+        {
+            if (
+                SelectedTile.Station != null &&
+                SelectedTile.Unit == null &&
+                fbGame.World.Players[game.We].Money >=
+                    UnitType.GetType(type).Cost
+            ) {
+                engine.NetClient.Send(
+                    new BuildUnitMessage(
+                        type,
+                        SelectedTile.Position.X,
+                        SelectedTile.Position.Y
+                    )
+                );
+            }
         }
     }
 

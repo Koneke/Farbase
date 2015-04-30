@@ -115,6 +115,15 @@ namespace Farbase
             get { return World.PlayerIDs[World.CurrentPlayerIndex] == We; }
         }
 
+        public Player LocalPlayer {
+            get
+            {
+                return We == -1
+                    ? null
+                    : World.Players[We];
+            }
+        }
+
         //client side of world
         public static fbWorld World;
 
