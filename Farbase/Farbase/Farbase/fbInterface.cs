@@ -506,11 +506,52 @@ namespace Farbase
             BuildCard.Visible = SelectedStation != null;
 
             tooltip = null;
+
             foreach(Widget w in widgets)
-                if(w.IsHovered)
-                    if (w is ContainerWidget)
-                        tooltip = ((ContainerWidget)w).GetHovered().Tooltip;
-                    else tooltip = w.Tooltip;
+                if (w.IsHovered)
+                    tooltip = w.GetHovered().Tooltip;
+
+            //no tooltip from widgets
+            if (tooltip == null)
+            {
+                Vector2? hoveredSquare = ScreenToGrid(engine.MousePosition);
+                if (hoveredSquare.HasValue)
+                {
+                    string unitTooltip = null;
+                    string stationTooltip = null;
+                    string planetTooltip = null;
+
+                    Tile t = fbGame.World.Map.At(hoveredSquare.Value);
+                    if (t.Unit != null)
+                        unitTooltip = string.Format(
+                            "{0} - {1}\n{2}/{3} moves\n{4}/{5} strength",
+                            t.Unit.UnitType.Name,
+                            fbGame.World.Players[t.Unit.Owner].Name,
+                            t.Unit.Moves,
+                            t.Unit.UnitType.Moves,
+                            t.Unit.Strength,
+                            t.Unit.UnitType.Strength
+                        );
+                    if (t.Station != null)
+                        stationTooltip = "station";
+                    if (t.Planet != null)
+                        planetTooltip = "planet";
+
+                    string[] tooltips =
+                        {
+                            unitTooltip,
+                            stationTooltip,
+                            planetTooltip
+                        };
+
+                    if(tooltips.Any(tt => tt != null))
+                        tooltip = 
+                            string.Join(
+                                "\n-\n",
+                                tooltips.Where(tt => tt != null)
+                            );
+                }
+            }
         }
 
         public void HandleEvents()

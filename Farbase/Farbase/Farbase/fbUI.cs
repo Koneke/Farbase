@@ -332,6 +332,11 @@ namespace Farbase
         }
 
         public virtual void OnClick() { }
+
+        public virtual Widget GetHovered()
+        {
+            return IsHovered ? this : null;
+        }
     }
 
     public abstract class ContainerWidget : Widget
@@ -369,17 +374,13 @@ namespace Farbase
                 if (c.IsHovered) c.OnClick();
         }
 
-        public Widget GetHovered()
+        public override Widget GetHovered()
         {
             if (!IsHovered) return null;
 
             foreach(Widget c in Children)
                 if (c.IsHovered)
-                {
-                    if (c is ContainerWidget)
-                        return ((ContainerWidget)c).GetHovered();
-                    return c;
-                }
+                    return c.GetHovered();
             return this;
         }
     }
