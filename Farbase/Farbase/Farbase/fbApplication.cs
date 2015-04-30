@@ -26,6 +26,7 @@ namespace Farbase
 
             Engine = new fbEngine(this);
 
+            //this shit needs to be moved...
             Engine.Textures = new Dictionary<string, Texture2D>();
             Engine.LoadTexture("grid", "gfx/@/grid.png");
             Engine.LoadTexture("background", "gfx/background-dark.jpg");
@@ -51,6 +52,8 @@ namespace Farbase
             Engine.LoadTexture("selection", "gfx/@/ui-selection.png");
 
             Engine.LoadTexture("blank", "gfx/@/blank.png");
+
+            Engine.LoadTexture("check", "gfx/@/ui-check.png");
 
             Engine.DefaultFont = new Font();
             Engine.DefaultFont.FontSheet = Engine.LoadTexture("font", "gfx/font.png");

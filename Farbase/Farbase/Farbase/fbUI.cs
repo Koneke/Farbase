@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
-    public enum Alignment { Left, Right }
+    public enum Alignment { Left, Right, Center }
 
     public class ColorSet
     {
@@ -45,6 +45,8 @@ namespace Farbase
         public bool Visible;
         public bool Disabled; //for interactive widgets
 
+        public abstract bool IsInteractive();
+
         public int TopMargin, RightMargin, BottomMargin, LeftMargin;
         public int TopPadding, RightPadding, BottomPadding, LeftPadding;
 
@@ -83,7 +85,10 @@ namespace Farbase
             get { return theme ?? ui.DefaultTheme; }
         }
 
-        public int Depth;
+        protected int depth;
+        public int Depth {
+            get { return Parent == null ? -1 : Parent.Depth + depth; }
+        }
 
         protected Widget(
             fbEngine engine,
@@ -92,13 +97,14 @@ namespace Farbase
         ) {
             this.engine = engine;
             this.ui = ui;
+            Disabled = false;
             Visible = true;
-            Depth = depth;
+            this.depth = depth;
         }
 
         public abstract Vector2 GetSize();
         public abstract Vector2 GetSizeInternal();
-        public abstract void Render(Vector2 position);
+        public abstract void Render();
 
         public Widget Margins(int t, int r, int b, int l)
         {
@@ -114,7 +120,7 @@ namespace Farbase
             return Margins(amount, amount, amount, amount);
         }
 
-        public Widget Margins(int hamount, int vamount)
+        public Widget Margins(int vamount, int hamount)
         {
             return Margins(vamount, hamount, vamount, hamount);
         }
@@ -156,6 +162,10 @@ namespace Farbase
 
                 if(Alignment == Alignment.Right)
                     ownPosition.X = (engine.GetSize() - GetSize()).X;
+
+                else if (Alignment == Alignment.Center)
+                    ownPosition.X =
+                        (engine.GetSize() / 2f - GetSize() / 2f).X;
             }
 
             return ownPosition;
@@ -181,31 +191,31 @@ namespace Farbase
             return this;
         }
 
-        protected Color GetColor(bool ignoreHover = false)
+        protected Color GetColor()
         {
             if (Disabled) return Theme.Content.Disabled;
 
-            return IsHovered && !ignoreHover
-                ? theme.Content.Hover
-                : theme.Content.Color;
+            return IsHovered && IsInteractive()
+                ? Theme.Content.Hover
+                : Theme.Content.Color;
         }
 
-        protected Color GetBackgroundColor(bool ignoreHover = false)
+        protected Color GetBackgroundColor()
         {
             if (Disabled) return Theme.Background.Disabled;
 
-            return IsHovered && !ignoreHover
-                ? theme.Background.Hover
-                : theme.Background.Color;
+            return IsHovered && IsInteractive()
+                ? Theme.Background.Hover
+                : Theme.Background.Color;
         }
 
-        protected Color GetBorderColor(bool ignoreHover = false)
+        protected Color GetBorderColor()
         {
             if (Disabled) return Theme.Borders.Disabled;
 
-            return IsHovered && !ignoreHover
-                ? theme.Borders.Hover
-                : theme.Borders.Color;
+            return IsHovered && IsInteractive()
+                ? Theme.Borders.Hover
+                : Theme.Borders.Color;
         }
 
         public Widget SetVisible(bool visible)
@@ -219,28 +229,97 @@ namespace Farbase
             Disabled = disabled;
             return this;
         }
+
+        public void DrawBackground()
+        {
+            new DrawCall(
+                engine.GetTexture("blank"),
+                new fbRectangle(
+                    GetScreenPosition() + TopLeftMargin,
+                    GetSizeInternal()
+                    ),
+                Depth + 1,
+                GetBackgroundColor()
+            ).Draw(engine);
+        }
+
+        public void DrawBorders()
+        {
+            //we can probably clean this stuff up a bit...
+
+            new DrawCall(
+                engine.GetTexture("blank"),
+                new fbRectangle(
+                    GetScreenPosition() + TopLeftMargin,
+                    new Vector2(GetSizeInternal().X, 1)
+                ),
+                Depth,
+                GetBorderColor()
+            ).Draw(engine);
+
+            new DrawCall(
+                engine.GetTexture("blank"),
+                new fbRectangle(
+                    GetScreenPosition()
+                        + TopLeftMargin
+                        + new Vector2(0, GetSizeInternal().Y - 1),
+                    new Vector2(GetSizeInternal().X, 1)
+                ),
+                Depth,
+                GetBorderColor()
+            ).Draw(engine);
+
+            new DrawCall(
+                engine.GetTexture("blank"),
+                new fbRectangle(
+                    GetScreenPosition() + TopLeftMargin,
+                    new Vector2(1, GetSizeInternal().Y)
+                ),
+                Depth,
+                GetBorderColor()
+            ).Draw(engine);
+
+            new DrawCall(
+                engine.GetTexture("blank"),
+                new fbRectangle(
+                    GetScreenPosition()
+                        + TopLeftMargin
+                        + new Vector2(GetSizeInternal().X - 1, 0),
+                    new Vector2(1, GetSizeInternal().Y)
+                ),
+                Depth,
+                GetBorderColor()
+            ).Draw(engine);
+        }
     }
 
     public abstract class ContainerWidget : Widget
     {
         public bool AutoSize;
-        protected List<Widget> children;
+        protected List<Widget> Children;
+        protected int ChildLimit;
 
         protected ContainerWidget(
             fbEngine engine,
             fbInterface ui
         ) : base(engine, ui) {
+            ChildLimit = -1;
+            Children = new List<Widget>();
         }
 
-        public List<Widget> GetChildren() { return children; }
+        public List<Widget> GetChildren() { return Children; }
         public void AddChild(Widget w)
         {
-            w.Parent = this;
-            children.Add(w);
+            if (Children.Count < ChildLimit || ChildLimit == -1)
+            {
+                w.Parent = this;
+                Children.Add(w);
+            }
+            else throw new Exception();
         }
         public void RemoveChild(Widget w) {
             w.Parent = null;
-            children.Remove(w);
+            Children.Remove(w);
         }
 
         public abstract Vector2 GetChildPosition(Widget child);
@@ -252,13 +331,14 @@ namespace Farbase
             fbEngine engine,
             fbInterface ui
         ) : base(engine, ui) {
-            children = new List<Widget>();
         }
+
+        public override bool IsInteractive() { return false; }
 
         public override Vector2 GetSizeInternal()
         {
             Vector2 size = new Vector2(0);
-            foreach (Widget w in children)
+            foreach (Widget w in Children)
             {
                 if (!w.Visible) continue;
 
@@ -280,77 +360,61 @@ namespace Farbase
 
         public override Vector2 GetChildPosition(Widget child)
         {
-            if (!children.Contains(child))
+            if (!Children.Contains(child))
                 throw new ArgumentException();
 
-            int childIndex = children.IndexOf(child);
+            int childIndex = Children.IndexOf(child);
 
-            Vector2 ownPosition = GetScreenPosition();
-
-            Vector2 position = ownPosition + TopLeftMargin + TopLeftPadding;
+            Vector2 position =
+                GetScreenPosition() + TopLeftMargin + TopLeftPadding;
 
             for (int i = 0; i < childIndex; i++)
-            {
-                if(children[i].Visible)
-                    position.Y += children[i].GetSize().Y;
-            }
+                if(Children[i].Visible)
+                    position.Y += Children[i].GetSize().Y;
 
             if (child.Alignment == Alignment.Right)
+            {
                 position.X =
-                    (ownPosition + GetSize() - child.GetSize()).X
-                    - (RightPadding + RightMargin);
+                    (GetScreenPosition() + GetSize() - child.GetSize()).X
+                        - (RightPadding + RightMargin);
+            }
+
+            else if (child.Alignment == Alignment.Center)
+            {
+                position.X =
+                    (GetScreenPosition() +
+                        (GetSize() / 2f - child.GetSize() / 2f)).X;
+            }
 
             return position;
         }
 
-        public override void Render(Vector2 Position)
+        public override void Render()
         {
-            fbRectangle destination = new fbRectangle
-            (
-                Position + new Vector2(LeftMargin, TopMargin),
-                GetSizeInternal()
-            );
+            DrawBackground();
+            DrawBorders();
 
-            new DrawCall(
-                engine.GetTexture("blank"),
-                destination,
-                Depth,
-                GetBorderColor(true)
-            ).Draw(engine);
-
-            new DrawCall(
-                engine.GetTexture("blank"),
-                destination.Shrink(2),
-                Depth,
-                GetBackgroundColor(true)
-            ).Draw(engine);
-
-            Vector2 position = destination.Position;
-
-            foreach (Widget c in children)
+            foreach (Widget c in Children)
             {
                 if (!c.Visible) continue;
-                c.Render(GetChildPosition(c));
-                position.Y += c.GetSize().Y;
+                c.Render();
             }
         }
     }
 
     public class Button : Widget
     {
-        //the event that will be generated when the button is pressed?
         private string label;
-        private Event reaction;
 
         public Button(
             fbEngine engine,
             fbInterface ui,
-            string label,
-            Event reaction
+            string label
         ) : base(engine, ui) {
             this.label = label;
-            this.reaction = reaction;
         }
+
+        public override bool IsInteractive() { return true; }
 
         public override Vector2 GetSizeInternal()
         {
@@ -362,40 +426,171 @@ namespace Farbase
             return GetSizeInternal() + MarginSize;
         }
 
-        public override void Render(Vector2 Position)
+        public override void Render()
         {
-            int depth = Parent == null
-                ? Depth
-                : Parent.Depth - 1;
-
-            fbRectangle destination =
-                new fbRectangle(
-                    Position + TopLeftMargin,
-                    GetSizeInternal()
-                );
-
-            new DrawCall(
-                engine.GetTexture("blank"),
-                destination,
-                depth,
-                GetBorderColor()
-            ).Draw(engine);
-
-            new DrawCall(
-                engine.GetTexture("blank"),
-                destination.Shrink(2),
-                depth - 1,
-                GetBackgroundColor()
-            ).Draw(engine);
-
             new TextCall(
                 label,
                 engine.DefaultFont,
-                destination.Position + GetSizeInternal() / 2
-                    - engine.DefaultFont.Measure(label) / 2,
-                depth - 2,
+                GetScreenPosition() + GetSizeInternal() / 2
+                    - engine.DefaultFont.Measure(label) / 2
+                    + new Vector2(1, 0),
+                Depth,
                 GetColor()
             ).Draw(engine);
+
+            DrawBackground();
+            DrawBorders();
+        }
+    }
+
+    public class Label : Widget
+    {
+        private string content;
+
+        public Label(
+            string text,
+            fbEngine engine,
+            fbInterface ui,
+            int depth = -1
+        ) : base(engine, ui, depth) {
+            content = text;
+        }
+
+        public override bool IsInteractive() { return false; }
+
+        public override Vector2 GetSizeInternal()
+        {
+            return engine.DefaultFont.Measure(content) + PaddingSize;
+        }
+
+        public override Vector2 GetSize()
+        {
+            return GetSizeInternal() + MarginSize;
+        }
+
+        public override void Render()
+        {
+            new TextCall(
+                content,
+                engine.DefaultFont,
+                GetScreenPosition() + GetSizeInternal() / 2
+                    - engine.DefaultFont.Measure(content) / 2
+                    + new Vector2(1, -1),
+                Depth,
+                GetColor()
+            ).Draw(engine);
+        }
+    }
+
+    public class WidgetPair : ContainerWidget
+    {
+        private int internalPadding;
+
+        public WidgetPair(
+            fbEngine engine,
+            fbInterface ui,
+            Widget a = null,
+            Widget b = null,
+            int internalPadding = 0
+        ) : base(engine, ui) {
+            ChildLimit = 2;
+            if (a != null) AddChild(a);
+            if (b != null) AddChild(b);
+            this.internalPadding = internalPadding;
+        }
+
+        public override bool IsInteractive() { return false; }
+
+        public override Vector2 GetSizeInternal()
+        {
+            Vector2 size = new Vector2(0);
+
+            foreach (Widget c in Children)
+            {
+                Vector2 childSize = c.GetSize();
+
+                size.X += childSize.X;
+
+                if (childSize.Y > size.Y)
+                    size.Y = childSize.Y;
+            }
+
+            //no padding if only one child
+            size.X += internalPadding * (Children.Count - 1);
+
+            return size + PaddingSize;
+        }
+
+        public override Vector2 GetSize()
+        {
+            return GetSizeInternal() + MarginSize;
+        }
+
+        public override void Render()
+        {
+            foreach (Widget c in Children)
+                if(c.Visible)
+                    c.Render();
+        }
+
+        public override Vector2 GetChildPosition(Widget child)
+        {
+            int childIndex = Children.IndexOf(child);
+            Vector2 position = GetScreenPosition()
+                + TopLeftMargin + TopLeftPadding;
+
+            for (int i = 0; i < childIndex; i++)
+                position.X += Children[i].GetSize().X + internalPadding;
+
+            //center vertically
+            position.Y +=
+                GetSizeInternal().Y / 2 - child.GetSize().Y / 2
+                - TopPadding ;
+
+            return position;
+        }
+    }
+
+    public class CheckBox : Widget
+    {
+        public bool Checked;
+
+        public CheckBox(
+            fbEngine engine,
+            fbInterface ui,
+            int depth = -1
+        ) : base(engine, ui, depth) {
+        }
+
+        public override bool IsInteractive() { return true; }
+
+        public override Vector2 GetSizeInternal()
+        {
+            return engine.GetTextureSize("check") + PaddingSize;
+        }
+
+        public override Vector2 GetSize()
+        {
+            return GetSizeInternal() + MarginSize;
+        }
+
+        public override void Render()
+        {
+            DrawBorders();
+            DrawBackground();
+
+            if(Checked)
+                new DrawCall(
+                    engine.GetTexture("check"),
+                    new fbRectangle(
+                        GetScreenPosition()
+                            + TopLeftPadding
+                            + TopLeftMargin,
+                        engine.GetTextureSize("check")
+                    ),
+                    Depth,
+                    GetColor()
+                ).Draw(engine);
         }
     }
 }

@@ -69,43 +69,91 @@ namespace Farbase
             widgets = new List<Widget>();
 
             DefaultTheme = new Theme(
-                new ColorSet(Color.White, Color.DarkGray, Color.Gray),
-                new ColorSet(Color.Black, Color.DarkGray, Color.DarkGray),
-                new ColorSet(Color.White, Color.White, Color.Gray)
+                new ColorSet(
+                    Color.White,
+                    Color.White,
+                    Color.Gray
+                ),
+                new ColorSet(
+                    new Color(0, 0, 0, 0.6f),
+                    Color.DarkGray * 0.9f,
+                    Color.DarkGray * 0.7f
+                ),
+                new ColorSet(
+                    Color.White * 0.8f,
+                    Color.White * 0.8f,
+                    Color.White * 0.8f
+                )
             );
 
             ListBox b =
                 (ListBox)
                 new ListBox(engine, this)
                     .Margins(40)
-                    .Padding(10, 5)
+                    .Padding(10, 10)
                     .SetAlign(Alignment.Right)
-                    .SetTheme(DefaultTheme)
             ;
 
             b.AddChild(
-                new Button(engine, this, "test", null)
+                new Label(" == testlabel == ", engine, this)
                     .Margins(2)
-                    .Padding(5)
-                    .SetAlign(Alignment.Right)
-                    .SetTheme(DefaultTheme)
-                    .SetVisible(false)
+                    .SetAlign(Alignment.Center)
             );
 
             b.AddChild(
-                new Button(engine, this, "lots of text", null)
+                new Button(engine, this, "alignment!")
                     .Margins(2)
                     .Padding(5)
                     .SetAlign(Alignment.Right)
-                    .SetTheme(DefaultTheme)
+            );
+
+            b.AddChild(
+                new Button(engine, this, "greyed out")
+                    .Margins(2)
+                    .Padding(5)
                     .SetDisabled(true)
             );
 
             b.AddChild(
-                new Button(engine, this, "saturnus", null)
+                new Button(engine, this, "lots and lots of text")
                     .Margins(2)
                     .Padding(5)
-                    .SetTheme(DefaultTheme)
+            );
+
+            b.AddChild(
+                new WidgetPair(
+                    engine,
+                    this,
+                    new Button(engine, this, "foo").Padding(5),
+                    new Button(engine, this, "bar").Padding(5),
+                    7
+                )
+                    .Margins(2)
+                    .SetAlign(Alignment.Center)
+            );
+
+            b.AddChild(
+                new WidgetPair(
+                    engine,
+                    this,
+                    new CheckBox(engine, this).Padding(2),
+                    new Label("test", engine, this),
+                    7
+                )
+                    .Margins(2)
+                    .SetAlign(Alignment.Left)
+            );
+
+            b.AddChild(
+                new WidgetPair(
+                    engine,
+                    this,
+                    new CheckBox(engine, this).Padding(2),
+                    new Label("some other option", engine, this),
+                    7
+                )
+                    .Margins(2)
+                    .SetAlign(Alignment.Left)
             );
 
             widgets.Add(b);
@@ -330,16 +378,8 @@ namespace Farbase
         private void DrawWidgets()
         {
             foreach (Widget w in widgets)
-            {
-                if (!w.Visible) continue;
-
-                Vector2 position = new Vector2(0);
-
-                if(w.Alignment == Alignment.Right)
-                    position.X = (engine.GetSize() - w.GetSize()).X;
-
-                w.Render(position);
-            }
+                if (w.Visible)
+                    w.Render();
         }
 
         public void Update()
