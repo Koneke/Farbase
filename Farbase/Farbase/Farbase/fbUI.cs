@@ -4,7 +4,8 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
-    public enum Alignment { Left, Right, Center }
+    public enum HAlignment { Left, Right, Center }
+    public enum VAlignment { Top, Bottom, Center }
 
     public class ColorSet
     {
@@ -78,7 +79,8 @@ namespace Farbase
             get { return new Vector2(LeftPadding, TopPadding); }
         }
 
-        public Alignment Alignment;
+        public HAlignment HAlignment;
+        public VAlignment VAlignment;
 
         private Theme theme;
         public Theme Theme {
@@ -144,9 +146,16 @@ namespace Farbase
             return Padding(vamount, hamount, vamount, hamount);
         }
 
-        public Widget SetAlign(Alignment a)
+        public Widget SetAlign(HAlignment a)
         {
-            Alignment = a;
+            HAlignment = a;
+            return this;
+        }
+
+        public Widget SetAlign(HAlignment ha, VAlignment va)
+        {
+            HAlignment = ha;
+            VAlignment = va;
             return this;
         }
 
@@ -160,12 +169,17 @@ namespace Farbase
             {
                 ownPosition = new Vector2(0);
 
-                if(Alignment == Alignment.Right)
+                if(HAlignment == HAlignment.Right)
                     ownPosition.X = (engine.GetSize() - GetSize()).X;
-
-                else if (Alignment == Alignment.Center)
+                else if (HAlignment == HAlignment.Center)
                     ownPosition.X =
                         (engine.GetSize() / 2f - GetSize() / 2f).X;
+
+                if(VAlignment == VAlignment.Bottom)
+                    ownPosition.Y = (engine.GetSize() - GetSize()).Y;
+                else if (VAlignment == VAlignment.Center)
+                    ownPosition.Y =
+                        (engine.GetSize() / 2f - GetSize() / 2f).Y;
             }
 
             return ownPosition;
@@ -291,6 +305,8 @@ namespace Farbase
                 GetBorderColor()
             ).Draw(engine);
         }
+
+        public virtual void OnClick() { }
     }
 
     public abstract class ContainerWidget : Widget
@@ -323,6 +339,12 @@ namespace Farbase
         }
 
         public abstract Vector2 GetChildPosition(Widget child);
+
+        public override void OnClick()
+        {
+            foreach(Widget c in Children)
+                if (c.IsHovered) c.OnClick();
+        }
     }
 
     public class ListBox : ContainerWidget
@@ -372,14 +394,14 @@ namespace Farbase
                 if(Children[i].Visible)
                     position.Y += Children[i].GetSize().Y;
 
-            if (child.Alignment == Alignment.Right)
+            if (child.HAlignment == HAlignment.Right)
             {
                 position.X =
                     (GetScreenPosition() + GetSize() - child.GetSize()).X
                         - (RightPadding + RightMargin);
             }
 
-            else if (child.Alignment == Alignment.Center)
+            else if (child.HAlignment == HAlignment.Center)
             {
                 position.X =
                     (GetScreenPosition() +
@@ -405,13 +427,16 @@ namespace Farbase
     public class Button : Widget
     {
         private string label;
+        private Action reaction;
 
         public Button(
+            string label,
+            Action reaction,
             fbEngine engine,
-            fbInterface ui,
-            string label
+            fbInterface ui
         ) : base(engine, ui) {
             this.label = label;
+            this.reaction = reaction;
         }
 
         public override bool IsInteractive() { return true; }
@@ -433,13 +458,19 @@ namespace Farbase
                 engine.DefaultFont,
                 GetScreenPosition() + GetSizeInternal() / 2
                     - engine.DefaultFont.Measure(label) / 2
-                    + new Vector2(1, 0),
+                    + TopLeftMargin,
                 Depth,
                 GetColor()
             ).Draw(engine);
 
             DrawBackground();
             DrawBorders();
+        }
+
+        public override void OnClick()
+        {
+            if (reaction == null) return;
+            reaction();
         }
     }
 
@@ -480,6 +511,8 @@ namespace Farbase
                 GetColor()
             ).Draw(engine);
         }
+
+        public override void OnClick() { }
     }
 
     public class WidgetPair : ContainerWidget
@@ -591,6 +624,11 @@ namespace Farbase
                     Depth,
                     GetColor()
                 ).Draw(engine);
+        }
+
+        public override void OnClick()
+        {
+            Checked = !Checked;
         }
     }
 }
