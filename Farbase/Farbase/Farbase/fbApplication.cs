@@ -50,12 +50,14 @@ namespace Farbase
 
             Engine.LoadTexture("selection", "gfx/@/ui-selection.png");
 
+            Engine.LoadTexture("blank", "gfx/@/blank.png");
+
             Engine.DefaultFont = new Font();
             Engine.DefaultFont.FontSheet = Engine.LoadTexture("font", "gfx/font.png");
             Engine.DefaultFont.CharSize = new Vector2(8);
             
-            Game = new fbGame(this);
-            UI = new fbInterface(this);
+            Game = new fbGame(Engine);
+            UI = new fbInterface(Game, Engine);
 
             Engine.StartNetClient();
         }

@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
+using System.Collections.Generic;
 
 namespace Farbase
 {
@@ -106,24 +106,23 @@ namespace Farbase
 
     public class fbGame
     {
-        private fbApplication app;
-
-        private fbEngine engine { get { return app.Engine; } }
+        private fbEngine engine;
 
         //our ID
         public int We = -1;
 
         public bool OurTurn {
             get { return World.PlayerIDs[World.CurrentPlayerIndex] == We; }
-        }
+        }
+
         //client side of world
         public static fbWorld World;
 
         public List<string> Log;
 
-        public fbGame(fbApplication app)
+        public fbGame(fbEngine engine)
         {
-            this.app = app;
+            this.engine = engine;
             Unit.Game = this;
             fbNetClient.Game = this;
             Initialize();

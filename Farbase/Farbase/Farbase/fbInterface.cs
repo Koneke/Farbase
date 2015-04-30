@@ -23,41 +23,21 @@ namespace Farbase
         public Vector2i GetSelection()
         {
             return new Vector2i(
-                (int)selected.Position.X,
-                (int)selected.Position.Y
+                selected.Position.X,
+                selected.Position.Y
             );
         }
     }
 
-    /*public class UnitSelection : ISelection
-    {
-        private Unit selected;
-
-        public UnitSelection(Unit u)
-        {
-            selected = u;
-        }
-
-        public Vector2i GetSelection()
-        {
-            return new Vector2i(
-                (int)selected.Position.X,
-                (int)selected.Position.Y
-            );
-        }
-    }*/
-
     public class fbInterface
     {
-        private fbApplication app;
-
-        private fbGame game { get { return app.Game; } }
-        private fbEngine engine { get { return app.Engine; } }
+        private fbGame game;
+        private fbEngine engine;
 
         private const int tileSize = 16;
 
         private ISelection selection;
-        public Tile SelectedTile
+        private Tile SelectedTile
         {
             get
             {
@@ -65,7 +45,7 @@ namespace Farbase
                 return fbGame.World.Map.At(selection.GetSelection());
             }
         }
-        public Unit SelectedUnit
+        private Unit SelectedUnit
         {
             get
             {
@@ -74,20 +54,46 @@ namespace Farbase
             }
         }
 
-        public fbCamera Camera;
+        private fbCamera Camera;
 
-        public fbInterface(fbApplication app)
-        {
-            this.app = app;
-            Camera = new fbCamera(app);
+        private List<Widget> widgets; 
+
+        public fbInterface(
+            fbGame game,
+            fbEngine engine
+        ) {
+            this.game = game;
+            this.engine = engine;
+            Camera = new fbCamera(engine);
+            widgets = new List<Widget>();
+
+            ListBox b =
+                (ListBox)
+                new ListBox(engine)
+                    .Margins(40)
+                    .Padding(10, 5)
+                    .SetAlign(Alignment.Right)
+            ;
+
+            b.AddChild(
+                new Button(engine, "test", null)
+                    .Margins(2)
+                    .Padding(5)
+                    .SetAlign(Alignment.Right)
+            );
+
+            b.AddChild(
+                new Button(engine, "saturnus", null)
+                    .Margins(2)
+                    .Padding(5)
+            );
+
+            widgets.Add(b);
         }
 
         public void Select(Vector2i position)
         {
             Tile t = fbGame.World.Map.At(position);
-            /*if(t.Unit != null)
-                selection = new UnitSelection(t.Unit);
-            else*/
             selection = new TileSelection(t);
         }
 
@@ -99,6 +105,8 @@ namespace Farbase
 
             DrawMap();
             DrawUI();
+
+            DrawWidgets();
         }
 
         private void DrawBackground()
@@ -296,6 +304,19 @@ namespace Farbase
                     engine.DefaultFont,
                     position
                 ).RightAlign().Draw(engine);
+            }
+        }
+
+        private void DrawWidgets()
+        {
+            foreach (Widget w in widgets)
+            {
+                Vector2 position = new Vector2(0);
+
+                if(w.Alignment == Alignment.Right)
+                    position.X = (engine.GetSize() - w.GetSize()).X;
+
+                w.Render(position);
             }
         }
 
@@ -505,18 +526,6 @@ namespace Farbase
                         )
                     );
                 }
-            /*if (
-                    SelectedStation != null &&
-                    SelectedUnit == null &&
-                    CurrentPlayer.Money >= 45
-                ) {
-                    SpawnUnit(
-                        UnitType.GetType("scout"),
-                        CurrentPlayer,
-                        Selection.Position
-                    );
-                    CurrentPlayer.Money -= 45;
-                }*/
 
             if (engine.ButtonPressed(0))
             {
@@ -560,12 +569,11 @@ namespace Farbase
     public class fbCamera
     {
         public fbRectangle Camera;
-        private fbApplication app;
-        private fbEngine engine { get { return app.Engine; } }
+        private fbEngine engine;
 
-        public fbCamera(fbApplication app)
+        public fbCamera(fbEngine engine)
         {
-            this.app = app;
+            this.engine = engine;
             Camera = new fbRectangle(
                 Vector2.Zero,
                 engine.GetSize()
