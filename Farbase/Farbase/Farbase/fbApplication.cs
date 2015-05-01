@@ -55,6 +55,8 @@ namespace Farbase
 
             Engine.LoadTexture("check", "gfx/@/ui-check.png");
 
+            Engine.LoadTexture("empty-portrait", "gfx/portrait.png");
+
             Engine.DefaultFont = new Font();
             Engine.DefaultFont.FontSheet = Engine.LoadTexture("font", "gfx/font.png");
             Engine.DefaultFont.CharSize = new Vector2(8);

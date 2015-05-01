@@ -31,8 +31,8 @@ namespace Farbase
 
     public class fbInterface
     {
-        private fbGame game;
-        private fbEngine engine;
+        public fbGame Game;
+        public fbEngine Engine;
 
         private const int tileSize = 16;
 
@@ -75,8 +75,8 @@ namespace Farbase
             fbGame game,
             fbEngine engine
         ) {
-            this.game = game;
-            this.engine = engine;
+            Game = game;
+            Engine = engine;
             Camera = new fbCamera(engine);
             widgets = new List<Widget>();
 
@@ -100,12 +100,28 @@ namespace Farbase
 
             SetupUI();
             //SetupTestUI();
+
+            game.RegisterProperty(
+                "current-player-name",
+                new Property<string>("")
+            );
         }
 
         public void SetupUI()
         {
+            widgets.Add(
+                new SideBySideWidgets(Engine, this, 5)
+                    .AddChild(
+                        new Image("empty-portrait", Engine, this)
+                        //automatically check the current player property
+                        .SetTooltip("@current-player-name")
+                    )
+                    .Padding(10)
+                    .Margins(40)
+            );
+
             BuildCard =
-                new SideBySideWidgets(engine, this, 5)
+                new SideBySideWidgets(Engine, this, 5)
                     .Margins(40)
                     .Padding(5)
                     .SetAlign(HAlignment.Right, VAlignment.Bottom);
@@ -118,13 +134,13 @@ namespace Farbase
                         new TextureButton(
                             ut.Name,
                             () => TryBuildUnit(unitType.Name),
-                            engine,
+                            Engine,
                             this,
                             2f
                         )
                         .Padding(2)
                         .SetCondition(
-                            () => game.LocalPlayer.Money > unitType.Cost
+                            () => Game.LocalPlayer.Money > unitType.Cost
                         )
                         .SetTooltip("Build " + ut.Name)
                     );
@@ -137,20 +153,20 @@ namespace Farbase
         {
             ListBox b =
                 (ListBox)
-                new ListBox(engine, this)
+                new ListBox(Engine, this)
                     .Margins(40)
                     .Padding(10)
                     .SetAlign(HAlignment.Right)
             ;
 
             b.AddChild(
-                new Label(" == test\nlabel == ", engine, this)
+                new Label(" == test\nlabel == ", Engine, this)
                     .Margins(2)
                     .SetAlign(HAlignment.Center)
             );
 
             b.AddChild(
-                new Button("alignment!", null, engine, this)
+                new Button("alignment!", null, Engine, this)
                     .Margins(2)
                     .Padding(5)
                     .SetAlign(HAlignment.Right)
@@ -160,40 +176,40 @@ namespace Farbase
             );
 
             b.AddChild(
-                new Button("greyed out", null, engine, this)
+                new Button("greyed out", null, Engine, this)
                     .Margins(2)
                     .Padding(5)
                     .SetCondition(() => false)
             );
 
             b.AddChild(
-                new Button("lots and lots of text", null, engine, this)
+                new Button("lots and lots of text", null, Engine, this)
                     .Margins(2)
                     .Padding(5)
             );
 
             b.AddChild(
-                new SideBySideWidgets(engine, this, 7)
-                    .AddChild(new Button("foo", null, engine, this).Padding(5))
-                    .AddChild(new Button("bar", null, engine, this).Padding(5))
+                new SideBySideWidgets(Engine, this, 7)
+                    .AddChild(new Button("foo", null, Engine, this).Padding(5))
+                    .AddChild(new Button("bar", null, Engine, this).Padding(5))
                     .Margins(2)
                     .SetAlign(HAlignment.Center)
                     .SetBorder(0)
             );
 
             b.AddChild(
-                new SideBySideWidgets(engine, this, 7)
-                    .AddChild(new CheckBox(engine, this).Padding(2))
-                    .AddChild(new Label("test", engine, this))
+                new SideBySideWidgets(Engine, this, 7)
+                    .AddChild(new CheckBox(Engine, this).Padding(2))
+                    .AddChild(new Label("test", Engine, this))
                     .Margins(2)
                     .SetAlign(HAlignment.Left)
                     .SetBorder(0)
             );
 
             b.AddChild(
-                new SideBySideWidgets(engine, this, 7)
-                    .AddChild(new CheckBox(engine, this).Padding(2))
-                    .AddChild(new Label("some other option", engine, this))
+                new SideBySideWidgets(Engine, this, 7)
+                    .AddChild(new CheckBox(Engine, this).Padding(2))
+                    .AddChild(new Label("some other option", Engine, this))
                     .Margins(2)
                     .SetAlign(HAlignment.Left)
                     .SetBorder(0)
@@ -203,14 +219,14 @@ namespace Farbase
 
             ListBox foo =
                 (ListBox)
-                new ListBox(engine, this)
+                new ListBox(Engine, this)
                     .SetAlign(HAlignment.Right, VAlignment.Bottom)
                     .Margins(40)
                     .Padding(10)
             ;
 
             foo.AddChild(
-                new Label(" - Another label - ", engine, this)
+                new Label(" - Another label - ", Engine, this)
                     .SetAlign(HAlignment.Center)
             );
 
@@ -218,9 +234,9 @@ namespace Farbase
                 new Button(
                     "I'm aligned to the bottom!",
                     () => {
-                        game.Log.Add("foo!");
+                        Game.Log.Add("foo!");
                     },
-                    engine,
+                    Engine,
                     this
                 )
                     .Margins(2)
@@ -252,12 +268,12 @@ namespace Farbase
         private void DrawBackground()
         {
             Vector2 position =
-                -engine.GetTextureSize("background") / 2f +
-                engine.GetSize() / 2f;
+                -Engine.GetTextureSize("background") / 2f +
+                Engine.GetSize() / 2f;
             position -= Camera.Camera.Position / 10f;
 
-            engine.Draw(
-                engine.GetTexture("background"),
+            Engine.Draw(
+                Engine.GetTexture("background"),
                 new fbRectangle(position, new Vector2(-1)),
                 new Color(0.3f, 0.3f, 0.3f),
                 1000
@@ -269,8 +285,8 @@ namespace Farbase
             for (int x = 0; x < fbGame.World.Map.Width; x++)
             for (int y = 0; y < fbGame.World.Map.Height; y++)
             {
-                engine.Draw(
-                    engine.GetTexture("grid"),
+                Engine.Draw(
+                    Engine.GetTexture("grid"),
                     Camera.WorldToScreen(
                         new fbRectangle(
                             new Vector2(x, y) * tileSize,
@@ -296,20 +312,20 @@ namespace Farbase
 
             if (t.Station != null)
             {
-                engine.Draw(
+                Engine.Draw(
                     t.Unit == null
-                    ? engine.GetTexture("station")
-                    : engine.GetTexture("station-bg"),
+                    ? Engine.GetTexture("station")
+                    : Engine.GetTexture("station-bg"),
                     destination
                 );
             }
 
             if (t.Planet != null)
             {
-                engine.Draw(
+                Engine.Draw(
                     t.Unit == null
-                    ? engine.GetTexture("planet")
-                    : engine.GetTexture("planet-bg"),
+                    ? Engine.GetTexture("planet")
+                    : Engine.GetTexture("planet-bg"),
                     destination
                 );
             }
@@ -321,8 +337,8 @@ namespace Farbase
                 (SelectedUnit != null && t.Unit == SelectedUnit) ||
                 (SelectedTile == t && t.Station != null)
             )
-                engine.Draw(
-                    engine.GetTexture("selection"),
+                Engine.Draw(
+                    Engine.GetTexture("selection"),
                     destination
                 );
         }
@@ -337,7 +353,7 @@ namespace Farbase
                     )
                 );
 
-            engine.Draw(
+            Engine.Draw(
                 u.UnitType.Texture,
                 destination,
                 fbGame.World.Players[u.Owner].Color
@@ -345,10 +361,10 @@ namespace Farbase
 
             for (int i = 0; i < u.Moves; i++)
             {
-                Vector2 dingySize = engine.GetTextureSize("move-dingy");
+                Vector2 dingySize = Engine.GetTextureSize("move-dingy");
 
-                engine.Draw(
-                    engine.GetTexture("move-dingy"),
+                Engine.Draw(
+                    Engine.GetTexture("move-dingy"),
                     Camera.WorldToScreen(
                         new fbRectangle(
                             u.Position * tileSize
@@ -361,10 +377,10 @@ namespace Farbase
 
             for (int i = 0; i < u.Strength; i++)
             {
-                Vector2 dingySize = engine.GetTextureSize("strength-dingy");
+                Vector2 dingySize = Engine.GetTextureSize("strength-dingy");
 
-                engine.Draw(
-                    engine.GetTexture("strength-dingy"),
+                Engine.Draw(
+                    Engine.GetTexture("strength-dingy"),
                     Camera.WorldToScreen(
                         new fbRectangle(
                             u.Position * tileSize + new Vector2(0, tileSize)
@@ -388,46 +404,46 @@ namespace Farbase
         {
             if (tooltip != null)
             {
-                Vector2 tooltipSize = engine.DefaultFont.Measure(tooltip);
+                Vector2 tooltipSize = Engine.DefaultFont.Measure(tooltip);
 
                 Vector2 tooltipPosition =
                     new Vector2(
-                        engine.MousePosition.X
+                        Engine.MousePosition.X
                             .Clamp(
                                 20,
-                                engine.GetSize().X - (tooltipSize.X + 20)
+                                Engine.GetSize().X - (tooltipSize.X + 20)
                             ),
-                        engine.MousePosition.Y
+                        Engine.MousePosition.Y
                             - (tooltipSize.Y + 5)
                     );
 
                 new DrawCall(
-                    engine.GetTexture("blank"),
+                    Engine.GetTexture("blank"),
                     new fbRectangle(
                         tooltipPosition,
                         tooltipSize
                     ).Grow(4),
                     -999,
                     DefaultTheme.Background.Color
-                ).Draw(engine);
+                ).Draw(Engine);
 
                 new TextCall(
                     tooltip,
-                    engine.DefaultFont,
+                    Engine.DefaultFont,
                     tooltipPosition,
                     -1000
-                ).Draw(engine);
+                ).Draw(Engine);
             }
 
             new TextCall(
                 string.Format(
                     "Hi, I am {0}<{1}>",
-                    fbGame.World.Players[game.We].Name,
-                    game.We
+                    fbGame.World.Players[Game.We].Name,
+                    Game.We
                 ),
-                engine.DefaultFont,
+                Engine.DefaultFont,
                 new Vector2(10)
-            ).Draw(engine);
+            ).Draw(Engine);
 
             if (fbGame.World.PlayerIDs.Count > 0)
             {
@@ -440,43 +456,43 @@ namespace Farbase
                         current.Name,
                         current.ID
                     ),
-                    engine.DefaultFont,
+                    Engine.DefaultFont,
                     new Vector2(10, 20)
-                ).Draw(engine);
+                ).Draw(Engine);
             }
 
             List<string> logTail;
-            lock (game.Log)
+            lock (Game.Log)
             {
-                logTail = game.Log
-                    .Skip(Math.Max(0, game.Log.Count - 10))
+                logTail = Game.Log
+                    .Skip(Math.Max(0, Game.Log.Count - 10))
                     .ToList();
             }
             logTail.Reverse();
 
-            Vector2 position = new Vector2(10, engine.GetSize().Y - 10);
+            Vector2 position = new Vector2(10, Engine.GetSize().Y - 10);
             foreach (string message in logTail)
             {
-                position -= new Vector2(0, engine.DefaultFont.CharSize.Y + 1);
+                position -= new Vector2(0, Engine.DefaultFont.CharSize.Y + 1);
 
                 new TextCall(
                     message,
-                    engine.DefaultFont,
+                    Engine.DefaultFont,
                     position
-                ).Draw(engine);
+                ).Draw(Engine);
             }
 
-            position = new Vector2(engine.GetSize().X - 10, 0);
+            position = new Vector2(Engine.GetSize().X - 10, 0);
             foreach (int id in fbGame.World.PlayerIDs)
             {
-                position += new Vector2(0, engine.DefaultFont.CharSize.Y + 1);
+                position += new Vector2(0, Engine.DefaultFont.CharSize.Y + 1);
                 Player p = fbGame.World.Players[id];
 
                 new TextCall(
                     p.Name + ": "+ p.Money + "$",
-                    engine.DefaultFont,
+                    Engine.DefaultFont,
                     position
-                ).RightAlign().Draw(engine);
+                ).RightAlign().Draw(Engine);
             }
         }
 
@@ -489,11 +505,11 @@ namespace Farbase
 
         public void Update()
         {
-            if (engine.KeyPressed(Keys.Escape)) engine.Exit();
+            if (Engine.KeyPressed(Keys.Escape)) Engine.Exit();
             Camera.Update();
 
             //no (important) interaction if we're waiting for data.
-            if (!engine.NetClient.Ready) return;
+            if (!Engine.NetClient.Ready) return;
 
             UpdateUI();
 
@@ -514,7 +530,7 @@ namespace Farbase
             //no tooltip from widgets
             if (tooltip == null)
             {
-                Vector2? hoveredSquare = ScreenToGrid(engine.MousePosition);
+                Vector2? hoveredSquare = ScreenToGrid(Engine.MousePosition);
                 if (hoveredSquare.HasValue)
                 {
                     string unitTooltip = null;
@@ -561,10 +577,10 @@ namespace Farbase
             //we're doing it like this because the game should NOT need
             //a reference to the interface
 
-            foreach (Event e in engine.Peek(NameEvent.EventType))
+            foreach (Event e in Engine.Peek(NameEvent.EventType))
             {
                 NameEvent ne = (NameEvent)e;
-                game.Log.Add(
+                Game.Log.Add(
                     string.Format(
                         "{0}<{2}> is now known as {1}<{2}>.",
                         fbGame.World.Players[ne.ID].Name,
@@ -574,7 +590,7 @@ namespace Farbase
                 );
             }
 
-            foreach (Event e in engine.Peek(UnitMoveEvent.EventType))
+            foreach (Event e in Engine.Peek(UnitMoveEvent.EventType))
             {
                 if (SelectedUnit == null) break;
 
@@ -591,22 +607,22 @@ namespace Farbase
 
         public void Input()
         {
-            if (engine.KeyPressed(Keys.Enter))
+            if (Engine.KeyPressed(Keys.Enter))
             {
-                if (game.OurTurn)
+                if (Game.OurTurn)
                 {
-                    engine.NetClient.Send(new PassMessage());
+                    Engine.NetClient.Send(new PassMessage());
                 }
                 else
-                    game.Log.Add("Not your turn!");
+                    Game.Log.Add("Not your turn!");
             }
 
-            if (engine.KeyPressed(Keys.Space))
+            if (Engine.KeyPressed(Keys.Space))
             {
-                engine.NetClient.ShouldDie = true;
+                Engine.NetClient.ShouldDie = true;
             }
 
-            if (engine.KeyPressed(Keys.G))
+            if (Engine.KeyPressed(Keys.G))
             {
                 List<string> names =
                     new List<string>
@@ -622,44 +638,44 @@ namespace Farbase
                         Color.CornflowerBlue
                     };
 
-                engine.NetClient.Send(
-                    new NameMessage(game.We, names[game.We], colors[game.We])
+                Engine.NetClient.Send(
+                    new NameMessage(Game.We, names[Game.We], colors[Game.We])
                 );
             }
 
-            if (engine.KeyPressed(Keys.H))
+            if (Engine.KeyPressed(Keys.H))
             {
-                if (game.OurTurn)
+                if (Game.OurTurn)
                 {
-                    engine.NetClient.Send(
+                    Engine.NetClient.Send(
                         new DevCommandMessage(0)
                     );
                 }
             }
 
             if (
-                game.OurTurn &&
+                Game.OurTurn &&
                 SelectedUnit != null &&
                 SelectedUnit.Owner == fbGame.World.CurrentPlayer.ID
             ) {
                 Vector2 moveOrder = Vector2.Zero;
 
-                if (engine.KeyPressed(Keys.NumPad2))
+                if (Engine.KeyPressed(Keys.NumPad2))
                     moveOrder = new Vector2(0, 1);
-                if (engine.KeyPressed(Keys.NumPad4))
+                if (Engine.KeyPressed(Keys.NumPad4))
                     moveOrder = new Vector2(-1, 0);
-                if (engine.KeyPressed(Keys.NumPad8))
+                if (Engine.KeyPressed(Keys.NumPad8))
                     moveOrder = new Vector2(0, -1);
-                if (engine.KeyPressed(Keys.NumPad6))
+                if (Engine.KeyPressed(Keys.NumPad6))
                     moveOrder = new Vector2(1, 0);
 
-                if (engine.KeyPressed(Keys.NumPad1))
+                if (Engine.KeyPressed(Keys.NumPad1))
                     moveOrder = new Vector2(-1, 1);
-                if (engine.KeyPressed(Keys.NumPad7))
+                if (Engine.KeyPressed(Keys.NumPad7))
                     moveOrder = new Vector2(-1, -1);
-                if (engine.KeyPressed(Keys.NumPad9))
+                if (Engine.KeyPressed(Keys.NumPad9))
                     moveOrder = new Vector2(1, -1);
-                if (engine.KeyPressed(Keys.NumPad3))
+                if (Engine.KeyPressed(Keys.NumPad3))
                     moveOrder = new Vector2(1, 1);
 
                 if (moveOrder != Vector2.Zero && SelectedUnit.Moves > 0)
@@ -671,11 +687,11 @@ namespace Farbase
                         int x = (int)(u.Position + moveOrder).X;
                         int y = (int)(u.Position + moveOrder).Y;
 
-                        engine.NetClient.Send(new MoveUnitMessage(u.ID, x, y));
+                        Engine.NetClient.Send(new MoveUnitMessage(u.ID, x, y));
 
                         u.Moves -= 1;
                         //u.MoveTo(x, y);
-                        engine.QueueEvent(new UnitMoveEvent(u.ID, x, y));
+                        Engine.QueueEvent(new UnitMoveEvent(u.ID, x, y));
                     }
                     else if (u.CanAttack(u.Position + moveOrder))
                     {
@@ -685,7 +701,7 @@ namespace Farbase
                             (int)targettile.Y
                         ).Unit;
 
-                        engine.NetClient.Send(
+                        Engine.NetClient.Send(
                             new AttackMessage(u.ID, target.ID)
                         );
                     }
@@ -733,14 +749,14 @@ namespace Farbase
                     CurrentPlayer.Money -= 25;
                 }*/
 
-            if (engine.KeyPressed(Keys.B))
+            if (Engine.KeyPressed(Keys.B))
                 if (
                     SelectedTile.Station != null &&
                     SelectedTile.Unit == null &&
-                    fbGame.World.Players[game.We].Money >=
+                    fbGame.World.Players[Game.We].Money >=
                         UnitType.GetType("scout").Cost
                 ) {
-                    engine.NetClient.Send(
+                    Engine.NetClient.Send(
                         new BuildUnitMessage(
                             "scout",
                             SelectedTile.Position.X,
@@ -752,7 +768,7 @@ namespace Farbase
             //handled more gracefully in the future, hopefully...
             bool passClickToWorld = true;
 
-            if (engine.ButtonPressed(0))
+            if (Engine.ButtonPressed(0))
             {
                 foreach(Widget w in widgets)
                     if (w.IsHovered)
@@ -762,11 +778,11 @@ namespace Farbase
                     }
             }
 
-            if (engine.ButtonPressed(0) && passClickToWorld)
+            if (Engine.ButtonPressed(0) && passClickToWorld)
             {
-                if (engine.Active && engine.MouseInside)
+                if (Engine.Active && Engine.MouseInside)
                 {
-                    Vector2? square = ScreenToGrid(engine.MousePosition);
+                    Vector2? square = ScreenToGrid(Engine.MousePosition);
 
                     //null means we clicked on the screen, but outside the grid.
                     if (square != null)
@@ -805,10 +821,10 @@ namespace Farbase
             if (
                 SelectedTile.Station != null &&
                 SelectedTile.Unit == null &&
-                fbGame.World.Players[game.We].Money >=
+                fbGame.World.Players[Game.We].Money >=
                     UnitType.GetType(type).Cost
             ) {
-                engine.NetClient.Send(
+                Engine.NetClient.Send(
                     new BuildUnitMessage(
                         type,
                         SelectedTile.Position.X,

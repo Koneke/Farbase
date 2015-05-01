@@ -36,6 +36,59 @@ namespace Farbase
         }
     }
 
+    public class SmartText
+    {
+        public string Text;
+
+        //we need a reference to the ui so
+        //we can access the properties in fbGame
+        private fbInterface ui;
+
+        public SmartText(
+            string text, fbInterface ui
+        ) {
+            Text = text;
+            this.ui = ui;
+        }
+
+        public override string ToString()
+        {
+            string result = Text;
+
+            //while we still have properties to replace...
+            while (result.IndexOf('@') != -1)
+            {
+                //properties go from @ to first non-alpha, non-dash character
+                int start = result.IndexOf('@');
+                int end = start + 1;
+                while (
+                    end < result.Length &&
+                    (result[end].IsLetter() || result[end] == '-')
+                ) end++;
+
+                //from start to end, removing the @
+                string prop =
+                    result.Substring(
+                         1 + start,
+                        -1 + end - start
+                    );
+
+                //insert property value
+                result = result.Replace(
+                    prop,
+                    ui.Game.GetProperty(prop)
+                        .GetValue()
+                        .ToString()
+                );
+
+                //remove remaining @ from string
+                result = result.Remove(start, 1);
+            }
+
+            return result;
+        }
+    }
+
     public abstract class Widget
     {
         protected fbInterface ui;
@@ -103,7 +156,16 @@ namespace Farbase
             get { return Parent == null ? -1 : Parent.Depth + depth; }
         }
 
-        public string Tooltip;
+        private SmartText tooltip;
+
+        public string Tooltip
+        {
+            get
+            {
+                if (tooltip == null) return null;
+                return tooltip.ToString();
+            }
+        }
 
         protected Widget(
             fbEngine engine,
@@ -325,9 +387,9 @@ namespace Farbase
             return this;
         }
 
-        public Widget SetTooltip(string tooltip)
+        public Widget SetTooltip(string tip)
         {
-            Tooltip = tooltip;
+            tooltip = new SmartText(tip, ui);
             return this;
         }
 
@@ -665,6 +727,53 @@ namespace Farbase
         public override void OnClick()
         {
             Checked = !Checked;
+        }
+    }
+
+    public class Image : Widget
+    {
+        private string texture;
+        private float scale;
+
+        public Image(
+            string texture,
+            fbEngine engine,
+            fbInterface ui,
+            float scale = 1f
+        ) : base(engine, ui) {
+            this.texture = texture;
+            this.scale = scale;
+        }
+
+        public override bool IsInteractive()
+        {
+            return false;
+        }
+
+        public override Vector2 GetSizeInternal()
+        {
+            return engine.GetTextureSize(texture) * scale + PaddingSize;
+        }
+
+        public override Vector2 GetSize()
+        {
+            return GetSizeInternal() + MarginSize;
+        }
+
+        public override void Render()
+        {
+            DrawBackground();
+            DrawBorders();
+
+            new DrawCall(
+                engine.GetTexture(texture),
+                new fbRectangle(
+                    GetScreenPosition() + TopLeftMargin + TopLeftPadding,
+                    engine.GetTextureSize(texture) * scale
+                ),
+                Depth,
+                Color.White
+            ).Draw(engine);
         }
     }
 

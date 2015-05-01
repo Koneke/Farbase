@@ -104,9 +104,58 @@ namespace Farbase
             { get { return fbGame.World.Map.At(Position); } }
     }
 
+    public interface Property
+    {
+        object GetValue();
+        void SetValue(object o);
+    }
+
+    public class Property<T> : Property
+    {
+        private T value;
+
+        public Property(T val)
+        {
+            value = val;
+        }
+
+        object Property.GetValue() { return GetValue(); }
+        private T GetValue() { return value; }
+
+        void Property.SetValue(object o)
+        {
+            //SetValue((T)(o ?? default(T)));
+            SetValue((T)o);
+        }
+        public void SetValue(T val)
+        {
+            if (!value.Equals(val))
+            {
+                //report to subscribers?
+                //since we know the value is new and not just the same one
+                //set again.
+                value = val;
+            }
+        }
+    }
+
     public class fbGame
     {
         private fbEngine engine;
+
+        private Dictionary<string, Property> properties;
+
+        public Property GetProperty(string name)
+        {
+            if(properties.ContainsKey(name.ToLower()))
+                return properties[name.ToLower()];
+            return null;
+        }
+
+        public void RegisterProperty(string name, Property property)
+        {
+            properties.Add(name.ToLower(), property);
+        }
 
         //our ID
         public int We = -1;
@@ -140,6 +189,7 @@ namespace Farbase
         public void Initialize()
         {
             engine.SetSize(1280, 720);
+            properties = new Dictionary<string, Property>();
 
             Log = new List<string>();
 
@@ -166,6 +216,14 @@ namespace Farbase
 
             foreach (Event e in engine.Poll(UnitMoveEvent.EventType))
                 HandleEvent((UnitMoveEvent)e);
+
+            //have yet to get map data from server
+            //this is a pretty clumpsy way of doing shit, but it
+            //works for the time being
+            if (World == null) return;
+
+            GetProperty("current-player-name")
+                .SetValue(World.CurrentPlayer.Name);
         }
 
         public void HandleEvent(NameEvent ne)
