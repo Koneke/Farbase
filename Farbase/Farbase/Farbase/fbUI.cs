@@ -61,25 +61,48 @@ namespace Farbase
                 //properties go from @ to first non-alpha, non-dash character
                 int start = result.IndexOf('@');
                 int end = start + 1;
+                bool indexing = false;
                 while (
                     end < result.Length &&
-                    (result[end].IsLetter() || result[end] == '-')
-                ) end++;
+                    (
+                        result[end].IsLetter() ||
+                        result[end] == '-' ||
+                        (result[end].IsNumber() && indexing) ||
+                        result[end] == ':'
+                    )
+                ) {
+                    if (result[end] == ':') indexing = true;
+                    end++;
+                }
 
                 //from start to end, removing the @
-                string prop =
+                string propertyString =
                     result.Substring(
                          1 + start,
                         -1 + end - start
                     );
 
-                //insert property value
-                result = result.Replace(
-                    prop,
-                    ui.Game.GetProperty(prop)
-                        .GetValue()
-                        .ToString()
-                );
+                string propertyName = propertyString;
+
+                int index = -1;
+                if (indexing)
+                {
+                    index = Int32.Parse(propertyString.Split(':')[1]);
+                    propertyName = propertyString.Split(':')[0];
+                }
+
+                object propValue;
+
+                if (!indexing)
+                    propValue = ui.Game.GetProperty(propertyName).GetValue();
+                else
+                    propValue = ui.Game.GetProperty(propertyName).At(index);
+
+
+                if (propValue == null) propValue = "undefined";
+                else propValue = propValue.ToString();
+
+                result = result.Replace(propertyString, (string)propValue);
 
                 //remove remaining @ from string
                 result = result.Remove(start, 1);
@@ -526,7 +549,7 @@ namespace Farbase
 
     public class Button : Widget
     {
-        private string label;
+        private SmartText label;
         private Action reaction;
 
         public Button(
@@ -535,7 +558,7 @@ namespace Farbase
             fbEngine engine,
             fbInterface ui
         ) : base(engine, ui) {
-            this.label = label;
+            this.label = new SmartText(label, ui);
             this.reaction = reaction;
         }
 
@@ -543,7 +566,8 @@ namespace Farbase
 
         public override Vector2 GetSizeInternal()
         {
-            return engine.DefaultFont.Measure(label) + PaddingSize;
+            return engine.DefaultFont.Measure(label.ToString())
+                + PaddingSize;
         }
 
         public override Vector2 GetSize()
@@ -554,10 +578,10 @@ namespace Farbase
         public override void Render()
         {
             new TextCall(
-                label,
+                label.ToString(),
                 engine.DefaultFont,
                 GetScreenPosition() + GetSizeInternal() / 2
-                    - engine.DefaultFont.Measure(label) / 2
+                    - engine.DefaultFont.Measure(label.ToString()) / 2
                     + TopLeftMargin,
                 Depth,
                 GetColor()
@@ -576,7 +600,7 @@ namespace Farbase
 
     public class Label : Widget
     {
-        private string content;
+        private SmartText content;
 
         public Label(
             string text,
@@ -584,14 +608,15 @@ namespace Farbase
             fbInterface ui,
             int depth = -1
         ) : base(engine, ui, depth) {
-            content = text;
+            content = new SmartText(text, ui);
         }
 
         public override bool IsInteractive() { return false; }
 
         public override Vector2 GetSizeInternal()
         {
-            return engine.DefaultFont.Measure(content) + PaddingSize;
+            return engine.DefaultFont.Measure(content.ToString())
+                + PaddingSize;
         }
 
         public override Vector2 GetSize()
@@ -602,11 +627,11 @@ namespace Farbase
         public override void Render()
         {
             new TextCall(
-                content,
+                content.ToString(),
                 engine.DefaultFont,
                 GetScreenPosition() + GetSizeInternal() / 2
-                    - engine.DefaultFont.Measure(content) / 2
-                    + new Vector2(1, -1),
+                    - engine.DefaultFont.Measure(content.ToString()) / 2
+                    + TopLeftMargin,
                 Depth,
                 GetColor()
             ).Draw(engine);

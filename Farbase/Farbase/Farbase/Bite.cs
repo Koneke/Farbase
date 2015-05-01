@@ -42,6 +42,11 @@ namespace Farbase
         {
             return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
         }
+
+        public static bool IsNumber(this char c)
+        {
+            return (c >= '0' && c <= '9');
+        }
     }
 
     public class Vector2i

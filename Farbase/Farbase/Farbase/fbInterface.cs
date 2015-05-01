@@ -99,11 +99,41 @@ namespace Farbase
             );
 
             SetupUI();
-            //SetupTestUI();
+            SetupTestUI();
 
             game.RegisterProperty(
                 "current-player-name",
                 new Property<string>("")
+            );
+
+            game.RegisterProperty(
+                "local-player-name",
+                new Property<string>("")
+            );
+
+            game.RegisterProperty(
+                "current-player-money",
+                new Property<int>(0)
+            );
+
+            game.RegisterProperty(
+                "local-player-money",
+                new Property<int>(0)
+            );
+
+            game.RegisterProperty(
+                "current-player-id",
+                new Property<int>(0)
+            );
+
+            game.RegisterProperty(
+                "local-player-id",
+                new Property<int>(0)
+            );
+
+            game.RegisterProperty(
+                "player-names",
+                new ListProperty<string>(new List<string>())
             );
         }
 
@@ -117,7 +147,7 @@ namespace Farbase
                         .SetTooltip("@current-player-name")
                     )
                     .Padding(10)
-                    .Margins(40)
+                    .Margins(60, 40)
             );
 
             BuildCard =
@@ -147,6 +177,30 @@ namespace Farbase
             }
 
             widgets.Add(BuildCard);
+
+            ListBox turnInfo =
+                (ListBox)
+                new ListBox(Engine, this)
+                    .Margins(20)
+                    .Padding(10);
+
+            turnInfo.AddChild(
+                new Label(
+                    "Current player: @current-player-name<@current-player-id>",
+                    Engine,
+                    this
+                )
+            );
+
+            turnInfo.AddChild(
+                new Label(
+                    "Player 0: @player-names:0",
+                    Engine,
+                    this
+                )
+            );
+
+            widgets.Add(turnInfo);
         }
 
         public void SetupTestUI()
@@ -432,32 +486,6 @@ namespace Farbase
                     Engine.DefaultFont,
                     tooltipPosition,
                     -1000
-                ).Draw(Engine);
-            }
-
-            new TextCall(
-                string.Format(
-                    "Hi, I am {0}<{1}>",
-                    fbGame.World.Players[Game.We].Name,
-                    Game.We
-                ),
-                Engine.DefaultFont,
-                new Vector2(10)
-            ).Draw(Engine);
-
-            if (fbGame.World.PlayerIDs.Count > 0)
-            {
-                Player current = fbGame.World.Players
-                    [fbGame.World.PlayerIDs[fbGame.World.CurrentPlayerIndex]];
-
-                new TextCall(
-                    string.Format(
-                        "Current player: {0}<{1}>",
-                        current.Name,
-                        current.ID
-                    ),
-                    Engine.DefaultFont,
-                    new Vector2(10, 20)
                 ).Draw(Engine);
             }
 

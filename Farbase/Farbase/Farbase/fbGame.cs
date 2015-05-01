@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Linq;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 
 namespace Farbase
@@ -108,11 +110,12 @@ namespace Farbase
     {
         object GetValue();
         void SetValue(object o);
+        object At(int index);
     }
 
     public class Property<T> : Property
     {
-        private T value;
+        protected T value;
 
         public Property(T val)
         {
@@ -124,7 +127,6 @@ namespace Farbase
 
         void Property.SetValue(object o)
         {
-            //SetValue((T)(o ?? default(T)));
             SetValue((T)o);
         }
         public void SetValue(T val)
@@ -136,6 +138,27 @@ namespace Farbase
                 //set again.
                 value = val;
             }
+        }
+
+        //this is not very beautiful
+        //but it makes us able to use indexed properties in a nice way.
+        //could probably make this just return its normal value?
+        //although we might actually *want* to crash if you try to index
+        //a non-indexable...
+        public virtual object At(int index)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    public class ListProperty<T> : Property<List<T>> 
+    {
+        public ListProperty(List<T> val) : base(val) { }
+
+        public override object At(int index)
+        {
+            if (index >= value.Count) return null;
+            return value[index];
         }
     }
 
@@ -222,8 +245,30 @@ namespace Farbase
             //works for the time being
             if (World == null) return;
 
+            GetProperty("player-names")
+                .SetValue(
+                    World.PlayerIDs
+                        .Select(id => World.Players[id].Name)
+                        .ToList()
+                );
+
             GetProperty("current-player-name")
                 .SetValue(World.CurrentPlayer.Name);
+
+            GetProperty("local-player-name")
+                .SetValue(LocalPlayer.Name);
+
+            GetProperty("current-player-money")
+                .SetValue(World.CurrentPlayer.Money);
+
+            GetProperty("local-player-money")
+                .SetValue(LocalPlayer.Money);
+
+            GetProperty("current-player-id")
+                .SetValue(World.CurrentPlayer.ID);
+
+            GetProperty("local-player-id")
+                .SetValue(LocalPlayer.ID);
         }
 
         public void HandleEvent(NameEvent ne)
