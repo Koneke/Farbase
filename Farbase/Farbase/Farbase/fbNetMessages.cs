@@ -175,32 +175,178 @@ namespace Farbase
         nm_string
     }
 
+    public enum NM3MessageType
+    {
+        message,
+        create_world,
+        create_station,
+        create_planet,
+        move_unit,
+        set_unit_moves,
+        new_player,
+        assign_id,
+        name_player,
+        current_player,
+        client_ready,
+        client_unready,
+        pass_turn,
+        attack,
+        hurt,
+        build_unit,
+        player_set_money,
+        player_set_diplo,
+        station_set_loyalty,
+        station_buy_loyalty,
+
+        dev_command,
+    }
+
     public class NM3Sig
     {
-        private static Dictionary<string, NM3Sig> sigs =
-            new Dictionary<string, NM3Sig>();
+        private static Dictionary<NM3MessageType, NM3Sig> sigs =
+            new Dictionary<NM3MessageType, NM3Sig>();
 
         public static NM3Sig Get(string command) {
-            return sigs[command.ToLower()];
+            return sigs[FromString(command)];
         }
 
-        public readonly string Command;
+        public static NM3Sig Get(NM3MessageType command) {
+            return sigs[command];
+        }
+
+        private static Dictionary<string, NM3MessageType> fromString
+            = new Dictionary<string, NM3MessageType>();
+
+        private static Dictionary<NM3MessageType, string> toString
+            = new Dictionary<NM3MessageType, string>();
+
+        private static void registerTypeName(
+            string name,
+            NM3MessageType type
+        ) {
+            fromString.Add(name, type);
+            toString.Add(type, name);
+        }
+
+        private static void setup()
+        {
+            fromString = new Dictionary<string, NM3MessageType>();
+            toString = new Dictionary<NM3MessageType, string>();
+
+            registerTypeName(
+                "message",
+                NM3MessageType.message
+            );
+            registerTypeName(
+                "create-world",
+                NM3MessageType.create_world
+            );
+            registerTypeName(
+                "create-station",
+                NM3MessageType.create_station
+            );
+            registerTypeName(
+                "create-planet",
+                NM3MessageType.create_planet
+            );
+            registerTypeName(
+                "move-unit",
+                NM3MessageType.move_unit
+            );
+            registerTypeName(
+                "set-unit-moves",
+                NM3MessageType.set_unit_moves
+            );
+            registerTypeName(
+                "new-player",
+                NM3MessageType.new_player
+            );
+            registerTypeName(
+                "current-player",
+                NM3MessageType.current_player
+            );
+            registerTypeName(
+                "ready",
+                NM3MessageType.client_ready
+            );
+            registerTypeName(
+                "unready",
+                NM3MessageType.client_unready
+            );
+            registerTypeName(
+                "pass",
+                NM3MessageType.pass_turn
+            );
+            registerTypeName(
+                "attack",
+                NM3MessageType.attack
+            );
+            registerTypeName(
+                "hurt",
+                NM3MessageType.hurt
+            );
+            registerTypeName(
+                "build-unit",
+                NM3MessageType.build_unit
+            );
+            registerTypeName(
+                "player-set-money",
+                NM3MessageType.player_set_money
+            );
+            registerTypeName(
+                "player-set-diplo",
+                NM3MessageType.player_set_diplo
+            );
+            registerTypeName(
+                "station-set-loyalty",
+                NM3MessageType.station_set_loyalty
+            );
+            registerTypeName(
+                "station-buy-loyalty",
+                NM3MessageType.station_buy_loyalty
+            );
+            registerTypeName(
+                "dev",
+                NM3MessageType.dev_command
+            );
+        }
+
+        public static NM3MessageType FromString(string s)
+        {
+            return fromString[s];
+        }
+
+        public static string ToString(NM3MessageType t)
+        {
+            return toString[t];
+        }
+
+        public readonly NM3MessageType Command;
         public List<Type> ArgumentTypes;
         public List<string> Arguments;
 
-        public NM3Sig(string command)
+        private NM3Sig()
         {
-            command = command.ToLower();
-            if (sigs.ContainsKey(command))
-                throw new Exception();
+            if (toString == null)
+                setup();
+        }
+
+        public NM3Sig(NM3MessageType command) : this()
+        {
+            /*command = command.ToLower();
+            NM3MessageType cmd = FromString(command);*/
 
             Command = command;
+
+            //if (sigs.ContainsKey(FromString(command)))
+            if (sigs.ContainsKey(Command))
+                throw new Exception();
 
             ArgumentTypes = new List<Type>();
             Arguments = new List<string>();
 
             //auto register
-            sigs.Add(command, this);
+            sigs.Add(Command, this);
         }
 
         public NM3Sig AddArgument(Type t, string name)
@@ -283,6 +429,11 @@ namespace Farbase
                 signature,
                 new List<object>(param)
             );
+        }
+
+        public string Format()
+        {
+            return "";
         }
     }
 
