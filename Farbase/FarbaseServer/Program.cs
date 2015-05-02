@@ -243,6 +243,29 @@ namespace FarbaseServer
             );
         }
 
+        private void HandleMessage(PurchaseStationLoyaltyMessage message)
+        {
+            Player p = fbGame.World.Players[message.id];
+            Station s =
+                fbGame.World.Map.At(message.stationX, message.stationY)
+                .Station;
+
+            if (p.DiplomacyPoints >= 20 && s != null)
+                s.AddLoyalty(p.ID, 20);
+            else return;
+
+            SendAll(
+                new SetDiploMessage(p.ID, p.DiplomacyPoints - 20)
+            );
+
+            SendAll(
+                new SetStationLoyaltyMessage(
+                    p.ID, message.stationX, message.stationY,
+                    s.GetLoyalty(p.ID)
+                )
+            );
+        }
+
         private void ReceiveMessage(Client source, string message)
         {
             string command, args;
