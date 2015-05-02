@@ -132,6 +132,10 @@ namespace Farbase
                     HandleMessage((SetMoneyMessage)message);
                     break;
 
+                case SetDiploMessage.Command:
+                    HandleMessage((SetDiploMessage)message);
+                    break;
+
                 default:
                     //should probably be handled more gracefully in the future,
                     //but works for unknown messages for now.
@@ -238,6 +242,11 @@ namespace Farbase
         }
 
         private void HandleMessage(SetMoneyMessage message)
+        {
+            fbGame.World.Players[message.id].Money = message.amount;
+        }
+
+        private void HandleMessage(SetDiploMessage message)
         {
             fbGame.World.Players[message.id].Money = message.amount;
         }

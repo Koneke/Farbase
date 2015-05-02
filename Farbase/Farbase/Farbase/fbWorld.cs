@@ -80,7 +80,14 @@ namespace Farbase
 
         public void PassTo(int playerID)
         {
-            foreach (int id in Players[playerID].OwnedUnits)
+            Player p = Players[playerID];
+
+            p.DiplomacyPoints = Math.Min(
+                Player.DiplomacyPointsMax,
+                p.DiplomacyPoints += 5
+            );
+
+            foreach (int id in p.OwnedUnits)
             {
                 UnitLookup[id].Replenish();
             }

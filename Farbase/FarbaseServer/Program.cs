@@ -106,6 +106,10 @@ namespace FarbaseServer
                     HandleMessage((BuildUnitMessage)message);
                     break;
 
+                case PurchaseStationLoyaltyMessage.Command:
+                    HandleMessage((PurchaseStationLoyaltyMessage)message);
+                    break;
+
                 default:
                     //should probably be handled more gracefully in the future,
                     //but works for unknown messages for now.

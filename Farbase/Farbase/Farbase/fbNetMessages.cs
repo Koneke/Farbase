@@ -109,6 +109,14 @@ namespace Farbase
                     message = new SetMoneyMessage(arguments);
                     break;
 
+                case SetDiploMessage.Command:
+                    message = new SetDiploMessage(arguments);
+                    break;
+
+                case PurchaseStationLoyaltyMessage.Command:
+                    message = new PurchaseStationLoyaltyMessage(arguments);
+                    break;
+
                 default:
                     string argline = "";
                     if (arguments.Count > 0)
@@ -715,6 +723,125 @@ namespace Farbase
                 Command,
                 id,
                 amount
+            );
+        }
+    }
+
+    public class SetDiploMessage : fbNetMessage
+    {
+        public const string Command = "set-diplo";
+        public override string GetMessageType() { return Command; }
+        public override int GetExpectedArguments() { return 2; }
+
+        public int id;
+        public int amount;
+
+        public SetDiploMessage(
+            List<string> arguments
+        ) {
+            id = Int32.Parse(arguments[0]);
+            amount = Int32.Parse(arguments[1]);
+        }
+
+        public SetDiploMessage(
+            int id, int amount
+        ) {
+            this.id = id;
+            this.amount = amount;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1},{2}",
+                Command,
+                id,
+                amount
+            );
+        }
+    }
+
+    public class SetStationLoyaltyMessage : fbNetMessage
+    {
+        public const string Command = "set-station-loyalty";
+        public override string GetMessageType() { return Command; }
+
+        public override int GetExpectedArguments()
+        {
+            //player id, station x, station y, amount
+            return 4;
+        }
+
+        public int id, stationX, stationY, loyalty;
+
+        public SetStationLoyaltyMessage(
+            List<string> arguments
+        ) {
+            id = Int32.Parse(arguments[0]);
+            stationX = Int32.Parse(arguments[1]);
+            stationY = Int32.Parse(arguments[2]);
+            loyalty = Int32.Parse(arguments[3]);
+        }
+
+        public SetStationLoyaltyMessage(
+            int id, int sx, int sy, int amount
+        ) {
+            this.id = id;
+            stationX = sx;
+            stationY = sy;
+            loyalty = amount;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1},{2},{3},{4}",
+                Command,
+                id,
+                stationX,
+                stationY,
+                loyalty
+            );
+        }
+    }
+
+    public class PurchaseStationLoyaltyMessage : fbNetMessage
+    {
+        public const string Command = "purchase-loyalty";
+        public override string GetMessageType() { return Command; }
+
+        public override int GetExpectedArguments()
+        {
+            //player id, station x, station y;
+            return 3;
+        }
+
+        public int id, stationX, stationY;
+
+        public PurchaseStationLoyaltyMessage(
+            List<string> arguments
+        ) {
+            id = Int32.Parse(arguments[0]);
+            stationX = Int32.Parse(arguments[1]);
+            stationY = Int32.Parse(arguments[2]);
+        }
+
+        public PurchaseStationLoyaltyMessage(
+            int id, int sx, int sy
+        ) {
+            this.id = id;
+            stationX = sx;
+            stationY = sy;
+        }
+
+        public override string Format()
+        {
+            return string.Format(
+                "{0}:{1},{2},{3}",
+                Command,
+                id,
+                stationX,
+                stationY
             );
         }
     }

@@ -7,10 +7,13 @@ namespace Farbase
 {
     public class Player
     {
+        public const int DiplomacyPointsMax = 100;
+
         public int ID;
         public string Name;
         public Color Color;
         public int Money;
+        public int DiplomacyPoints;
         public List<int> OwnedUnits; 
 
         public Player(string name, int id, Color color)
@@ -97,6 +100,43 @@ namespace Farbase
         public Vector2 Position;
         public Tile Tile
             { get { return fbGame.World.Map.At(Position); } }
+
+        private Dictionary<int, int> loyalty;
+
+        public Station()
+        {
+            loyalty = new Dictionary<int, int>();
+        }
+
+        public int GetLoyalty(int id)
+        {
+            if (loyalty.ContainsKey(id))
+                return loyalty[id];
+            return 0;
+        }
+
+        public void SetLoyalty(int id, int amount)
+        {
+            if (loyalty.ContainsKey(id))
+                loyalty[id] = amount;
+            else loyalty.Add(id, amount);
+        }
+
+        public void AddLoyalty(int id, int amount)
+        {
+            if (loyalty.ContainsKey(id))
+                loyalty[id] =
+                    Math.Min(100, GetLoyalty(id) + amount);
+            else loyalty.Add(id, amount);
+        }
+
+        public void RemoveLoyalty(int id, int amount)
+        {
+            if (loyalty.ContainsKey(id))
+                loyalty[id] =
+                    Math.Max(0, GetLoyalty(id) - amount);
+            else loyalty.Add(id, 0);
+        }
     }
 
     public class Planet
@@ -104,62 +144,6 @@ namespace Farbase
         public Vector2 Position;
         public Tile Tile
             { get { return fbGame.World.Map.At(Position); } }
-    }
-
-    public interface Property
-    {
-        object GetValue();
-        void SetValue(object o);
-        object At(int index);
-    }
-
-    public class Property<T> : Property
-    {
-        protected T value;
-
-        public Property(T val)
-        {
-            value = val;
-        }
-
-        object Property.GetValue() { return GetValue(); }
-        private T GetValue() { return value; }
-
-        void Property.SetValue(object o)
-        {
-            SetValue((T)o);
-        }
-        public void SetValue(T val)
-        {
-            if (!value.Equals(val))
-            {
-                //report to subscribers?
-                //since we know the value is new and not just the same one
-                //set again.
-                value = val;
-            }
-        }
-
-        //this is not very beautiful
-        //but it makes us able to use indexed properties in a nice way.
-        //could probably make this just return its normal value?
-        //although we might actually *want* to crash if you try to index
-        //a non-indexable...
-        public virtual object At(int index)
-        {
-            throw new NotSupportedException();
-        }
-    }
-
-    public class ListProperty<T> : Property<List<T>> 
-    {
-        public ListProperty(List<T> val) : base(val) { }
-
-        public override object At(int index)
-        {
-            if (index >= value.Count) return null;
-            return value[index];
-        }
     }
 
     public class fbGame
@@ -255,20 +239,21 @@ namespace Farbase
             GetProperty("current-player-name")
                 .SetValue(World.CurrentPlayer.Name);
 
+            GetProperty("current-player-id")
+                .SetValue(World.CurrentPlayer.ID);
+
             GetProperty("local-player-name")
                 .SetValue(LocalPlayer.Name);
 
-            GetProperty("current-player-money")
-                .SetValue(World.CurrentPlayer.Money);
+            GetProperty("local-player-id")
+                .SetValue(LocalPlayer.ID);
 
             GetProperty("local-player-money")
                 .SetValue(LocalPlayer.Money);
 
-            GetProperty("current-player-id")
-                .SetValue(World.CurrentPlayer.ID);
+            GetProperty("local-player-diplo")
+                .SetValue(LocalPlayer.DiplomacyPoints);
 
-            GetProperty("local-player-id")
-                .SetValue(LocalPlayer.ID);
         }
 
         public void HandleEvent(NameEvent ne)
@@ -281,6 +266,18 @@ namespace Farbase
         {
             Unit u = World.UnitLookup[ume.ID];
             u.MoveTo(ume.x, ume.y);
+        }
+
+        public void BuyLoyalty(Station station)
+        {
+            if (LocalPlayer.DiplomacyPoints >= 20)
+                engine.NetClient.Send(
+                    new PurchaseStationLoyaltyMessage(
+                        We,
+                        station.Tile.Position.X,
+                        station.Tile.Position.Y
+                    )
+                );
         }
     }
 }

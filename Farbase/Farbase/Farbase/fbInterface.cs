@@ -99,11 +99,16 @@ namespace Farbase
             );
 
             SetupUI();
-            SetupTestUI();
+            //SetupTestUI();
 
             game.RegisterProperty(
                 "current-player-name",
                 new Property<string>("")
+            );
+
+            game.RegisterProperty(
+                "current-player-id",
+                new Property<int>(0)
             );
 
             game.RegisterProperty(
@@ -112,7 +117,7 @@ namespace Farbase
             );
 
             game.RegisterProperty(
-                "current-player-money",
+                "local-player-id",
                 new Property<int>(0)
             );
 
@@ -122,12 +127,7 @@ namespace Farbase
             );
 
             game.RegisterProperty(
-                "current-player-id",
-                new Property<int>(0)
-            );
-
-            game.RegisterProperty(
-                "local-player-id",
+                "local-player-diplo",
                 new Property<int>(0)
             );
 
@@ -139,13 +139,23 @@ namespace Farbase
 
         public void SetupUI()
         {
-            widgets.Add(
-                new SideBySideWidgets(Engine, this, 5)
+            SideBySideWidgets portrait =
+                (SideBySideWidgets)
+                    new SideBySideWidgets(Engine, this, 5)
                     .AddChild(
                         new Image("empty-portrait", Engine, this)
-                        //automatically check the current player property
-                        .SetTooltip("@current-player-name")
+                            //automatically check the current player property
+                            .SetTooltip("@local-player-name")
                     )
+                    .AddChild(new Label("@local-player-name", Engine, this))
+                    .SetBorder(0)
+                    .Margins(2, 0);
+
+            widgets.Add(
+                new ListBox(Engine, this)
+                    .AddChild(portrait)
+                    .AddChild(new Label("$: @local-player-money", Engine, this))
+                    .AddChild(new Label("d: @local-player-diplo", Engine, this))
                     .Padding(10)
                     .Margins(60, 40)
             );
@@ -172,7 +182,13 @@ namespace Farbase
                         .SetCondition(
                             () => Game.LocalPlayer.Money > unitType.Cost
                         )
-                        .SetTooltip("Build " + ut.Name)
+                        .SetTooltip(
+                            string.Format(
+                                "Build {0} - {1}$",
+                                ut.Name,
+                                ut.Cost
+                            )
+                        )
                     );
             }
 
@@ -187,14 +203,6 @@ namespace Farbase
             turnInfo.AddChild(
                 new Label(
                     "Current player: @current-player-name<@current-player-id>",
-                    Engine,
-                    this
-                )
-            );
-
-            turnInfo.AddChild(
-                new Label(
-                    "Player 0: @player-names:0",
                     Engine,
                     this
                 )
@@ -577,7 +585,12 @@ namespace Farbase
                             t.Unit.UnitType.Strength
                         );
                     if (t.Station != null)
+                    {
                         stationTooltip = "station";
+                        if (t.Station.GetLoyalty(Game.We) > 0)
+                            stationTooltip +=
+                                "\n" + t.Station.GetLoyalty(Game.We);
+                    }
                     if (t.Planet != null)
                         planetTooltip = "planet";
 
@@ -777,21 +790,13 @@ namespace Farbase
                     CurrentPlayer.Money -= 25;
                 }*/
 
-            if (Engine.KeyPressed(Keys.B))
-                if (
-                    SelectedTile.Station != null &&
-                    SelectedTile.Unit == null &&
-                    fbGame.World.Players[Game.We].Money >=
-                        UnitType.GetType("scout").Cost
-                ) {
-                    Engine.NetClient.Send(
-                        new BuildUnitMessage(
-                            "scout",
-                            SelectedTile.Position.X,
-                            SelectedTile.Position.Y
-                        )
-                    );
-                }
+            if (
+                Game.OurTurn &&
+                SelectedStation != null &&
+                Engine.KeyPressed(Keys.L)
+            ) {
+                Game.BuyLoyalty(SelectedStation);
+            }
 
             //handled more gracefully in the future, hopefully...
             bool passClickToWorld = true;
@@ -819,8 +824,8 @@ namespace Farbase
                             new Vector2i(
                                 (int)square.Value.X,
                                 (int)square.Value.Y
-                                )
-                            );
+                            )
+                        );
                     }
                 }
             }
