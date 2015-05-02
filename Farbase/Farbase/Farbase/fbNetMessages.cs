@@ -5,6 +5,287 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
+    public interface NetMessageArgument
+    {
+        object GetValue();
+        void SetValue(string val);
+    }
+
+    public class IntArgument : NetMessageArgument
+    {
+        private int value;
+
+        public IntArgument() { }
+        public IntArgument(int val) { value = val; }
+        public IntArgument(string val) { SetValue(val); }
+
+        public object GetValue() { return value; }
+        public void SetValue(string val) { value = Int32.Parse(val); }
+    }
+
+    public class StringArgument : NetMessageArgument
+    {
+        private string value;
+
+        public StringArgument() { }
+        public StringArgument(string val) { value = val; }
+
+        public object GetValue() { return value; }
+        public void SetValue(string val) { value = val; }
+    }
+
+    public class NetMsg
+    {
+        public static void RegisterSignature(string sig) { }
+        public static NetMsg GetSignature(string command)
+        {
+            return null;
+        }
+
+        public string Command;
+
+        //identifier: argument
+        public List<string> argNames; 
+        public Dictionary<string, NetMessageArgument> arg;
+
+        private void ConstructSignature(string signature)
+        {
+            signature = signature.ToLower();
+            arg = new Dictionary<string, NetMessageArgument>();
+            argNames = new List<string>();
+
+            string[] args;
+            if (signature.Contains(':'))
+            {
+                var split = signature.Split(':');
+                Command = split[0];
+                args = split[1].Split(',');
+            }
+            else
+            {
+                Command = signature;
+                args = new string[]{};
+            }
+
+            foreach (string a in args)
+            {
+                string type = a.Split(' ')[0];
+                string id = a.Split(' ')[1];
+
+                argNames.Add(id);
+
+                switch (type)
+                {
+                    case "int":
+                        arg.Add(id, new IntArgument());
+                        break;
+
+                    case "string":
+                        arg.Add(id, new StringArgument());
+                        break;
+
+                    default:
+                        throw new ArgumentException();
+                }
+            }
+        }
+
+        public NetMsg(
+            string signature,
+            List<string> arguments 
+        ) {
+            ConstructSignature(signature);
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                arg[argNames[i]].SetValue(arguments[i]);
+            }
+            /*
+            signature = signature.ToLower();
+            arg = new Dictionary<string, NetMessageArgument>();
+
+            string[] args;
+            if (signature.Contains(':'))
+            {
+                var split = signature.Split(':');
+                Command = split[0];
+                args = split[1].Split(',');
+            }
+            else
+            {
+                Command = signature;
+                args = new string[]{};
+            }
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                string a = args[i];
+                string type = a.Split(' ')[0];
+                string id = a.Split(' ')[1];
+
+                switch (type)
+                {
+                    case "int":
+                        arg.Add(
+                            id,
+                            //new NetMessageArgument<int>
+                            new IntArgument(arguments[i])
+                                //(Int32.Parse(arguments[i]))
+                            );
+                        break;
+
+                    case "string":
+                        arg.Add(
+                            id,
+                            //new NetMessageArgument<string>(arguments[i])
+                            new StringArgument(arguments[i])
+                        );
+                        break;
+
+                    default:
+                        throw new ArgumentException();
+                }
+            }*/
+        }
+    }
+
+    public class NetMessage2
+    {
+        private NetMsg signature;
+        private Dictionary<string, int> ints;
+        private Dictionary<string, string> strings;
+
+        public NetMessage2(
+            string sig,
+            List<string> arguments
+        ) {
+            signature = new NetMsg(sig, arguments);
+            ints = new Dictionary<string, int>();
+            strings = new Dictionary<string, string>();
+
+            int i = 0;
+        }
+
+        public int GetInt(string key) { return ints[key.ToLower()]; }
+        public int GetString(string key) { return ints[key.ToLower()]; }
+    }
+
+    public enum NMArgTypes
+    {
+        nm_int,
+        nm_string
+    }
+
+    public class NM3Sig
+    {
+        private static Dictionary<string, NM3Sig> sigs =
+            new Dictionary<string, NM3Sig>();
+
+        public static NM3Sig Get(string command) {
+            return sigs[command.ToLower()];
+        }
+
+        public readonly string Command;
+        public List<Type> ArgumentTypes;
+        public List<string> Arguments;
+
+        public NM3Sig(string command)
+        {
+            command = command.ToLower();
+            if (sigs.ContainsKey(command))
+                throw new Exception();
+
+            Command = command;
+
+            ArgumentTypes = new List<Type>();
+            Arguments = new List<string>();
+
+            //auto register
+            sigs.Add(command, this);
+        }
+
+        public NM3Sig AddArgument(Type t, string name)
+        {
+            if(Arguments.Contains(name))
+                throw new ArgumentException();
+
+            ArgumentTypes.Add(t);
+            Arguments.Add(name);
+
+            return this;
+        }
+    }
+
+    public class NetMessage3
+    {
+        public NM3Sig Signature;
+        private List<object> messageArguments;
+
+        public object Get(string key)
+        {
+            return messageArguments
+                [Signature.Arguments.IndexOf(key.ToLower())];
+        }
+
+        private void setup(string formatted)
+        {
+            string command;
+            List<string> arguments;
+            if (formatted.Contains(':'))
+            {
+                command = formatted.Split(':')[0];
+                arguments =
+                    formatted
+                        .Split(':')[1]
+                        .Split(',')
+                        .ToList();
+            }
+            else
+            {
+                command = formatted;
+                arguments = new List<string>();
+            }
+
+            Signature = NM3Sig.Get(command.ToLower());
+            messageArguments = new List<object>();
+
+            var handlers = new Dictionary<Type, Func<string, object>>
+            {
+                { typeof(int), s => Int32.Parse(s) },
+                { typeof(string), s => s }
+            };
+
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                messageArguments.Add(
+                    handlers[Signature.ArgumentTypes[i]](arguments[i])
+                );
+            }
+        }
+
+        private void setup(NM3Sig signature, List<object> arguments)
+        {
+            Signature = signature;
+
+            if (Signature.Arguments.Count != arguments.Count)
+                throw new ArgumentException();
+
+            messageArguments = new List<object>();
+            messageArguments.AddRange(arguments);
+        }
+
+        public NetMessage3(string formatted) { setup(formatted); }
+
+        public NetMessage3(
+            NM3Sig signature,
+            params object[] param
+        ) {
+            setup(
+                signature,
+                new List<object>(param)
+            );
+        }
+    }
+
     public abstract class fbNetMessage
     {
         public int Sender;
