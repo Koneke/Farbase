@@ -187,20 +187,20 @@ namespace Farbase
 
         public fbGame(fbEngine engine)
         {
-            new NM3Sig(NM3MessageType.move_unit)
-                .AddArgument(typeof(int), "id")
-                .AddArgument(typeof(int), "x")
-                .AddArgument(typeof(int), "y");
+            NetMessage3.Setup();
 
             var b = new NetMessage3(
-                NM3Sig.Get(NM3MessageType.move_unit),
+                NM3MessageType.move_unit,
                 0, 10, 10
             );
 
-            var c = new NetMessage3("move-unit:0,10,10");
+            b = new NetMessage3(
+                NM3MessageType.message,
+                "foo"
+            );
 
-            //  signatureFromCommand(command), arguments
-            //or something
+            var c = b.Format();
+
             this.engine = engine;
             Unit.Game = this;
             fbNetClient.Game = this;

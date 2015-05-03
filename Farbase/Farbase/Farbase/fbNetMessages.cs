@@ -177,10 +177,12 @@ namespace Farbase
 
     public enum NM3MessageType
     {
+        dev_command,
         message,
         create_world,
         create_station,
         create_planet,
+        create_unit,
         move_unit,
         set_unit_moves,
         new_player,
@@ -197,8 +199,7 @@ namespace Farbase
         player_set_diplo,
         station_set_loyalty,
         station_buy_loyalty,
-
-        dev_command,
+        replenish_player
     }
 
     public class NM3Sig
@@ -206,19 +207,49 @@ namespace Farbase
         private static Dictionary<NM3MessageType, NM3Sig> sigs =
             new Dictionary<NM3MessageType, NM3Sig>();
 
-        public static NM3Sig Get(string command) {
-            return sigs[FromString(command)];
+        public static NM3Sig Get(NM3MessageType messageType) {
+            return sigs[messageType];
         }
 
-        public static NM3Sig Get(NM3MessageType command) {
-            return sigs[command];
+        public readonly NM3MessageType MessageType;
+        public List<Type> ArgumentTypes;
+        public List<string> Arguments;
+
+        public NM3Sig(NM3MessageType messageType)
+        {
+            MessageType = messageType;
+
+            if (sigs.ContainsKey(MessageType))
+                throw new Exception();
+
+            ArgumentTypes = new List<Type>();
+            Arguments = new List<string>();
+
+            //auto register
+            sigs.Add(MessageType, this);
         }
 
-        private static Dictionary<string, NM3MessageType> fromString
-            = new Dictionary<string, NM3MessageType>();
+        public NM3Sig AddArgument<T>(string name)
+        {
+            if(Arguments.Contains(name))
+                throw new ArgumentException();
 
-        private static Dictionary<NM3MessageType, string> toString
-            = new Dictionary<NM3MessageType, string>();
+            ArgumentTypes.Add(typeof(T));
+            Arguments.Add(name);
+
+            return this;
+        }
+    }
+
+    public class NetMessage3
+    {
+        private static Dictionary<string, NM3MessageType> fromString;
+        private static Dictionary<NM3MessageType, string> toString;
+
+        public static NM3MessageType FromString(string s)
+        {
+            return fromString[s.ToLower()];
+        }
 
         private static void registerTypeName(
             string name,
@@ -228,11 +259,17 @@ namespace Farbase
             toString.Add(type, name);
         }
 
-        private static void setup()
+        public static void Setup()
         {
             fromString = new Dictionary<string, NM3MessageType>();
             toString = new Dictionary<NM3MessageType, string>();
 
+            SetupTypeNames();
+            SetupSignatures();
+        }
+
+        private static void SetupTypeNames()
+        {
             registerTypeName(
                 "message",
                 NM3MessageType.message
@@ -248,6 +285,10 @@ namespace Farbase
             registerTypeName(
                 "create-planet",
                 NM3MessageType.create_planet
+            );
+            registerTypeName(
+                "create-unit",
+                NM3MessageType.create_unit
             );
             registerTypeName(
                 "move-unit",
@@ -311,58 +352,120 @@ namespace Farbase
             );
         }
 
-        public static NM3MessageType FromString(string s)
+        private static void SetupSignatures()
         {
-            return fromString[s];
+            new NM3Sig(NM3MessageType.message)
+                .AddArgument<string>("message")
+            ;
+
+            new NM3Sig(NM3MessageType.create_world)
+                .AddArgument<int>("width")
+                .AddArgument<int>("height")
+            ;
+
+            new NM3Sig(NM3MessageType.create_station)
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
+            new NM3Sig(NM3MessageType.create_unit)
+                .AddArgument<string>("type")
+                .AddArgument<int>("id")
+                .AddArgument<int>("owner")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
+            new NM3Sig(NM3MessageType.move_unit)
+                .AddArgument<int>("id")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
+            new NM3Sig(NM3MessageType.set_unit_moves)
+                .AddArgument<int>("id")
+                .AddArgument<int>("amount")
+            ;
+
+            new NM3Sig(NM3MessageType.new_player)
+                .AddArgument<int>("id")
+            ;
+
+            //todo: can probably be replaced by using pass from server to client
+            new NM3Sig(NM3MessageType.replenish_player)
+                .AddArgument<int>("id")
+            ;
+
+            new NM3Sig(NM3MessageType.assign_id)
+                .AddArgument<int>("id")
+            ;
+
+            new NM3Sig(NM3MessageType.name_player)
+                .AddArgument<int>("id")
+                .AddArgument<string>("name")
+                .AddArgument<string>("color")
+            ;
+
+            //should probably be id and not index
+            new NM3Sig(NM3MessageType.current_player)
+                .AddArgument<int>("index")
+            ;
+
+            new NM3Sig(NM3MessageType.client_ready)
+            ;
+
+            new NM3Sig(NM3MessageType.client_unready)
+            ;
+
+            new NM3Sig(NM3MessageType.pass_turn)
+            ;
+
+            new NM3Sig(NM3MessageType.dev_command)
+                .AddArgument<int>("command")
+            ;
+
+            new NM3Sig(NM3MessageType.attack)
+                .AddArgument<int>("attacker-id")
+                .AddArgument<int>("target-id")
+            ;
+
+            new NM3Sig(NM3MessageType.hurt)
+                .AddArgument<int>("id")
+                .AddArgument<int>("amount")
+            ;
+
+            new NM3Sig(NM3MessageType.build_unit)
+                .AddArgument<string>("type")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
+            new NM3Sig(NM3MessageType.player_set_money)
+                .AddArgument<int>("id")
+                .AddArgument<int>("amount")
+            ;
+
+            new NM3Sig(NM3MessageType.player_set_diplo)
+                .AddArgument<int>("id")
+                .AddArgument<int>("amount")
+            ;
+
+            new NM3Sig(NM3MessageType.station_set_loyalty)
+                .AddArgument<int>("id")
+                .AddArgument<int>("station-x")
+                .AddArgument<int>("station-y")
+                .AddArgument<int>("amount")
+            ;
+
+            new NM3Sig(NM3MessageType.station_buy_loyalty)
+                .AddArgument<int>("id")
+                .AddArgument<int>("station-x")
+                .AddArgument<int>("station-y")
+            ;
         }
 
-        public static string ToString(NM3MessageType t)
-        {
-            return toString[t];
-        }
+        // ----------------------------------------------- //
 
-        public readonly NM3MessageType Command;
-        public List<Type> ArgumentTypes;
-        public List<string> Arguments;
-
-        private NM3Sig()
-        {
-            if (toString == null)
-                setup();
-        }
-
-        public NM3Sig(NM3MessageType command) : this()
-        {
-            /*command = command.ToLower();
-            NM3MessageType cmd = FromString(command);*/
-
-            Command = command;
-
-            //if (sigs.ContainsKey(FromString(command)))
-            if (sigs.ContainsKey(Command))
-                throw new Exception();
-
-            ArgumentTypes = new List<Type>();
-            Arguments = new List<string>();
-
-            //auto register
-            sigs.Add(Command, this);
-        }
-
-        public NM3Sig AddArgument(Type t, string name)
-        {
-            if(Arguments.Contains(name))
-                throw new ArgumentException();
-
-            ArgumentTypes.Add(t);
-            Arguments.Add(name);
-
-            return this;
-        }
-    }
-
-    public class NetMessage3
-    {
         public NM3Sig Signature;
         private List<object> messageArguments;
 
@@ -372,6 +475,10 @@ namespace Farbase
                 [Signature.Arguments.IndexOf(key.ToLower())];
         }
 
+        //setup the netmessage from a formatted string,
+        //usually received from the server.
+        //e.g. "move-unit:0,10,10"
+        //called from the NetMessage3(string) ctor.
         private void setup(string formatted)
         {
             string command;
@@ -391,7 +498,11 @@ namespace Farbase
                 arguments = new List<string>();
             }
 
-            Signature = NM3Sig.Get(command.ToLower());
+            Signature = NM3Sig.Get(FromString(command));
+
+            if (Signature.Arguments.Count != arguments.Count)
+                throw new ArgumentException();
+
             messageArguments = new List<object>();
 
             var handlers = new Dictionary<Type, Func<string, object>>
@@ -403,7 +514,9 @@ namespace Farbase
             for (int i = 0; i < arguments.Count; i++)
             {
                 messageArguments.Add(
-                    handlers[Signature.ArgumentTypes[i]](arguments[i])
+                    handlers
+                        [Signature.ArgumentTypes[i]]
+                        (arguments[i])
                 );
             }
         }
@@ -422,18 +535,25 @@ namespace Farbase
         public NetMessage3(string formatted) { setup(formatted); }
 
         public NetMessage3(
-            NM3Sig signature,
+            NM3MessageType messageType,
             params object[] param
         ) {
+            NM3Sig signature = NM3Sig.Get(messageType);
             setup(
                 signature,
                 new List<object>(param)
             );
         }
 
+        //return a formatted string of the message, used for sending the
+        //message to the server/client.
         public string Format()
         {
-            return "";
+            return string.Format(
+                "{0}:{1}",
+                toString[Signature.MessageType],
+                string.Join(",", messageArguments)
+            );
         }
     }
 
