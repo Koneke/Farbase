@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
-using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
     public class fbNetClient
     {
-        private fbApplication app;
-
         public static bool Verbose = true;
         public static fbGame Game;
 
@@ -22,237 +18,23 @@ namespace Farbase
         private List<string> SendQueue;
         public bool Ready;
 
-        public fbNetClient(fbApplication app)
+        public fbNetClient()
         {
-            this.app = app;
             Ready = false;
         }
 
         private void ReceiveMessage(string message)
         {
+            if (Verbose)
+                Game.Log.Add(
+                    string.Format(
+                        "<- s: {0}",
+                        message
+                    )
+                );
+
             NetMessage3 nm3message = new NetMessage3(message);
             Game.HandleNetMessage(nm3message);
-            return;
-
-            string command, args;
-
-            int split = message.IndexOf(':');
-
-            if (split >= 0)
-            {
-                command = message.Substring(0, split);
-                args = message.Substring(
-                    split + 1,
-                    message.Length - (split + 1)
-                );
-            }
-            else
-            {
-                command = message;
-                args = "";
-            }
-
-            List<String> arguments = args.Split(
-                new[] { ',' },
-                StringSplitOptions.RemoveEmptyEntries
-            ).ToList();
-
-            if(Verbose)
-                Game.Log.Add(
-                    String.Format("<- s: {0}", message)
-                );
-
-            command = command.ToLower();
-
-            fbNetMessage netmsg = fbNetMessage.Spawn(command, arguments);
-            HandleMessage(netmsg);
-        }
-
-        private void HandleMessage(fbNetMessage message)
-        {
-            switch (message.GetMessageType())
-            {
-                case MsgMessage.Command:
-                    HandleMessage((MsgMessage)message);
-                    break;
-
-                case CreateWorldMessage.Command:
-                    HandleMessage((CreateWorldMessage)message);
-                    break;
-
-                case CreateStationMessage.Command:
-                    HandleMessage((CreateStationMessage)message);
-                    break;
-
-                case CreatePlanetMessage.Command:
-                    HandleMessage((CreatePlanetMessage)message);
-                    break;
-
-                case CreateUnitMessage.Command:
-                    HandleMessage((CreateUnitMessage)message);
-                    break;
-
-                case MoveUnitMessage.Command:
-                    HandleMessage((MoveUnitMessage)message);
-                    break;
-
-                case SetUnitMovesMessage.Command:
-                    HandleMessage((SetUnitMovesMessage)message);
-                    break;
-
-                case NewPlayerMessage.Command:
-                    HandleMessage((NewPlayerMessage)message);
-                    break;
-
-                case ReplenishPlayerMessage.Command:
-                    HandleMessage((ReplenishPlayerMessage)message);
-                    break;
-
-                case AssignIDMessage.Command:
-                    HandleMessage((AssignIDMessage)message);
-                    break;
-
-                case NameMessage.Command:
-                    HandleMessage((NameMessage)message);
-                    break;
-
-                case CurrentPlayerMessage.Command:
-                    HandleMessage((CurrentPlayerMessage)message);
-                    break;
-
-                case ReadyMessage.Command:
-                    HandleMessage((ReadyMessage)message);
-                    break;
-
-                case UnreadyMessage.Command:
-                    HandleMessage((UnreadyMessage)message);
-                    break;
-
-                case HurtMessage.Command:
-                    HandleMessage((HurtMessage)message);
-                    break;
-
-                case SetMoneyMessage.Command:
-                    HandleMessage((SetMoneyMessage)message);
-                    break;
-
-                case SetDiploMessage.Command:
-                    HandleMessage((SetDiploMessage)message);
-                    break;
-
-                default:
-                    //should probably be handled more gracefully in the future,
-                    //but works for unknown messages for now.
-                    throw new ArgumentException();
-            }
-        }
-
-        private void HandleMessage(MsgMessage message)
-        {
-            app.Game.Log.Add(message.Content);
-        }
-
-        private void HandleMessage(CreateWorldMessage message)
-        {
-            fbGame.World = new fbWorld(message.w, message.h);
-        }
-
-        private void HandleMessage(CreateStationMessage message)
-        {
-            fbGame.World.SpawnStation(message.x, message.y);
-        }
-
-        private void HandleMessage(CreatePlanetMessage message)
-        {
-            fbGame.World.SpawnPlanet(message.x, message.y);
-        }
-
-        private void HandleMessage(CreateUnitMessage message)
-        {
-            fbGame.World.SpawnUnit(
-                message.type,
-                message.owner,
-                message.id,
-                message.x,
-                message.y
-            );
-        }
-
-        private void HandleMessage(MoveUnitMessage message)
-        {
-            app.Engine.QueueEvent(
-                new UnitMoveEvent(message.id, message.x, message.y)
-            );
-            //fbGame.World.UnitLookup[message.id].MoveTo(message.x, message.y);
-        }
-
-        private void HandleMessage(SetUnitMovesMessage message)
-        {
-            fbGame.World.UnitLookup[message.id].Moves = message.amount;
-        }
-
-        private void HandleMessage(NewPlayerMessage message)
-        {
-            fbGame.World.AddPlayer(
-                new Player(
-                    "Unnnamed player",
-                    message.id,
-                    Color.White
-                )
-            );
-        }
-
-        private void HandleMessage(ReplenishPlayerMessage message)
-        {
-            fbGame.World.PassTo(message.id);
-        }
-
-        private void HandleMessage(AssignIDMessage message)
-        {
-            app.Game.We = message.id;
-        }
-
-        private void HandleMessage(NameMessage message)
-        {
-            app.Engine.QueueEvent(
-                new NameEvent(message.id, message.name, message.color)
-            );
-        }
-
-        private void HandleMessage(CurrentPlayerMessage message)
-        {
-            fbGame.World.CurrentPlayerIndex = message.index;
-            app.Game.Log.Add(
-                string.Format(
-                    "It is now {0}'s turn.",
-                    fbGame.World.CurrentPlayer.Name
-                )
-            );
-        }
-
-        private void HandleMessage(ReadyMessage message)
-        {
-            Ready = true;
-        }
-
-        private void HandleMessage(UnreadyMessage message)
-        {
-            Ready = false;
-        }
-
-        private void HandleMessage(HurtMessage message)
-        {
-            fbGame.World.UnitLookup[message.id].Hurt(message.amount);
-        }
-
-        private void HandleMessage(SetMoneyMessage message)
-        {
-            fbGame.World.Players[message.id].Money = message.amount;
-        }
-
-        private void HandleMessage(SetDiploMessage message)
-        {
-            fbGame.World.Players[message.id].Money = message.amount;
         }
 
         public void Start()

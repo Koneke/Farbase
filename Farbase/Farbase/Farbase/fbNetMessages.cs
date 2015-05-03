@@ -271,12 +271,12 @@ namespace Farbase
             ;
 
             new NM3Sig(NM3MessageType.dev_command)
-                .AddArgument<int>("command")
+                .AddArgument<int>("number")
             ;
 
             new NM3Sig(NM3MessageType.attack)
-                .AddArgument<int>("attacker-id")
-                .AddArgument<int>("target-id")
+                .AddArgument<int>("attackerid")
+                .AddArgument<int>("targetid")
             ;
 
             new NM3Sig(NM3MessageType.hurt)
@@ -318,11 +318,17 @@ namespace Farbase
 
         public NM3Sig Signature;
         private List<object> messageArguments;
+        public int Sender;
 
         public object Get(string key)
         {
             return messageArguments
                 [Signature.Arguments.IndexOf(key.ToLower())];
+        }
+
+        public T Get<T>(string key)
+        {
+            return (T)Get(key);
         }
 
         //setup the netmessage from a formatted string,
@@ -347,6 +353,8 @@ namespace Farbase
                 command = formatted;
                 arguments = new List<string>();
             }
+
+            arguments.RemoveAll(s => s == "");
 
             Signature = NM3Sig.Get(FromString(command));
 

@@ -189,18 +189,6 @@ namespace Farbase
         {
             NetMessage3.Setup();
 
-            var b = new NetMessage3(
-                NM3MessageType.move_unit,
-                0, 10, 10
-            );
-
-            b = new NetMessage3(
-                NM3MessageType.message,
-                "foo"
-            );
-
-            var c = b.Format();
-
             this.engine = engine;
             Unit.Game = this;
             fbNetClient.Game = this;

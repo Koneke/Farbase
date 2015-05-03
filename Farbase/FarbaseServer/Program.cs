@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -25,6 +24,11 @@ namespace FarbaseServer
             ID = IDCounter++;
             tcpClient = client;
             Stream = tcpClient.GetStream();
+        }
+
+        public void SendMessage(NetMessage3 message)
+        {
+            SendMessage(message.Format());
         }
 
         public void SendMessage(fbNetMessage message)
@@ -53,6 +57,15 @@ namespace FarbaseServer
         private List<Client> players;
 
         private void SendAll(
+            NetMessage3 message,
+            int except = -1
+        ) {
+            foreach(Client p in players)
+                if (p.ID != except)
+                    p.SendMessage(message);
+        }
+
+        private void SendAll(
             fbNetMessage message,
             int except = -1
         ) {
@@ -74,228 +87,211 @@ namespace FarbaseServer
             );
         }
 
-        private void HandleMessage(fbNetMessage message)
+        private void HandleMessage(NetMessage3 message)
         {
-            switch (message.GetMessageType())
+            switch (message.Signature.MessageType)
             {
-                case MsgMessage.Command:
-                    HandleMessage((MsgMessage)message);
+                case NM3MessageType.message:
+                    Console.WriteLine(
+                        message.Get<string>("message")
+                    );
                     break;
 
-                case NameMessage.Command:
-                    HandleMessage((NameMessage)message);
+                case NM3MessageType.name_player:
+                    Player p = fbGame.World.Players[message.Get<int>("id")];
+
+                    p.Name = message.Get<string>("name");
+                    p.Color = ExtensionMethods.ColorFromString(
+                        message.Get<string>("color")
+                    );
+
+                    SendAll(message);
                     break;
 
-                case PassMessage.Command:
-                    HandleMessage((PassMessage)message);
+                case NM3MessageType.pass_turn:
+                    fbGame.World.CurrentPlayerIndex =
+                        (fbGame.World.CurrentPlayerIndex + 1) %
+                        fbGame.World.PlayerIDs.Count;
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.current_player,
+                            fbGame.World.CurrentPlayerIndex
+                        )
+                    );
+
+                    fbGame.World.PassTo(fbGame.World.CurrentID);
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.replenish_player,
+                            fbGame.World.CurrentID
+                        )
+                    );
                     break;
 
-                case MoveUnitMessage.Command:
-                    HandleMessage((MoveUnitMessage)message);
+                case NM3MessageType.move_unit:
+                    Unit un;
+                    //lock necessary?
+                    lock (fbGame.World)
+                    {
+                        un = fbGame.World.UnitLookup
+                            [message.Get<int>("id")];
+
+                        if (un.Moves > 0)
+                        {
+                            un.MoveTo(
+                                message.Get<int>("x"),
+                                message.Get<int>("y")
+                            );
+                            un.Moves--;
+                        }
+                    }
+
+                    //pass along to everyone else
+                    SendAll(
+                        message,
+                        except: un.Owner
+                    );
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.set_unit_moves,
+                            un.ID, un.Moves
+                            ),
+                        except: un.Owner
+                    );
                     break;
 
-                case DevCommandMessage.Command:
-                    HandleMessage((DevCommandMessage)message);
+                case NM3MessageType.dev_command:
+                    switch (message.Get<int>("number"))
+                    {
+                        case 0:
+                            Unit u = fbGame.World.SpawnUnit(
+                                "scout",
+                                message.Sender,
+                                //we need to manually update the ID counter
+                                fbGame.World.UnitIDCounter++,
+                                10, 10
+                            );
+                            BroadcastUnit(u);
+
+                            SendAll(
+                                new NetMessage3(
+                                    NM3MessageType.player_set_money,
+                                    message.Sender,
+                                    10
+                                )
+                            );
+                            break;
+                    }
                     break;
 
-                case AttackMessage.Command:
-                    HandleMessage((AttackMessage)message);
+                case NM3MessageType.attack:
+                    //please don't do shit until we've resolved combat
+                    Client.TcpPlayers[message.Sender]
+                        .SendMessage(new UnreadyMessage());
+
+                    Unit attacker = fbGame.World.UnitLookup
+                        [message.Get<int>("attackerid")];
+
+                    Unit target = fbGame.World.UnitLookup
+                        [message.Get<int>("targetid")];
+
+                    int totalStrength = attacker.Strength + target.Strength;
+                    int roll = random.Next(totalStrength) + 1;
+
+                    Unit loser;
+                    if (roll <= attacker.Strength)
+                        loser = attacker;
+                    else
+                        loser = target;
+
+                    loser.Hurt(1);
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.hurt,
+                            loser.ID,
+                            1
+                        )
+                    );
+
+                    //we done here
+                    Client.TcpPlayers[message.Sender]
+                        .SendMessage(
+                            new NetMessage3(NM3MessageType.client_ready)
+                        );
                     break;
 
-                case BuildUnitMessage.Command:
-                    HandleMessage((BuildUnitMessage)message);
+                case NM3MessageType.build_unit:
+                    Unit unit = new Unit(
+                        UnitType.GetType(message.Get<string>("type")),
+                        message.Get<int>("owner"),
+                        fbGame.World.UnitIDCounter++,
+                        message.Get<int>("x"),
+                        message.Get<int>("y")
+                    );
+
+                    BroadcastUnit(unit);
+
+                    int newMoney = fbGame.World.Players
+                        [message.Sender]
+                        .Money - unit.UnitType.Cost;
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.player_set_money,
+                            message.Sender,
+                            newMoney
+                        )
+                    );
                     break;
 
-                case PurchaseStationLoyaltyMessage.Command:
-                    HandleMessage((PurchaseStationLoyaltyMessage)message);
+                case NM3MessageType.station_buy_loyalty:
+                    Player pl = fbGame.World.Players
+                        //we could just use sender...?
+                        [message.Get<int>("id")];
+
+                    Station s =
+                        fbGame.World.Map.At(
+                            message.Get<int>("x"),
+                            message.Get<int>("y")
+                        )
+                        .Station;
+
+                    if (pl.DiplomacyPoints >= 20 && s != null)
+                        s.AddLoyalty(pl.ID, 20);
+                    else return;
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.player_set_diplo,
+                            pl.ID,
+                            pl.DiplomacyPoints - 20
+                        )
+                    );
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.station_set_loyalty,
+                            pl.ID,
+                            message.Get<int>("x"),
+                            message.Get<int>("y"),
+                            s.GetLoyalty(pl.ID)
+                        )
+                    );
                     break;
 
                 default:
-                    //should probably be handled more gracefully in the future,
-                    //but works for unknown messages for now.
                     throw new ArgumentException();
             }
         }
 
-        private void HandleMessage(MsgMessage message)
-        {
-            Console.WriteLine(message.Content);
-        }
-
-        private void HandleMessage(NameMessage message)
-        {
-            fbGame.World.Players[message.id].Name = message.name;
-            fbGame.World.Players[message.id].Color = message.color;
-
-            SendAll(message);
-        }
-
-        private void HandleMessage(PassMessage message)
-        {
-            fbGame.World.CurrentPlayerIndex =
-                (fbGame.World.CurrentPlayerIndex + 1) %
-                fbGame.World.PlayerIDs.Count;
-
-            SendAll(
-                new CurrentPlayerMessage(fbGame.World.CurrentPlayerIndex)
-            );
-
-            fbGame.World.PassTo(fbGame.World.CurrentID);
-
-            SendAll(
-                new ReplenishPlayerMessage(fbGame.World.CurrentID)
-            );
-        }
-
-        private void HandleMessage(MoveUnitMessage message)
-        {
-            Unit un;
-            //lock necessary?
-            lock (fbGame.World)
-            {
-                un = fbGame.World.UnitLookup[message.id];
-
-                if (un.Moves > 0)
-                {
-                    un.MoveTo(message.x, message.y);
-                    un.Moves--;
-                }
-            }
-
-            //pass along to everyone else
-            SendAll(
-                message,
-                un.Owner
-            );
-
-            SendAll(
-                new SetUnitMovesMessage(un.ID, un.Moves),
-                un.Owner
-            );
-        }
-
-        private void HandleMessage(DevCommandMessage message)
-        {
-            switch (message.Number)
-            {
-                case 0:
-                    Unit u = fbGame.World.SpawnUnit(
-                        "scout",
-                        message.Sender,
-                        //we need to manually update the ID counter
-                        fbGame.World.UnitIDCounter++,
-                        10, 10
-                    );
-                    BroadcastUnit(u);
-
-                    SendAll(new SetMoneyMessage(message.Sender, 10));
-                    break;
-            }
-        }
-
-        private void HandleMessage(AttackMessage message)
-        {
-            //please don't do shit until we've resolved combat
-            Client.TcpPlayers[message.Sender]
-                .SendMessage(new UnreadyMessage());
-
-            Unit attacker = fbGame.World.UnitLookup[message.attackerid];
-            Unit target = fbGame.World.UnitLookup[message.targetid];
-
-            int totalStrength = attacker.Strength + target.Strength;
-            int roll = random.Next(totalStrength) + 1;
-
-            Unit loser;
-            if (roll <= attacker.Strength)
-                loser = attacker;
-            else
-                loser = target;
-
-            loser.Hurt(1);
-            SendAll(new HurtMessage(loser.ID, 1));
-
-            //we done here
-            Client.TcpPlayers[message.Sender]
-                .SendMessage(new ReadyMessage());
-        }
-
-        private void HandleMessage(BuildUnitMessage message)
-        {
-            BroadcastUnit(
-                fbGame.World.SpawnUnit(
-                    message.type,
-                    message.Sender,
-                    fbGame.World.UnitIDCounter++,
-                    message.x,
-                    message.y
-                )
-            );
-
-            int newMoney =
-                fbGame.World.Players[message.Sender].Money -
-                UnitType.GetType(message.type).Cost;
-
-            SendAll(
-                new SetMoneyMessage(
-                    message.Sender,
-                    newMoney
-                )
-            );
-        }
-
-        private void HandleMessage(PurchaseStationLoyaltyMessage message)
-        {
-            Player p = fbGame.World.Players[message.id];
-            Station s =
-                fbGame.World.Map.At(message.stationX, message.stationY)
-                .Station;
-
-            if (p.DiplomacyPoints >= 20 && s != null)
-                s.AddLoyalty(p.ID, 20);
-            else return;
-
-            SendAll(
-                new SetDiploMessage(p.ID, p.DiplomacyPoints - 20)
-            );
-
-            SendAll(
-                new SetStationLoyaltyMessage(
-                    p.ID, message.stationX, message.stationY,
-                    s.GetLoyalty(p.ID)
-                )
-            );
-        }
-
         private void ReceiveMessage(Client source, string message)
         {
-            string command, args;
-
-            int split = message.IndexOf(':');
-            if (split >= 0)
-            {
-                command = message.Substring(0, split);
-                args = message.Substring(
-                    split + 1,
-                    message.Length - (split + 1)
-                );
-            }
-            else
-            {
-                command = message;
-                args = "";
-            }
-
-            List<String> arguments = args.Split(
-                new[] { ',' },
-                StringSplitOptions.RemoveEmptyEntries
-            ).ToList();
-
-            Console.WriteLine("<- {0}: {1}", source.ID, message);
-
-            fbNetMessage msg = fbNetMessage.Spawn(command, arguments);
-            msg.Sender = source.ID;
-
-            HandleMessage(msg);
+            NetMessage3 nm3 = new NetMessage3(message);
+            nm3.Sender = source.ID;
+            HandleMessage(nm3);
         }
 
         public void Start()
@@ -333,6 +329,8 @@ namespace FarbaseServer
 
         private void netStart()
         {
+            NetMessage3.Setup();
+
             encoder = new ASCIIEncoding();
 
             try
