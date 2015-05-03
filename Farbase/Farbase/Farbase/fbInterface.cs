@@ -652,7 +652,9 @@ namespace Farbase
             {
                 if (Game.OurTurn)
                 {
-                    Engine.NetClient.Send(new PassMessage());
+                    Engine.NetClient.Send(
+                        new NetMessage3(NM3MessageType.pass_turn)
+                    );
                 }
                 else
                     Game.Log.Add("Not your turn!");
@@ -680,7 +682,12 @@ namespace Farbase
                     };
 
                 Engine.NetClient.Send(
-                    new NameMessage(Game.We, names[Game.We], colors[Game.We])
+                    new NetMessage3(
+                        NM3MessageType.name_player,
+                        Game.We,
+                        names[Game.We],
+                        ExtensionMethods.ColorToString(colors[Game.We])
+                    )
                 );
             }
 
@@ -689,7 +696,10 @@ namespace Farbase
                 if (Game.OurTurn)
                 {
                     Engine.NetClient.Send(
-                        new DevCommandMessage(0)
+                        new NetMessage3(
+                            NM3MessageType.dev_command,
+                            0
+                        )
                     );
                 }
             }
@@ -728,7 +738,14 @@ namespace Farbase
                         int x = (int)(u.Position + moveOrder).X;
                         int y = (int)(u.Position + moveOrder).Y;
 
-                        Engine.NetClient.Send(new MoveUnitMessage(u.ID, x, y));
+                        Engine.NetClient.Send(
+                            new NetMessage3(
+                                NM3MessageType.move_unit,
+                                u.ID,
+                                x,
+                                y
+                            )
+                        );
 
                         u.Moves -= 1;
                         //u.MoveTo(x, y);
@@ -743,7 +760,10 @@ namespace Farbase
                         ).Unit;
 
                         Engine.NetClient.Send(
-                            new AttackMessage(u.ID, target.ID)
+                            new NetMessage3(
+                                NM3MessageType.attack,
+                                u.ID, target.ID
+                            )
                         );
                     }
                 }
@@ -858,7 +878,8 @@ namespace Farbase
                     UnitType.GetType(type).Cost
             ) {
                 Engine.NetClient.Send(
-                    new BuildUnitMessage(
+                    new NetMessage3(
+                        NM3MessageType.build_unit,
                         type,
                         SelectedTile.Position.X,
                         SelectedTile.Position.Y

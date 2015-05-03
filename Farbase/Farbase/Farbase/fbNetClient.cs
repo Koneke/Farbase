@@ -84,7 +84,7 @@ namespace Farbase
             stream = client.GetStream();
         }
 
-        public void Send(fbNetMessage message)
+        public void Send(NetMessage3 message)
         {
             SendQueue.Add(message.Format());
         }

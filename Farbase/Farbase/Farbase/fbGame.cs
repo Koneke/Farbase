@@ -274,7 +274,8 @@ namespace Farbase
         {
             if (LocalPlayer.DiplomacyPoints >= 20)
                 engine.NetClient.Send(
-                    new PurchaseStationLoyaltyMessage(
+                    new NetMessage3(
+                        NM3MessageType.station_buy_loyalty,
                         We,
                         station.Tile.Position.X,
                         station.Tile.Position.Y
