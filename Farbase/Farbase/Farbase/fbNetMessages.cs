@@ -89,135 +89,66 @@ namespace Farbase
             toString.Add(type, name);
         }
 
+        private static NM3Sig SetupSignature(
+            string command,
+            NM3MessageType messageType
+        ) {
+            registerTypeName(command, messageType);
+            return new NM3Sig(messageType);
+        }
+
         public static void Setup()
         {
             fromString = new Dictionary<string, NM3MessageType>();
             toString = new Dictionary<NM3MessageType, string>();
 
-            SetupTypeNames();
             SetupSignatures();
 
             if (fromString.Count != NM3Sig.sigs.Count)
                 throw new Exception();
         }
 
-        private static void SetupTypeNames()
+        private static void SetupSignatures()
         {
             registerTypeName(
                 "msg",
                 NM3MessageType.message
             );
-            registerTypeName(
-                "create-world",
-                NM3MessageType.create_world
-            );
-            registerTypeName(
-                "create-station",
-                NM3MessageType.create_station
-            );
-            registerTypeName(
-                "create-planet",
-                NM3MessageType.create_planet
-            );
-            registerTypeName(
-                "create-unit",
-                NM3MessageType.create_unit
-            );
-            registerTypeName(
-                "move",
-                NM3MessageType.move_unit
-            );
-            registerTypeName(
-                "set-moves",
-                NM3MessageType.set_unit_moves
-            );
-            registerTypeName(
-                "new-player",
-                NM3MessageType.new_player
-            );
-            registerTypeName(
-                "replenish",
-                NM3MessageType.replenish_player
-            );
-            registerTypeName(
-                "assign-id",
-                NM3MessageType.assign_id
-            );
-            registerTypeName(
-                "name",
-                NM3MessageType.name_player
-            );
-            registerTypeName(
-                "current-player",
-                NM3MessageType.current_player
-            );
-            registerTypeName(
-                "ready",
-                NM3MessageType.client_ready
-            );
-            registerTypeName(
-                "unready",
-                NM3MessageType.client_unready
-            );
-            registerTypeName(
-                "pass",
-                NM3MessageType.pass_turn
-            );
-            registerTypeName(
-                "dev",
-                NM3MessageType.dev_command
-            );
-            registerTypeName(
-                "attack",
-                NM3MessageType.attack
-            );
-            registerTypeName(
-                "hurt",
-                NM3MessageType.hurt
-            );
-            registerTypeName(
-                "build-unit",
-                NM3MessageType.build_unit
-            );
-            registerTypeName(
-                "set-money",
-                NM3MessageType.player_set_money
-            );
-            registerTypeName(
-                "set-diplo",
-                NM3MessageType.player_set_diplo
-            );
-            registerTypeName(
-                "station-set-loyalty",
-                NM3MessageType.station_set_loyalty
-            );
-            registerTypeName(
-                "station-buy-loyalty",
-                NM3MessageType.station_buy_loyalty
-            );
-        }
-
-        private static void SetupSignatures()
-        {
             new NM3Sig(NM3MessageType.message)
                 .AddArgument<string>("message")
             ;
 
+            registerTypeName(
+                "create-world",
+                NM3MessageType.create_world
+            );
             new NM3Sig(NM3MessageType.create_world)
                 .AddArgument<int>("width")
                 .AddArgument<int>("height")
             ;
 
+            registerTypeName(
+                "create-station",
+                NM3MessageType.create_station
+            );
             new NM3Sig(NM3MessageType.create_station)
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
 
+            registerTypeName(
+                "create-planet",
+                NM3MessageType.create_planet
+            );
             new NM3Sig(NM3MessageType.create_planet)
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
 
+            registerTypeName(
+                "create-unit",
+                NM3MessageType.create_unit
+            );
             new NM3Sig(NM3MessageType.create_unit)
                 .AddArgument<string>("type")
                 .AddArgument<int>("owner")
@@ -226,80 +157,145 @@ namespace Farbase
                 .AddArgument<int>("y")
             ;
 
+            registerTypeName(
+                "move",
+                NM3MessageType.move_unit
+            );
             new NM3Sig(NM3MessageType.move_unit)
                 .AddArgument<int>("id")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
 
+            registerTypeName(
+                "set-moves",
+                NM3MessageType.set_unit_moves
+            );
             new NM3Sig(NM3MessageType.set_unit_moves)
                 .AddArgument<int>("id")
                 .AddArgument<int>("amount")
             ;
 
+            registerTypeName(
+                "new-player",
+                NM3MessageType.new_player
+            );
             new NM3Sig(NM3MessageType.new_player)
                 .AddArgument<int>("id")
             ;
 
             //todo: can probably be replaced by using pass from server to client
+            registerTypeName(
+                "replenish",
+                NM3MessageType.replenish_player
+            );
             new NM3Sig(NM3MessageType.replenish_player)
                 .AddArgument<int>("id")
             ;
 
+            registerTypeName(
+                "assign-id",
+                NM3MessageType.assign_id
+            );
             new NM3Sig(NM3MessageType.assign_id)
                 .AddArgument<int>("id")
             ;
 
+            registerTypeName(
+                "name",
+                NM3MessageType.name_player
+            );
             new NM3Sig(NM3MessageType.name_player)
                 .AddArgument<int>("id")
                 .AddArgument<string>("name")
                 .AddArgument<string>("color")
             ;
 
+            registerTypeName(
+                "current-player",
+                NM3MessageType.current_player
+            );
             //should probably be id and not index
             new NM3Sig(NM3MessageType.current_player)
                 .AddArgument<int>("index")
             ;
 
-            new NM3Sig(NM3MessageType.client_ready)
-            ;
+            registerTypeName(
+                "ready",
+                NM3MessageType.client_ready
+            );
+            new NM3Sig(NM3MessageType.client_ready);
 
-            new NM3Sig(NM3MessageType.client_unready)
-            ;
+            registerTypeName(
+                "unready",
+                NM3MessageType.client_unready
+            );
+            new NM3Sig(NM3MessageType.client_unready);
 
-            new NM3Sig(NM3MessageType.pass_turn)
-            ;
+            registerTypeName(
+                "pass",
+                NM3MessageType.pass_turn
+            );
+            new NM3Sig(NM3MessageType.pass_turn);
 
+            registerTypeName(
+                "dev",
+                NM3MessageType.dev_command
+            );
             new NM3Sig(NM3MessageType.dev_command)
                 .AddArgument<int>("number")
             ;
 
+            registerTypeName(
+                "attack",
+                NM3MessageType.attack
+            );
             new NM3Sig(NM3MessageType.attack)
                 .AddArgument<int>("attackerid")
                 .AddArgument<int>("targetid")
             ;
 
+            registerTypeName(
+                "hurt",
+                NM3MessageType.hurt
+            );
             new NM3Sig(NM3MessageType.hurt)
                 .AddArgument<int>("id")
                 .AddArgument<int>("amount")
             ;
 
+            registerTypeName(
+                "build-unit",
+                NM3MessageType.build_unit
+            );
             new NM3Sig(NM3MessageType.build_unit)
                 .AddArgument<string>("type")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
 
+            registerTypeName(
+                "set-money",
+                NM3MessageType.player_set_money
+            );
             new NM3Sig(NM3MessageType.player_set_money)
                 .AddArgument<int>("id")
                 .AddArgument<int>("amount")
             ;
 
+            registerTypeName(
+                "set-diplo",
+                NM3MessageType.player_set_diplo
+            );
             new NM3Sig(NM3MessageType.player_set_diplo)
                 .AddArgument<int>("id")
                 .AddArgument<int>("amount")
             ;
 
+            registerTypeName(
+                "station-set-loyalty",
+                NM3MessageType.station_set_loyalty
+            );
             new NM3Sig(NM3MessageType.station_set_loyalty)
                 .AddArgument<int>("id")
                 .AddArgument<int>("station-x")
@@ -307,6 +303,10 @@ namespace Farbase
                 .AddArgument<int>("amount")
             ;
 
+            registerTypeName(
+                "station-buy-loyalty",
+                NM3MessageType.station_buy_loyalty
+            );
             new NM3Sig(NM3MessageType.station_buy_loyalty)
                 .AddArgument<int>("id")
                 .AddArgument<int>("station-x")

@@ -31,11 +31,6 @@ namespace FarbaseServer
             SendMessage(message.Format());
         }
 
-        public void SendMessage(fbNetMessage message)
-        {
-            SendMessage(message.Format());
-        }
-
         public void SendMessage(string message)
         {
             Console.WriteLine("-> {0}: {1}", ID, message);
@@ -65,19 +60,11 @@ namespace FarbaseServer
                     p.SendMessage(message);
         }
 
-        private void SendAll(
-            fbNetMessage message,
-            int except = -1
-        ) {
-            foreach (Client p in players)
-                if (p.ID != except)
-                    p.SendMessage(message.Format());
-        }
-
         private void BroadcastUnit(Unit u)
         {
             SendAll(
-                new CreateUnitMessage(
+                new NetMessage3(
+                    NM3MessageType.create_unit,
                     u.UnitType.Name,
                     u.Owner,
                     u.ID,
@@ -190,7 +177,9 @@ namespace FarbaseServer
                 case NM3MessageType.attack:
                     //please don't do shit until we've resolved combat
                     Client.TcpPlayers[message.Sender]
-                        .SendMessage(new UnreadyMessage());
+                        .SendMessage(
+                            new NetMessage3(NM3MessageType.client_unready)
+                        );
 
                     Unit attacker = fbGame.World.UnitLookup
                         [message.Get<int>("attackerid")];
