@@ -30,6 +30,10 @@ namespace Farbase
 
         private void ReceiveMessage(string message)
         {
+            NetMessage3 nm3message = new NetMessage3(message);
+            Game.HandleNetMessage(nm3message);
+            return;
+
             string command, args;
 
             int split = message.IndexOf(':');

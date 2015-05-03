@@ -26,6 +26,9 @@ namespace Farbase
             Name = name;
             Color = color;
         }
+
+        public NameEvent(int id, string name, string color)
+            : this(id, name, ExtensionMethods.ColorFromString(color)) { }
     }
 
     public class UnitMoveEvent : Event

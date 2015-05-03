@@ -293,5 +293,131 @@ namespace Farbase
                     )
                 );
         }
+
+        public void HandleNetMessage(NetMessage3 message)
+        {
+            switch (message.Signature.MessageType)
+            {
+                case NM3MessageType.message:
+                    Log.Add((string)message.Get("message"));
+                    break;
+
+                case NM3MessageType.create_world:
+                    World = new fbWorld(
+                        (int)message.Get("width"),
+                        (int)message.Get("height")
+                    );
+                    break;
+
+                case NM3MessageType.create_station:
+                    World.SpawnStation(
+                        (int)message.Get("x"),
+                        (int)message.Get("y")
+                    );
+                    break;
+
+                case NM3MessageType.create_planet:
+                    World.SpawnPlanet(
+                        (int)message.Get("x"),
+                        (int)message.Get("y")
+                    );
+                    break;
+
+                case NM3MessageType.create_unit:
+                    World.SpawnUnit(
+                        (string)message.Get("type"),
+                        (int)message.Get("owner"),
+                        (int)message.Get("id"),
+                        (int)message.Get("x"),
+                        (int)message.Get("y")
+                    );
+                    break;
+
+                case NM3MessageType.move_unit:
+                    engine.QueueEvent(
+                        new UnitMoveEvent(
+                            (int)message.Get("id"),
+                            (int)message.Get("x"),
+                            (int)message.Get("y")
+                        )
+                    );
+                    break;
+
+                case NM3MessageType.set_unit_moves:
+                    World.UnitLookup
+                        [(int)message.Get("id")].Moves =
+                         (int)message.Get("amount");
+                    break;
+
+                case NM3MessageType.new_player:
+                    World.AddPlayer(
+                        new Player(
+                            "Unnnamed player",
+                            (int)message.Get("id"),
+                            Color.White
+                        )
+                    );
+                    break;
+
+                case NM3MessageType.replenish_player:
+                    World.PassTo((int)message.Get("id"));
+                    break;
+
+                case NM3MessageType.assign_id:
+                    We = (int)message.Get("id");
+                    break;
+
+                case NM3MessageType.name_player:
+                    engine.QueueEvent(
+                        new NameEvent(
+                            (int)message.Get("id"),
+                            (string)message.Get("name"),
+                            (string)message.Get("color")
+                        )
+                    );
+                    break;
+
+                case NM3MessageType.current_player:
+                    World.CurrentPlayerIndex =
+                        (int)message.Get("index");
+
+                    //todo: event this?
+                    Log.Add(
+                        string.Format(
+                            "It is now {0}'s turn.",
+                            World.CurrentPlayer.Name
+                        )
+                    );
+                    break;
+
+                case NM3MessageType.hurt:
+                    World.UnitLookup[(int)message.Get("id")]
+                        .Hurt((int)message.Get("amount"));
+                    break;
+
+                case NM3MessageType.player_set_money:
+                    World.Players[(int)message.Get("id")]
+                        .Money = (int)message.Get("amount");
+                    break;
+
+                case NM3MessageType.player_set_diplo:
+                    World.Players[(int)message.Get("id")]
+                        .DiplomacyPoints = (int)message.Get("amount");
+                    break;
+
+                //todo: might want to make ready part of game..?
+                case NM3MessageType.client_ready:
+                    engine.NetClient.Ready = true;
+                    break;
+
+                //todo: might want to make ready part of game..?
+                case NM3MessageType.client_unready:
+                    engine.NetClient.Ready = false;
+                    break;
+
+                default:
+                    throw new Exception();
+            }
+        }
     }
 }

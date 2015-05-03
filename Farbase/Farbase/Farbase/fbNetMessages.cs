@@ -5,176 +5,6 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
-    public interface NetMessageArgument
-    {
-        object GetValue();
-        void SetValue(string val);
-    }
-
-    public class IntArgument : NetMessageArgument
-    {
-        private int value;
-
-        public IntArgument() { }
-        public IntArgument(int val) { value = val; }
-        public IntArgument(string val) { SetValue(val); }
-
-        public object GetValue() { return value; }
-        public void SetValue(string val) { value = Int32.Parse(val); }
-    }
-
-    public class StringArgument : NetMessageArgument
-    {
-        private string value;
-
-        public StringArgument() { }
-        public StringArgument(string val) { value = val; }
-
-        public object GetValue() { return value; }
-        public void SetValue(string val) { value = val; }
-    }
-
-    public class NetMsg
-    {
-        public static void RegisterSignature(string sig) { }
-        public static NetMsg GetSignature(string command)
-        {
-            return null;
-        }
-
-        public string Command;
-
-        //identifier: argument
-        public List<string> argNames; 
-        public Dictionary<string, NetMessageArgument> arg;
-
-        private void ConstructSignature(string signature)
-        {
-            signature = signature.ToLower();
-            arg = new Dictionary<string, NetMessageArgument>();
-            argNames = new List<string>();
-
-            string[] args;
-            if (signature.Contains(':'))
-            {
-                var split = signature.Split(':');
-                Command = split[0];
-                args = split[1].Split(',');
-            }
-            else
-            {
-                Command = signature;
-                args = new string[]{};
-            }
-
-            foreach (string a in args)
-            {
-                string type = a.Split(' ')[0];
-                string id = a.Split(' ')[1];
-
-                argNames.Add(id);
-
-                switch (type)
-                {
-                    case "int":
-                        arg.Add(id, new IntArgument());
-                        break;
-
-                    case "string":
-                        arg.Add(id, new StringArgument());
-                        break;
-
-                    default:
-                        throw new ArgumentException();
-                }
-            }
-        }
-
-        public NetMsg(
-            string signature,
-            List<string> arguments 
-        ) {
-            ConstructSignature(signature);
-            for (int i = 0; i < arguments.Count; i++)
-            {
-                arg[argNames[i]].SetValue(arguments[i]);
-            }
-            /*
-            signature = signature.ToLower();
-            arg = new Dictionary<string, NetMessageArgument>();
-
-            string[] args;
-            if (signature.Contains(':'))
-            {
-                var split = signature.Split(':');
-                Command = split[0];
-                args = split[1].Split(',');
-            }
-            else
-            {
-                Command = signature;
-                args = new string[]{};
-            }
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                string a = args[i];
-                string type = a.Split(' ')[0];
-                string id = a.Split(' ')[1];
-
-                switch (type)
-                {
-                    case "int":
-                        arg.Add(
-                            id,
-                            //new NetMessageArgument<int>
-                            new IntArgument(arguments[i])
-                                //(Int32.Parse(arguments[i]))
-                            );
-                        break;
-
-                    case "string":
-                        arg.Add(
-                            id,
-                            //new NetMessageArgument<string>(arguments[i])
-                            new StringArgument(arguments[i])
-                        );
-                        break;
-
-                    default:
-                        throw new ArgumentException();
-                }
-            }*/
-        }
-    }
-
-    public class NetMessage2
-    {
-        private NetMsg signature;
-        private Dictionary<string, int> ints;
-        private Dictionary<string, string> strings;
-
-        public NetMessage2(
-            string sig,
-            List<string> arguments
-        ) {
-            signature = new NetMsg(sig, arguments);
-            ints = new Dictionary<string, int>();
-            strings = new Dictionary<string, string>();
-
-            int i = 0;
-        }
-
-        public int GetInt(string key) { return ints[key.ToLower()]; }
-        public int GetString(string key) { return ints[key.ToLower()]; }
-    }
-
-    public enum NMArgTypes
-    {
-        nm_int,
-        nm_string
-    }
-
     public enum NM3MessageType
     {
         dev_command,
@@ -204,7 +34,7 @@ namespace Farbase
 
     public class NM3Sig
     {
-        private static Dictionary<NM3MessageType, NM3Sig> sigs =
+        public static Dictionary<NM3MessageType, NM3Sig> sigs =
             new Dictionary<NM3MessageType, NM3Sig>();
 
         public static NM3Sig Get(NM3MessageType messageType) {
@@ -266,12 +96,15 @@ namespace Farbase
 
             SetupTypeNames();
             SetupSignatures();
+
+            if (fromString.Count != NM3Sig.sigs.Count)
+                throw new Exception();
         }
 
         private static void SetupTypeNames()
         {
             registerTypeName(
-                "message",
+                "msg",
                 NM3MessageType.message
             );
             registerTypeName(
@@ -291,16 +124,28 @@ namespace Farbase
                 NM3MessageType.create_unit
             );
             registerTypeName(
-                "move-unit",
+                "move",
                 NM3MessageType.move_unit
             );
             registerTypeName(
-                "set-unit-moves",
+                "set-moves",
                 NM3MessageType.set_unit_moves
             );
             registerTypeName(
                 "new-player",
                 NM3MessageType.new_player
+            );
+            registerTypeName(
+                "replenish",
+                NM3MessageType.replenish_player
+            );
+            registerTypeName(
+                "assign-id",
+                NM3MessageType.assign_id
+            );
+            registerTypeName(
+                "name",
+                NM3MessageType.name_player
             );
             registerTypeName(
                 "current-player",
@@ -319,6 +164,10 @@ namespace Farbase
                 NM3MessageType.pass_turn
             );
             registerTypeName(
+                "dev",
+                NM3MessageType.dev_command
+            );
+            registerTypeName(
                 "attack",
                 NM3MessageType.attack
             );
@@ -331,11 +180,11 @@ namespace Farbase
                 NM3MessageType.build_unit
             );
             registerTypeName(
-                "player-set-money",
+                "set-money",
                 NM3MessageType.player_set_money
             );
             registerTypeName(
-                "player-set-diplo",
+                "set-diplo",
                 NM3MessageType.player_set_diplo
             );
             registerTypeName(
@@ -345,10 +194,6 @@ namespace Farbase
             registerTypeName(
                 "station-buy-loyalty",
                 NM3MessageType.station_buy_loyalty
-            );
-            registerTypeName(
-                "dev",
-                NM3MessageType.dev_command
             );
         }
 
@@ -368,10 +213,15 @@ namespace Farbase
                 .AddArgument<int>("y")
             ;
 
+            new NM3Sig(NM3MessageType.create_planet)
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
             new NM3Sig(NM3MessageType.create_unit)
                 .AddArgument<string>("type")
-                .AddArgument<int>("id")
                 .AddArgument<int>("owner")
+                .AddArgument<int>("id")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
