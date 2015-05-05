@@ -41,32 +41,9 @@ namespace Farbase
             eventQueue.Add(e);
         }
 
-        public List<Event> Poll(EventType type)
-        {
-            List<Event> matchingEvents =
-                eventQueue
-                    .Where(e => e.GetEventType() == type)
-                    .ToList();
-
-            foreach (Event e in matchingEvents)
-                eventQueue.Remove(e);
-
-            return matchingEvents;
-        }
-
-        public List<Event> Peek(EventType type)
-        {
-            List<Event> matchingEvents =
-                eventQueue
-                    .Where(e => e.GetEventType() == type)
-                    .ToList();
-
-            return matchingEvents;
-        }
-
         public void Subscribe(fbEventHandler handler, EventType eventType)
         {
-            if (subscribers[eventType] == null)
+            if (!subscribers.ContainsKey(eventType))
                 subscribers.Add(eventType, new List<fbEventHandler>());
 
             subscribers[eventType].Add(handler);
@@ -75,6 +52,21 @@ namespace Farbase
         public void Unsubscribe(fbEventHandler handler, EventType eventType)
         {
             subscribers[eventType].Remove(handler);
+        }
+
+        private void PushEvents()
+        {
+            foreach (Event e in eventQueue)
+            {
+                foreach (
+                    fbEventHandler handler in
+                    subscribers[e.GetEventType()]
+                ) {
+                    handler.Handle(e);
+                }
+            }
+
+            eventQueue.Clear();
         }
 
         public void StartNetClient()
@@ -149,6 +141,8 @@ namespace Farbase
 
             oks = ks;
             ks = Keyboard.GetState();
+
+            PushEvents();
         }
 
         public void Draw(DrawCall dc)

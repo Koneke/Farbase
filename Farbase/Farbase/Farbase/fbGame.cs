@@ -52,8 +52,6 @@ namespace Farbase
 
         public List<string> Log;
 
-        private GameEventHandler eventHandler;
-
         public fbGame(fbEngine engine)
         {
             NetMessage3.Setup();
@@ -67,7 +65,9 @@ namespace Farbase
 
             Log = new List<string>();
 
-            eventHandler = new GameEventHandler();
+            GameEventHandler eventHandler = new GameEventHandler(this);
+            engine.Subscribe(eventHandler, EventType.NameEvent);
+            engine.Subscribe(eventHandler, EventType.UnitMoveEvent);
 
             Initialize();
         }
@@ -90,6 +90,46 @@ namespace Farbase
             worker.Strength = 1;
             worker.Cost = 5;
             UnitType.RegisterType("worker", worker);
+
+            SetupProperties();
+        }
+
+        private void SetupProperties()
+        {
+            RegisterProperty(
+                "current-player-name",
+                new Property<string>("")
+            );
+
+            RegisterProperty(
+                "current-player-id",
+                new Property<int>(0)
+            );
+
+            RegisterProperty(
+                "local-player-name",
+                new Property<string>("")
+            );
+
+            RegisterProperty(
+                "local-player-id",
+                new Property<int>(0)
+            );
+
+            RegisterProperty(
+                "local-player-money",
+                new Property<int>(0)
+            );
+
+            RegisterProperty(
+                "local-player-diplo",
+                new Property<int>(0)
+            );
+
+            RegisterProperty(
+                "player-names",
+                new ListProperty<string>(new List<string>())
+            );
         }
 
         public Property GetProperty(string name)
@@ -104,15 +144,8 @@ namespace Farbase
             properties.Add(name.ToLower(), property);
         }
 
-
         public void Update()
         {
-            foreach (Event e in engine.Poll(NameEvent.Type))
-                HandleEvent((NameEvent)e);
-
-            foreach (Event e in engine.Poll(UnitMoveEvent.Type))
-                HandleEvent((UnitMoveEvent)e);
-
             //have yet to get map data from server
             //this is a pretty clumpsy way of doing shit, but it
             //works for the time being
@@ -143,18 +176,6 @@ namespace Farbase
             GetProperty("local-player-diplo")
                 .SetValue(LocalPlayer.DiplomacyPoints);
 
-        }
-
-        public void HandleEvent(NameEvent ne)
-        {
-            World.Players[ne.ID].Name = ne.Name;
-            World.Players[ne.ID].Color = ne.Color;
-        }
-
-        public void HandleEvent(UnitMoveEvent ume)
-        {
-            Unit u = World.UnitLookup[ume.ID];
-            u.MoveTo(ume.x, ume.y);
         }
 
         public void HandleNetMessage(NetMessage3 message)

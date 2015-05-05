@@ -74,7 +74,6 @@ namespace Farbase
         }
     }
 
-
     public class fbWorld
     {
         public List<int> PlayerIDs;

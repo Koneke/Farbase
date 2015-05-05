@@ -29,6 +29,21 @@ namespace Farbase
         }
     }
 
+    public class UnitSelection : ISelection
+    {
+        private Unit selected;
+
+        public UnitSelection(Unit unit)
+        {
+            selected = unit;
+        }
+
+        public Vector2i GetSelection()
+        {
+            return selected.Position;
+        }
+    }
+
     public class fbInterface
     {
         public fbGame Game;
@@ -36,20 +51,23 @@ namespace Farbase
 
         private const int tileSize = 16;
 
-        private ISelection selection;
+        public ISelection Selection;
         private Tile SelectedTile
         {
             get
             {
-                if (selection == null) return null;
-                return fbGame.World.Map.At(selection.GetSelection());
+                if (Selection == null) return null;
+                return fbGame.World.Map.At(Selection.GetSelection());
             }
         }
-        private Unit SelectedUnit
+
+        public Unit SelectedUnit
         {
             get
             {
-                if (selection == null) return null;
+                if (Selection == null) return null;
+                //works even if the selection is a unitselection
+                //since the selectedtile is then the one with the unit on
                 return SelectedTile.Unit;
             }
         }
@@ -57,7 +75,7 @@ namespace Farbase
         {
             get
             {
-                if (selection == null) return null;
+                if (Selection == null) return null;
                 return SelectedTile.Station;
             }
         }
@@ -101,40 +119,10 @@ namespace Farbase
             SetupUI();
             //SetupTestUI();
 
-            game.RegisterProperty(
-                "current-player-name",
-                new Property<string>("")
-            );
 
-            game.RegisterProperty(
-                "current-player-id",
-                new Property<int>(0)
-            );
-
-            game.RegisterProperty(
-                "local-player-name",
-                new Property<string>("")
-            );
-
-            game.RegisterProperty(
-                "local-player-id",
-                new Property<int>(0)
-            );
-
-            game.RegisterProperty(
-                "local-player-money",
-                new Property<int>(0)
-            );
-
-            game.RegisterProperty(
-                "local-player-diplo",
-                new Property<int>(0)
-            );
-
-            game.RegisterProperty(
-                "player-names",
-                new ListProperty<string>(new List<string>())
-            );
+            InterfaceEventHandler ieh = new InterfaceEventHandler(game, this);
+            engine.Subscribe(ieh, EventType.NameEvent);
+            engine.Subscribe(ieh, EventType.UnitMoveEvent);
         }
 
         public void SetupUI()
@@ -312,7 +300,11 @@ namespace Farbase
         public void Select(Vector2i position)
         {
             Tile t = fbGame.World.Map.At(position);
-            selection = new TileSelection(t);
+
+            if (t.Unit != null)
+                Selection = new UnitSelection(t.Unit);
+            else
+                Selection = new TileSelection(t);
         }
 
         public void Draw()
@@ -415,7 +407,7 @@ namespace Farbase
             fbRectangle destination =
                 Camera.WorldToScreen(
                     new fbRectangle(
-                        u.Position * tileSize,
+                        u.fPosition * tileSize,
                         new Vector2(tileSize)
                     )
                 );
@@ -434,7 +426,7 @@ namespace Farbase
                     Engine.GetTexture("move-dingy"),
                     Camera.WorldToScreen(
                         new fbRectangle(
-                            u.Position * tileSize
+                            u.fPosition * tileSize
                                 + new Vector2(dingySize.X * i, 0),
                             dingySize
                         )
@@ -450,7 +442,7 @@ namespace Farbase
                     Engine.GetTexture("strength-dingy"),
                     Camera.WorldToScreen(
                         new fbRectangle(
-                            u.Position * tileSize + new Vector2(0, tileSize)
+                            u.fPosition * tileSize + new Vector2(0, tileSize)
                                 - new Vector2(0, dingySize.Y * (i + 1)),
                             dingySize
                         )
@@ -555,7 +547,6 @@ namespace Farbase
             UpdateUI();
 
             Input();
-            HandleEvents();
         }
 
         public void UpdateUI()
@@ -612,41 +603,6 @@ namespace Farbase
                                 tooltips.Where(tt => tt != null)
                             );
                 }
-            }
-        }
-
-        public void HandleEvents()
-        {
-            //peek, and then let it fall through to the game itself which
-            //handles the renaming.
-            //we're doing it like this because the game should NOT need
-            //a reference to the interface
-
-            foreach (Event e in Engine.Peek(NameEvent.Type))
-            {
-                NameEvent ne = (NameEvent)e;
-                Game.Log.Add(
-                    string.Format(
-                        "{0}<{2}> is now known as {1}<{2}>.",
-                        fbGame.World.Players[ne.ID].Name,
-                        ne.Name,
-                        ne.ID
-                    )
-                );
-            }
-
-            foreach (Event e in Engine.Peek(UnitMoveEvent.Type))
-            {
-                if (SelectedUnit == null) break;
-
-                //if the moving unit is the one we're having selected,
-                //stick to it.
-
-                UnitMoveEvent ume = (UnitMoveEvent)e;
-                if (SelectedUnit.ID == ume.ID)
-                    selection = new TileSelection(
-                        fbGame.World.Map.At(ume.x, ume.y)
-                    );
             }
         }
 
@@ -713,34 +669,34 @@ namespace Farbase
                 SelectedUnit != null &&
                 SelectedUnit.Owner == fbGame.World.CurrentPlayer.ID
             ) {
-                Vector2 moveOrder = Vector2.Zero;
+                Vector2i moveOrder = null;
 
                 if (Engine.KeyPressed(Keys.NumPad2))
-                    moveOrder = new Vector2(0, 1);
-                if (Engine.KeyPressed(Keys.NumPad4))
-                    moveOrder = new Vector2(-1, 0);
-                if (Engine.KeyPressed(Keys.NumPad8))
-                    moveOrder = new Vector2(0, -1);
-                if (Engine.KeyPressed(Keys.NumPad6))
-                    moveOrder = new Vector2(1, 0);
+                    moveOrder = new Vector2i(0, 1);
+                else if (Engine.KeyPressed(Keys.NumPad4))
+                    moveOrder = new Vector2i(-1, 0);
+                else if (Engine.KeyPressed(Keys.NumPad8))
+                    moveOrder = new Vector2i(0, -1);
+                else if (Engine.KeyPressed(Keys.NumPad6))
+                    moveOrder = new Vector2i(1, 0);
 
-                if (Engine.KeyPressed(Keys.NumPad1))
-                    moveOrder = new Vector2(-1, 1);
-                if (Engine.KeyPressed(Keys.NumPad7))
-                    moveOrder = new Vector2(-1, -1);
-                if (Engine.KeyPressed(Keys.NumPad9))
-                    moveOrder = new Vector2(1, -1);
-                if (Engine.KeyPressed(Keys.NumPad3))
-                    moveOrder = new Vector2(1, 1);
+                else if (Engine.KeyPressed(Keys.NumPad1))
+                    moveOrder = new Vector2i(-1, 1);
+                else if (Engine.KeyPressed(Keys.NumPad7))
+                    moveOrder = new Vector2i(-1, -1);
+                else if (Engine.KeyPressed(Keys.NumPad9))
+                    moveOrder = new Vector2i(1, -1);
+                else if (Engine.KeyPressed(Keys.NumPad3))
+                    moveOrder = new Vector2i(1, 1);
 
-                if (moveOrder != Vector2.Zero && SelectedUnit.Moves > 0)
+                if (moveOrder != null && SelectedUnit.Moves > 0)
                 {
                     Unit u = SelectedUnit;
 
                     if(u.CanMoveTo(u.Position + moveOrder))
                     {
-                        int x = (int)(u.Position + moveOrder).X;
-                        int y = (int)(u.Position + moveOrder).Y;
+                        int x = (u.Position + moveOrder).X;
+                        int y = (u.Position + moveOrder).Y;
 
                         Engine.NetClient.Send(
                             new NetMessage3(
@@ -752,15 +708,14 @@ namespace Farbase
                         );
 
                         u.Moves -= 1;
-                        //u.MoveTo(x, y);
                         Engine.QueueEvent(new UnitMoveEvent(u.ID, x, y));
                     }
                     else if (u.CanAttack(u.Position + moveOrder))
                     {
-                        Vector2 targettile = u.Position + moveOrder;
+                        Vector2i targettile = u.Position + moveOrder;
                         Unit target = fbGame.World.Map.At(
-                            (int)targettile.X,
-                            (int)targettile.Y
+                            targettile.X,
+                            targettile.Y
                         ).Unit;
 
                         Engine.NetClient.Send(
@@ -945,20 +900,6 @@ namespace Farbase
 
             Camera.Position +=
                 mouseScroll * mouseScrollSpeed * cameraScaling;
-        }
-
-        private Rectangle WorldToScreen(Rectangle rectangle)
-        {
-            rectangle.X -= (int)Camera.Position.X;
-            rectangle.Y -= (int)Camera.Position.Y;
-
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            rectangle.X = (int)(rectangle.X * scaleFactor.X);
-            rectangle.Y = (int)(rectangle.Y * scaleFactor.Y);
-            rectangle.Width = (int)(rectangle.Width * scaleFactor.X);
-            rectangle.Height = (int)(rectangle.Height * scaleFactor.Y);
-
-            return rectangle;
         }
 
         public fbRectangle WorldToScreen(fbRectangle rectangle)

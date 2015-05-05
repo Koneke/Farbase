@@ -47,7 +47,15 @@ namespace Farbase
 
         public int x, y;
 
-        public Vector2 Position
+        public Vector2i Position
+        {
+            get { return new Vector2i(x, y); }
+        }
+
+        //ugly and should not remain
+        //it's really only because some pieces of the code still only
+        //takes xna Vector2
+        public Vector2 fPosition
         {
             get { return new Vector2(x, y); }
         }
@@ -105,7 +113,7 @@ namespace Farbase
             }
         }
 
-        public bool CanMoveTo(Vector2 position)
+        public bool CanMoveTo(Vector2i position)
         {
             //only bad condition atm is collision
             if (fbGame.World.Map.At(position).Unit == null)
@@ -113,9 +121,9 @@ namespace Farbase
             return false;
         }
 
-        public bool CanAttack(Vector2 position)
+        public bool CanAttack(Vector2i position)
         {
-            Vector2 delta = Position - position;
+            Vector2i delta = Position - position;
             //only neighbours
             if (Math.Abs(delta.X) > 1 || Math.Abs(delta.Y) > 1)
                 return false;
@@ -135,7 +143,7 @@ namespace Farbase
             fbGame.World.Map.At(tx, ty).Unit = this;
         }
 
-        public Vector2 StepTowards(Vector2 goal)
+        public Vector2i StepTowards(Vector2i goal)
         {
             //return the next move order for the path towards the given point.
 
@@ -145,11 +153,11 @@ namespace Farbase
             //      obstacles in the game (namely, only units).
             //      there's apparently a load of space in space, whoda thunk.
 
-            Vector2 delta = goal - Position;
+            Vector2i delta = goal - Position;
             delta.X = delta.X.Clamp(-1, 1);
             delta.Y = delta.Y.Clamp(-1, 1);
 
-            Vector2 moveOrder = Vector2.Zero;
+            Vector2i moveOrder = new Vector2i(0);
 
             if (delta.X == 0 && delta.Y == 0)
                 return moveOrder;
@@ -159,14 +167,14 @@ namespace Farbase
 
             if (
                 delta.X != 0 &&
-                CanMoveTo(Position + new Vector2(delta.X, 0))
+                CanMoveTo(Position + new Vector2i(delta.X, 0))
             )
-                return new Vector2(delta.X, 0);
+                return new Vector2i(delta.X, 0);
 
-            if (CanMoveTo(Position + new Vector2(0, delta.Y)))
-                return new Vector2(0, delta.Y);
+            if (CanMoveTo(Position + new Vector2i(0, delta.Y)))
+                return new Vector2i(0, delta.Y);
 
-            return Vector2.Zero;
+            return new Vector2i(0);
         }
 
         public void Hurt(int amount)
@@ -182,5 +190,4 @@ namespace Farbase
             }
         }
     }
-
 }

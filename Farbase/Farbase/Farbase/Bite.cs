@@ -59,6 +59,21 @@ namespace Farbase
             X = x;
             Y = y;
         }
+
+        public Vector2i(int i)
+        {
+            X = Y = i;
+        }
+
+        public static Vector2i operator +(Vector2i a, Vector2i b)
+        {
+            return new Vector2i(a.X + b.X, a.Y + b.Y);
+        }
+
+        public static Vector2i operator -(Vector2i a, Vector2i b)
+        {
+            return new Vector2i(a.X - b.X, a.Y - b.Y);
+        }
     }
 
     public class DrawCall
