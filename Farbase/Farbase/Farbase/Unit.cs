@@ -188,17 +188,13 @@ namespace Farbase
             return new Vector2i(0);
         }
 
-        public void Hurt(int amount)
+        public void Despawn()
         {
-            Strength -= amount;
-            if (Strength <= 0)
-            {
-                //fbGame.World.DespawnUnit(this)?
-                World.Units.Remove(this);
-                World.Map.At(x, y).Unit = null;
-                World.UnitLookup.Remove(ID);
-                World.Players[Owner].OwnedUnits.Remove(ID);
-            }
+            //fbGame.World.DespawnUnit(this)?
+            World.Units.Remove(this);
+            World.Map.At(x, y).Unit = null;
+            World.UnitLookup.Remove(ID);
+            World.Players[Owner].OwnedUnits.Remove(ID);
         }
     }
 }

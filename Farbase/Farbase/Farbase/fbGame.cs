@@ -13,7 +13,6 @@ namespace Farbase
         public string Name;
         public Color Color;
         public int Money;
-        public int DiplomacyPoints;
         public List<int> OwnedUnits; 
 
         public Player(string name, int id, Color color)
@@ -123,11 +122,6 @@ namespace Farbase
             );
 
             RegisterProperty(
-                "local-player-diplo",
-                new Property<int>(0)
-            );
-
-            RegisterProperty(
                 "player-names",
                 new ListProperty<string>(new List<string>())
             );
@@ -174,9 +168,6 @@ namespace Farbase
             GetProperty("local-player-money")
                 .SetValue(LocalPlayer.Money);
 
-            GetProperty("local-player-diplo")
-                .SetValue(LocalPlayer.DiplomacyPoints);
-
         }
 
         public void HandleNetMessage(NetMessage3 message)
@@ -187,14 +178,14 @@ namespace Farbase
                     Log.Add((string)message.Get("message"));
                     break;
 
-                case NM3MessageType.create_world:
+                case NM3MessageType.world_create:
                     World = new fbWorld(
                         (int)message.Get("width"),
                         (int)message.Get("height")
                     );
                     break;
 
-                case NM3MessageType.create_station:
+                case NM3MessageType.station_create:
                     World.SpawnStation(
                         (int)message.Get("owner"),
                         (int)message.Get("x"),
@@ -202,14 +193,14 @@ namespace Farbase
                     );
                     break;
 
-                case NM3MessageType.create_planet:
+                case NM3MessageType.planet_create:
                     World.SpawnPlanet(
                         (int)message.Get("x"),
                         (int)message.Get("y")
                     );
                     break;
 
-                case NM3MessageType.create_unit:
+                case NM3MessageType.unit_create:
                     World.SpawnUnit(
                         (string)message.Get("type"),
                         (int)message.Get("owner"),
@@ -219,7 +210,7 @@ namespace Farbase
                     );
                     break;
 
-                case NM3MessageType.move_unit:
+                case NM3MessageType.unit_move:
                     Engine.QueueEvent(
                         new UnitMoveEvent(
                             (int)message.Get("id"),
@@ -229,13 +220,7 @@ namespace Farbase
                     );
                     break;
 
-                case NM3MessageType.set_unit_moves:
-                    World.UnitLookup
-                        [(int)message.Get("id")].Moves =
-                         (int)message.Get("amount");
-                    break;
-
-                case NM3MessageType.new_player:
+                case NM3MessageType.player_new:
                     World.AddPlayer(
                         new Player(
                             "Unnnamed player",
@@ -245,15 +230,15 @@ namespace Farbase
                     );
                     break;
 
-                case NM3MessageType.replenish_player:
+                case NM3MessageType.player_replenish:
                     World.PassTo((int)message.Get("id"));
                     break;
 
-                case NM3MessageType.assign_id:
+                case NM3MessageType.player_assign_id:
                     We = (int)message.Get("id");
                     break;
 
-                case NM3MessageType.name_player:
+                case NM3MessageType.player_name:
                     Engine.QueueEvent(
                         new NameEvent(
                             (int)message.Get("id"),
@@ -263,7 +248,7 @@ namespace Farbase
                     );
                     break;
 
-                case NM3MessageType.current_player:
+                case NM3MessageType.player_current:
                     World.CurrentPlayerIndex =
                         (int)message.Get("index");
 
@@ -276,14 +261,20 @@ namespace Farbase
                     );
                     break;
 
-                case NM3MessageType.hurt:
-                    World.UnitLookup[(int)message.Get("id")]
-                        .Hurt((int)message.Get("amount"));
+                case NM3MessageType.unit_status:
+                    Unit u = World.UnitLookup[message.Get<int>("id")];
+                    u.Moves = message.Get<int>("moves");
+                    u.Attacks = message.Get<int>("attacks");
+                    u.Strength = message.Get<int>("strength");
+
+                    //todo: should probably be an event
+                    if (u.Strength <= 0)
+                        u.Despawn();
                     break;
 
-                case NM3MessageType.player_set_money:
+                case NM3MessageType.player_status:
                     World.Players[(int)message.Get("id")]
-                        .Money = (int)message.Get("amount");
+                        .Money = (int)message.Get("money");
                     break;
 
                 case NM3MessageType.client_ready:

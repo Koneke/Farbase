@@ -8,6 +8,10 @@ namespace Farbase
     public class fbNetClient
     {
         public static bool Verbose = true;
+
+        //todo: this is an awkward and illegal reference
+        //      at the moment it's okay, because all it's doing is giving
+        //      netmsgs to game, but it's not clean at all.
         public static fbGame Game;
 
         private TcpClient client;

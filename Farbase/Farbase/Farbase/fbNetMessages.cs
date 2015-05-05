@@ -8,25 +8,30 @@ namespace Farbase
     {
         dev_command,
         message,
-        create_world,
-        create_station,
-        create_planet,
-        create_unit,
-        move_unit,
-        set_unit_moves,
-        new_player,
-        assign_id,
-        name_player,
-        current_player,
+
         client_ready,
         client_unready,
-        pass_turn,
-        attack,
-        hurt,
-        build_unit,
-        player_set_money,
-        replenish_player,
-        build_station
+        client_pass,
+
+        planet_create,
+
+        player_assign_id,
+        player_current,
+        player_name,
+        player_new,
+        player_status,
+        player_replenish,
+
+        station_build,
+        station_create,
+
+        unit_attack,
+        unit_build,
+        unit_create,
+        unit_move,
+        unit_status,
+
+        world_create,
     }
 
     public class NM3Sig
@@ -107,6 +112,15 @@ namespace Farbase
 
         private static void SetupSignatures()
         {
+            //=== === === === === === === === === ===//
+
+            SetupSignature(
+                "dev",
+                NM3MessageType.dev_command
+            )
+                .AddArgument<int>("number")
+            ;
+
             SetupSignature(
                 "msg",
                 NM3MessageType.message
@@ -114,88 +128,7 @@ namespace Farbase
                 .AddArgument<string>("message")
             ;
 
-            SetupSignature(
-                "create-world",
-                NM3MessageType.create_world
-            )
-                .AddArgument<int>("width")
-                .AddArgument<int>("height")
-            ;
-
-            SetupSignature(
-                "create-station",
-                NM3MessageType.create_station
-            )
-                .AddArgument<int>("owner")
-                .AddArgument<int>("x")
-                .AddArgument<int>("y")
-            ;
-
-            SetupSignature(
-                "create-planet",
-                NM3MessageType.create_planet
-            )
-                .AddArgument<int>("x")
-                .AddArgument<int>("y")
-            ;
-
-            SetupSignature(
-                "create-unit",
-                NM3MessageType.create_unit
-            )
-                .AddArgument<string>("type")
-                .AddArgument<int>("owner")
-                .AddArgument<int>("id")
-                .AddArgument<int>("x")
-                .AddArgument<int>("y")
-            ;
-
-            SetupSignature(
-                "move",
-                NM3MessageType.move_unit
-            )
-                .AddArgument<int>("id")
-                .AddArgument<int>("x")
-                .AddArgument<int>("y")
-            ;
-
-            SetupSignature(
-                "new-player",
-                NM3MessageType.new_player
-            )
-                .AddArgument<int>("id")
-            ;
-
-            //todo: can probably be replaced by using pass from server to client
-            SetupSignature(
-                "replenish",
-                NM3MessageType.replenish_player
-            )
-                .AddArgument<int>("id")
-            ;
-
-            SetupSignature(
-                "assign-id",
-                NM3MessageType.assign_id
-            )
-                .AddArgument<int>("id")
-            ;
-
-            SetupSignature(
-                "name",
-                NM3MessageType.name_player
-            )
-                .AddArgument<int>("id")
-                .AddArgument<string>("name")
-                .AddArgument<string>("color")
-            ;
-
-            SetupSignature(
-                "current-player",
-                NM3MessageType.current_player
-            )
-                .AddArgument<int>("index")
-            ;
+            //=== === === === === === === === === ===//
 
             SetupSignature(
                 "ready",
@@ -209,47 +142,100 @@ namespace Farbase
 
             SetupSignature(
                 "pass",
-                NM3MessageType.pass_turn
+                NM3MessageType.client_pass
             );
 
+            //=== === === === === === === === === ===//
+
             SetupSignature(
-                "dev",
-                NM3MessageType.dev_command
+                "create-planet",
+                NM3MessageType.planet_create
             )
-                .AddArgument<int>("number")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
+            //=== === === === === === === === === ===//
+
+            SetupSignature(
+                "assign-id",
+                NM3MessageType.player_assign_id
+            )
+                .AddArgument<int>("id")
             ;
 
             SetupSignature(
+                "current-player",
+                NM3MessageType.player_current
+            )
+                .AddArgument<int>("index")
+            ;
+
+            SetupSignature(
+                "name",
+                NM3MessageType.player_name
+            )
+                .AddArgument<int>("id")
+                .AddArgument<string>("name")
+                .AddArgument<string>("color")
+            ;
+
+            SetupSignature(
+                "new-player",
+                NM3MessageType.player_new
+            )
+                .AddArgument<int>("id")
+            ;
+
+            SetupSignature(
+                "player-status",
+                NM3MessageType.player_status
+            )
+                .AddArgument<int>("id")
+                .AddArgument<int>("money")
+            ;
+
+            //todo: can probably be replaced by using pass from server to client
+            SetupSignature(
+                "replenish",
+                NM3MessageType.player_replenish
+            )
+                .AddArgument<int>("id")
+            ;
+
+            //=== === === === === === === === === ===//
+
+            SetupSignature(
+                "create-station",
+                NM3MessageType.station_create
+            )
+                .AddArgument<int>("owner")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
+            SetupSignature(
+                "build-station",
+                NM3MessageType.station_build
+            )
+                .AddArgument<int>("owner")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
+            ;
+
+            //=== === === === === === === === === ===//
+
+            SetupSignature(
                 "attack",
-                NM3MessageType.attack
+                NM3MessageType.unit_attack
             )
                 .AddArgument<int>("attackerid")
                 .AddArgument<int>("targetid")
             ;
 
-            //todo: replace these two with a generic unit-info,
-            //      transferring the current state of the unit?
-            // ~~~ ~~~ ~~~ ~~~ ~~~
-            SetupSignature(
-                "hurt",
-                NM3MessageType.hurt
-            )
-                .AddArgument<int>("id")
-                .AddArgument<int>("amount")
-            ;
-
-            SetupSignature(
-                "set-moves",
-                NM3MessageType.set_unit_moves
-            )
-                .AddArgument<int>("id")
-                .AddArgument<int>("amount")
-            ;
-            // ~~~ ~~~ ~~~ ~~~ ~~~
-
             SetupSignature(
                 "build-unit",
-                NM3MessageType.build_unit
+                NM3MessageType.unit_build
             )
                 .AddArgument<string>("type")
                 .AddArgument<int>("x")
@@ -257,20 +243,43 @@ namespace Farbase
             ;
 
             SetupSignature(
-                "set-money",
-                NM3MessageType.player_set_money
+                "create-unit",
+                NM3MessageType.unit_create
             )
+                .AddArgument<string>("type")
+                .AddArgument<int>("owner")
                 .AddArgument<int>("id")
-                .AddArgument<int>("amount")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
             ;
 
             SetupSignature(
-                "build-station",
-                NM3MessageType.build_station
+                "move",
+                NM3MessageType.unit_move
             )
-                .AddArgument<int>("owner")
+                .AddArgument<int>("id")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
+            ;
+
+            SetupSignature(
+                "unit-status",
+                NM3MessageType.unit_status
+            )
+                .AddArgument<int>("id")
+                .AddArgument<int>("moves")
+                .AddArgument<int>("attacks")
+                .AddArgument<int>("strength")
+            ;
+
+            //=== === === === === === === === === ===//
+
+            SetupSignature(
+                "create-world",
+                NM3MessageType.world_create
+            )
+                .AddArgument<int>("width")
+                .AddArgument<int>("height")
             ;
         }
 

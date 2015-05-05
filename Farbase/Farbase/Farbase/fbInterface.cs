@@ -106,7 +106,6 @@ namespace Farbase
                 new ListBox(Engine, this)
                     .AddChild(portrait)
                     .AddChild(new Label("$: @local-player-money", Engine, this))
-                    .AddChild(new Label("d: @local-player-diplo", Engine, this))
                     .Padding(10)
                     .Margins(60, 40)
             );
@@ -629,7 +628,7 @@ namespace Farbase
                 if (Game.OurTurn)
                 {
                     Engine.NetClient.Send(
-                        new NetMessage3(NM3MessageType.pass_turn)
+                        new NetMessage3(NM3MessageType.client_pass)
                     );
                 }
                 else
@@ -659,7 +658,7 @@ namespace Farbase
 
                 Engine.NetClient.Send(
                     new NetMessage3(
-                        NM3MessageType.name_player,
+                        NM3MessageType.player_name,
                         Game.We,
                         names[Game.We],
                         ExtensionMethods.ColorToString(colors[Game.We])
@@ -716,7 +715,7 @@ namespace Farbase
 
                         Engine.NetClient.Send(
                             new NetMessage3(
-                                NM3MessageType.move_unit,
+                                NM3MessageType.unit_move,
                                 u.ID,
                                 x,
                                 y
@@ -736,7 +735,7 @@ namespace Farbase
 
                         Engine.NetClient.Send(
                             new NetMessage3(
-                                NM3MessageType.attack,
+                                NM3MessageType.unit_attack,
                                 u.ID, target.ID
                             )
                         );
@@ -834,7 +833,7 @@ namespace Farbase
             ) {
                 Engine.NetClient.Send(
                     new NetMessage3(
-                        NM3MessageType.build_unit,
+                        NM3MessageType.unit_build,
                         type,
                         SelectedTile.Position.X,
                         SelectedTile.Position.Y

@@ -4,8 +4,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using Farbase;
 using Microsoft.Xna.Framework;
+using Farbase;
 
 namespace FarbaseServer
 {
@@ -28,13 +28,10 @@ namespace FarbaseServer
 
         public void SendMessage(NetMessage3 message)
         {
-            SendMessage(message.Format());
-        }
-
-        public void SendMessage(string message)
-        {
-            Console.WriteLine("-> {0}: {1}", ID, message);
-            byte[] buffer = Program.encoder.GetBytes(message + '\n');
+            Console.WriteLine("-> {0}: {1}", ID, message.Format());
+            byte[] buffer = Program.encoder.GetBytes(
+                message.Format() + '\n'
+            );
             Stream.Write(buffer, 0, buffer.Length);
             Stream.Flush();
         }
@@ -66,7 +63,7 @@ namespace FarbaseServer
         {
             SendAll(
                 new NetMessage3(
-                    NM3MessageType.create_unit,
+                    NM3MessageType.unit_create,
                     u.UnitType.Name,
                     u.Owner,
                     u.ID,
@@ -86,7 +83,7 @@ namespace FarbaseServer
                     );
                     break;
 
-                case NM3MessageType.name_player:
+                case NM3MessageType.player_name:
                     Player p = World.Players[message.Get<int>("id")];
 
                     p.Name = message.Get<string>("name");
@@ -97,14 +94,14 @@ namespace FarbaseServer
                     SendAll(message);
                     break;
 
-                case NM3MessageType.pass_turn:
+                case NM3MessageType.client_pass:
                     World.CurrentPlayerIndex =
                         (World.CurrentPlayerIndex + 1) %
                         World.PlayerIDs.Count;
 
                     SendAll(
                         new NetMessage3(
-                            NM3MessageType.current_player,
+                            NM3MessageType.player_current,
                             World.CurrentPlayerIndex
                         )
                     );
@@ -113,13 +110,13 @@ namespace FarbaseServer
 
                     SendAll(
                         new NetMessage3(
-                            NM3MessageType.replenish_player,
+                            NM3MessageType.player_replenish,
                             World.CurrentID
                         )
                     );
                     break;
 
-                case NM3MessageType.move_unit:
+                case NM3MessageType.unit_move:
                     Unit un;
                     //lock necessary?
                     lock (World)
@@ -145,9 +142,12 @@ namespace FarbaseServer
 
                     SendAll(
                         new NetMessage3(
-                            NM3MessageType.set_unit_moves,
-                            un.ID, un.Moves
-                            ),
+                            NM3MessageType.unit_status,
+                            un.ID,
+                            un.Moves,
+                            un.Attacks,
+                            un.Strength
+                        ),
                         except: un.Owner
                     );
                     break;
@@ -165,18 +165,23 @@ namespace FarbaseServer
                             );
                             BroadcastUnit(u);
 
+                            World.GetPlayer(message.Sender).Money = 10;
+
+                            //might make this a generic "update"
+                            //so we don't have to manually resync this every
+                            //time we change stuff for a player
                             SendAll(
                                 new NetMessage3(
-                                    NM3MessageType.player_set_money,
+                                    NM3MessageType.player_status,
                                     message.Sender,
-                                    10
+                                    World.GetPlayer(message.Sender).Money
                                 )
                             );
                             break;
                     }
                     break;
 
-                case NM3MessageType.attack:
+                case NM3MessageType.unit_attack:
                     //please don't do shit until we've resolved combat
                     Client.TcpPlayers[message.Sender]
                         .SendMessage(
@@ -198,12 +203,17 @@ namespace FarbaseServer
                     else
                         loser = target;
 
-                    loser.Hurt(1);
+                    loser.Strength -= 1;
+                    if (loser.Strength <= 0)
+                        loser.Despawn();
+
                     SendAll(
                         new NetMessage3(
-                            NM3MessageType.hurt,
+                            NM3MessageType.unit_status,
                             loser.ID,
-                            1
+                            loser.Moves,
+                            loser.Attacks,
+                            loser.Strength
                         )
                     );
 
@@ -214,7 +224,7 @@ namespace FarbaseServer
                         );
                     break;
 
-                case NM3MessageType.build_unit:
+                case NM3MessageType.unit_build:
                     Unit unit = new Unit(
                         World,
                         UnitType.GetType(message.Get<string>("type")),
@@ -234,14 +244,14 @@ namespace FarbaseServer
 
                     SendAll(
                         new NetMessage3(
-                            NM3MessageType.player_set_money,
+                            NM3MessageType.player_status,
                             message.Sender,
                             newMoney
                         )
                     );
                     break;
 
-                case NM3MessageType.create_station:
+                case NM3MessageType.station_create:
                     World.SpawnStation(
                         message.Get<int>("owner"),
                         message.Get<int>("x"),
@@ -345,18 +355,30 @@ namespace FarbaseServer
 
         private void welcomeClient(Client p)
         {
-            p.SendMessage("msg:Welcome to Farbase.");
-            p.SendMessage("msg:Your ID is " + p.ID + ".");
             p.SendMessage(
-                string.Format(
-                    "assign-id:{0}",
+                new NetMessage3(
+                    NM3MessageType.message,
+                    "msg:Welcome to Farbase."
+                )
+            );
+
+            p.SendMessage(
+                new NetMessage3(
+                    NM3MessageType.message,
+                    "msg:Your ID is " + p.ID + "."
+                )
+            );
+
+            p.SendMessage(
+                new NetMessage3(
+                    NM3MessageType.player_assign_id,
                     p.ID
                 )
             );
 
             p.SendMessage(
-                string.Format(
-                    "create-world:{0},{1}",
+                new NetMessage3(
+                    NM3MessageType.world_create,
                     World.Map.Width,
                     World.Map.Height
                 )
@@ -366,20 +388,28 @@ namespace FarbaseServer
             foreach (int id in World.PlayerIDs)
             {
                 p.SendMessage(
-                    string.Format(
-                        "new-player:{0}",
+                    new NetMessage3(
+                        NM3MessageType.player_new,
                         id
                     )
                 );
 
                 p.SendMessage(
-                    string.Format(
-                        "name:{0},{1},{2}",
+                    new NetMessage3(
+                        NM3MessageType.player_name,
                         id,
                         World.Players[id].Name,
                         ExtensionMethods.ColorToString(
                             World.Players[id].Color
                         )
+                    )
+                );
+
+                p.SendMessage(
+                    new NetMessage3(
+                        NM3MessageType.player_status,
+                        id,
+                        World.GetPlayer(id).Money
                     )
                 );
             }
@@ -389,26 +419,35 @@ namespace FarbaseServer
             {
                 Tile t = World.Map.At(x, y);
                 if (t.Station != null)
+                {
                     p.SendMessage(
-                        string.Format(
-                            "create-station:{0},{1},{2}",
-                            t.Station.Owner, x, y
+                        new NetMessage3(
+                            NM3MessageType.station_create,
+                            t.Station.Owner,
+                            x,
+                            y
                         )
                     );
+                }
+
                 if (World.Map.At(x, y).Planet != null)
+                {
                     p.SendMessage(
-                        string.Format(
-                            "create-planet:{0},{1}",
-                            x, y
+                        new NetMessage3(
+                            NM3MessageType.planet_create,
+                            x,
+                            y
                         )
                     );
+                }
 
                 Unit u = World.Map.At(x, y).Unit;
+
                 if (u != null)
                 {
                     p.SendMessage(
-                        string.Format(
-                            "create-unit:{0},{1},{2},{3},{4}",
+                        new NetMessage3(
+                            NM3MessageType.unit_create,
                             u.UnitType.Name,
                             u.Owner,
                             u.ID,
@@ -416,19 +455,31 @@ namespace FarbaseServer
                             u.Position.Y
                         )
                     );
+
+                    p.SendMessage(
+                        new NetMessage3(
+                            NM3MessageType.unit_status,
+                            u.ID,
+                            u.Moves,
+                            u.Attacks,
+                            u.Strength
+                        )
+                    );
                 }
             }
 
             //tell new client about whose turn it is
             p.SendMessage(
-                string.Format(
-                    "current-player:{0}",
+                new NetMessage3(
+                    NM3MessageType.player_current,
                     World.CurrentPlayerIndex
                 )
             );
 
             //we gucci now
-            p.SendMessage("ready");
+            p.SendMessage(
+                new NetMessage3(NM3MessageType.client_ready)
+            );
         }
 
         private void handleClient(object clientObject)
@@ -457,8 +508,8 @@ namespace FarbaseServer
             {
                 if (id == p.ID) continue;
                 Client.TcpPlayers[id].SendMessage(
-                    string.Format(
-                        "new-player:{0}",
+                    new NetMessage3(
+                        NM3MessageType.player_new,
                         p.ID
                     )
                 );

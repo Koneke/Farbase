@@ -140,7 +140,7 @@ namespace Farbase
                     BuildStationEvent bse = (BuildStationEvent)e;
                     Engine.NetClient.Send(
                         new NetMessage3(
-                            NM3MessageType.create_station,
+                            NM3MessageType.station_create,
                             bse.Owner,
                             bse.x,
                             bse.y
