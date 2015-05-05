@@ -48,7 +48,7 @@ namespace Farbase
         }
 
         //client side of world
-        public static fbWorld World;
+        public fbWorld World;
 
         public List<string> Log;
 
@@ -56,8 +56,7 @@ namespace Farbase
         {
             NetMessage3.Setup();
 
-            this.Engine = engine;
-            Unit.Game = this;
+            Engine = engine;
             fbNetClient.Game = this;
 
             engine.SetSize(1280, 720);

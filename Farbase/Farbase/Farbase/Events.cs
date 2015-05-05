@@ -126,13 +126,13 @@ namespace Farbase
             {
                 case EventType.NameEvent:
                     NameEvent ne = (NameEvent)e;
-                    fbGame.World.Players[ne.ID].Name = ne.Name;
-                    fbGame.World.Players[ne.ID].Color = ne.Color;
+                    Game.World.Players[ne.ID].Name = ne.Name;
+                    Game.World.Players[ne.ID].Color = ne.Color;
                     break;
 
                 case EventType.UnitMoveEvent:
                     UnitMoveEvent ume = (UnitMoveEvent)e;
-                    Unit u = fbGame.World.UnitLookup[ume.ID];
+                    Unit u = Game.World.UnitLookup[ume.ID];
                     u.MoveTo(ume.x, ume.y);
                     break;
 
@@ -174,7 +174,7 @@ namespace Farbase
                     Game.Log.Add(
                         string.Format(
                             "{0}<{2}> is now known as {1}<{2}>.",
-                            fbGame.World.Players[ne.ID].Name,
+                            Game.World.Players[ne.ID].Name,
                             ne.Name,
                             ne.ID
                         )

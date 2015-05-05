@@ -39,7 +39,7 @@ namespace Farbase
 
     public class Unit
     {
-        public static fbGame Game;
+        private fbWorld World;
 
         public UnitType UnitType;
         public int Owner;
@@ -63,7 +63,7 @@ namespace Farbase
         public Tile Tile
         {
             get {
-                return fbGame.World.Map.At(x, y);
+                return World.Map.At(x, y);
             }
         }
 
@@ -72,12 +72,14 @@ namespace Farbase
         public int Strength;
 
         public Unit(
+            fbWorld world,
             UnitType unitType,
             int owner,
             int id,
             int x,
             int y
         ) {
+            World = world;
             UnitType = unitType;
             Owner = owner;
             ID = id;
@@ -89,11 +91,19 @@ namespace Farbase
         }
 
         public Unit(
+            fbWorld world,
             UnitType unitType,
             int owner,
             int id,
             Vector2 position
-        ) : this(unitType, owner, id, (int)position.X, (int)position.Y) {
+        ) : this(
+            world,
+            unitType,
+            owner,
+            id,
+            (int)position.X,
+            (int)position.Y
+        ) {
         }
 
         public void Replenish()
@@ -116,7 +126,7 @@ namespace Farbase
         public bool CanMoveTo(Vector2i position)
         {
             //only bad condition atm is collision
-            if (fbGame.World.Map.At(position).Unit == null)
+            if (World.Map.At(position).Unit == null)
                 return true;
             return false;
         }
@@ -128,8 +138,8 @@ namespace Farbase
             if (Math.Abs(delta.X) > 1 || Math.Abs(delta.Y) > 1)
                 return false;
 
-            if (fbGame.World.Map.At(position).Unit != null)
-                if (fbGame.World.Map.At(position).Unit.Owner != Owner)
+            if (World.Map.At(position).Unit != null)
+                if (World.Map.At(position).Unit.Owner != Owner)
                     return true;
 
             return false;
@@ -137,10 +147,11 @@ namespace Farbase
 
         public void MoveTo(int tx, int ty)
         {
-            Tile.Unit = null;
+            //Tile.Unit = null;
+            World.Map.At(x, y).Unit = null;
             x = tx;
             y = ty;
-            fbGame.World.Map.At(tx, ty).Unit = this;
+            World.Map.At(tx, ty).Unit = this;
         }
 
         public Vector2i StepTowards(Vector2i goal)
@@ -183,10 +194,10 @@ namespace Farbase
             if (Strength <= 0)
             {
                 //fbGame.World.DespawnUnit(this)?
-                fbGame.World.Units.Remove(this);
-                fbGame.World.Map.At(x, y).Unit = null;
-                fbGame.World.UnitLookup.Remove(ID);
-                fbGame.World.Players[Owner].OwnedUnits.Remove(ID);
+                World.Units.Remove(this);
+                World.Map.At(x, y).Unit = null;
+                World.UnitLookup.Remove(ID);
+                World.Players[Owner].OwnedUnits.Remove(ID);
             }
         }
     }
