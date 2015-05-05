@@ -182,6 +182,12 @@ namespace Farbase
                     break;
 
                 case EventType.BuildUnitEvent:
+                    //this should probably not be a thing later,
+                    //because unit building units takes time?
+                    //(so it'd actually be annoying)
+                    //but right now it's instant and you probably want it
+                    //selected asap
+
                     BuildUnitEvent bue = (BuildUnitEvent)e;
                     Vector2i selected = ui.Selection.GetSelection();
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 
 namespace Farbase
@@ -119,12 +120,10 @@ namespace Farbase
 
         public ContainerWidget Parent;
 
-        public bool Visible {
-            get {
-                if (visibleCondition == null)
-                    return true;
-                return visibleCondition();
-            }
+        public virtual bool IsVisible() {
+            if (visibleCondition == null)
+                return true;
+            return visibleCondition();
         }
 
         public bool Disabled
@@ -134,15 +133,15 @@ namespace Farbase
             }
         }
 
-        public Func<bool> enabledCondition; 
-        private Func<bool> visibleCondition;
+        private Func<bool> enabledCondition;
+        protected Func<bool> visibleCondition;
 
         public abstract bool IsInteractive();
 
-        public int TopMargin, RightMargin, BottomMargin, LeftMargin;
-        public int TopPadding, RightPadding, BottomPadding, LeftPadding;
+        protected int TopMargin, RightMargin, BottomMargin, LeftMargin;
+        protected int TopPadding, RightPadding, BottomPadding, LeftPadding;
 
-        public Vector2 MarginSize
+        protected Vector2 MarginSize
         {
             get {
                 return new Vector2(
@@ -151,7 +150,7 @@ namespace Farbase
                 );
             }
         }
-        public Vector2 PaddingSize
+        protected Vector2 PaddingSize
         {
             get {
                 return new Vector2(
@@ -161,10 +160,10 @@ namespace Farbase
             }
         }
 
-        public Vector2 TopLeftMargin {
+        protected Vector2 TopLeftMargin {
             get { return new Vector2(LeftMargin, TopMargin); }
         }
-        public Vector2 TopLeftPadding {
+        protected Vector2 TopLeftPadding {
             get { return new Vector2(LeftPadding, TopPadding); }
         }
 
@@ -358,10 +357,6 @@ namespace Farbase
 
         public void DrawBackground()
         {
-            var a =
-                GetBackgroundColor();
-            var b = a * backgroundAlpha;
-
             new DrawCall(
                 engine.GetTexture("blank"),
                 new fbRectangle(
@@ -456,11 +451,23 @@ namespace Farbase
         protected ContainerWidget(
             fbEngine engine,
             fbInterface ui
-        ) : base(engine, ui) {
+            ) : base(engine, ui)
+        {
             Children = new List<Widget>();
         }
 
-        public List<Widget> GetChildren() { return Children; }
+        public override bool IsVisible()
+        {
+            if (visibleCondition == null)
+                return AnyChildVisible;
+            return visibleCondition() && AnyChildVisible;
+        }
+
+        public List<Widget> GetChildren()
+        {
+            return Children;
+        }
+
         public ContainerWidget AddChild(Widget w)
         {
             w.Parent = this;
@@ -468,7 +475,9 @@ namespace Farbase
 
             return this;
         }
-        public ContainerWidget RemoveChild(Widget w) {
+
+        public ContainerWidget RemoveChild(Widget w)
+        {
             w.Parent = null;
             Children.Remove(w);
 
@@ -479,8 +488,8 @@ namespace Farbase
 
         public override void OnClick()
         {
-            foreach(Widget c in Children)
-                if (c.Visible && c.IsHovered)
+            foreach (Widget c in Children)
+                if (c.IsVisible() && c.IsHovered)
                     c.OnClick();
         }
 
@@ -488,19 +497,28 @@ namespace Farbase
         {
             if (!IsHovered) return null;
 
-            foreach(Widget c in Children)
-                if (c.Visible && c.IsHovered)
+            foreach (Widget c in Children)
+                if (c.IsVisible() && c.IsHovered)
                     return c.GetHovered();
             return this;
+        }
+
+        private bool AnyChildVisible
+        {
+            get { return Children.Any(c => c.IsVisible() ); }
         }
     }
 
     public class ListBox : ContainerWidget
     {
+        private int internalPadding;
+
         public ListBox(
             fbEngine engine,
-            fbInterface ui
+            fbInterface ui,
+            int internalPadding = 0
         ) : base(engine, ui) {
+            this.internalPadding = internalPadding;
         }
 
         public override bool IsInteractive() { return false; }
@@ -510,7 +528,7 @@ namespace Farbase
             Vector2 size = new Vector2(0);
             foreach (Widget w in Children)
             {
-                if (!w.Visible) continue;
+                if (!w.IsVisible()) continue;
 
                 Vector2 childSize = w.GetSize();
 
@@ -518,6 +536,7 @@ namespace Farbase
                     size.X = childSize.X;
 
                 size.Y += childSize.Y;
+                size.Y += internalPadding;
             }
 
             return size + PaddingSize;
@@ -539,8 +558,11 @@ namespace Farbase
                 GetScreenPosition() + TopLeftMargin + TopLeftPadding;
 
             for (int i = 0; i < childIndex; i++)
-                if(Children[i].Visible)
+                if (Children[i].IsVisible())
+                {
                     position.Y += Children[i].GetSize().Y;
+                    position.Y += internalPadding;
+                }
 
             if (child.HAlignment == HAlignment.Right)
             {
@@ -566,7 +588,7 @@ namespace Farbase
 
             foreach (Widget c in Children)
             {
-                if (!c.Visible) continue;
+                if (!c.IsVisible()) continue;
                 c.Render();
             }
         }
@@ -685,7 +707,7 @@ namespace Farbase
 
             foreach (Widget c in Children)
             {
-                if (!c.Visible) continue;
+                if (!c.IsVisible()) continue;
 
                 Vector2 childSize = c.GetSize();
 
@@ -712,7 +734,7 @@ namespace Farbase
             DrawBackground();
 
             foreach (Widget c in Children)
-                if(c.Visible)
+                if(c.IsVisible())
                     c.Render();
         }
 
@@ -723,7 +745,7 @@ namespace Farbase
                 + TopLeftMargin + TopLeftPadding;
 
             for (int i = 0; i < childIndex; i++)
-                if(Children[i].Visible)
+                if(Children[i].IsVisible())
                     position.X += Children[i].GetSize().X + internalPadding;
 
             //center vertically

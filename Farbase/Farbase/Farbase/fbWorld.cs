@@ -39,7 +39,7 @@ namespace Farbase
             return At(
                 (int)position.X,
                 (int)position.Y
-                );
+            );
         }
     }
 

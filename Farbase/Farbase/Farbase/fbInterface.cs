@@ -47,8 +47,9 @@ namespace Farbase
         private List<Widget> widgets;
         public Theme DefaultTheme;
 
-        private Widget BuildCard;
-        private Widget CommandCard;
+        private ListBox CardBox;
+        private SideBySideWidgets BuildCard;
+        private SideBySideWidgets CommandCard;
 
         private string tooltip;
 
@@ -110,24 +111,25 @@ namespace Farbase
                     .Margins(60, 40)
             );
 
-            ListBox cardBox =
+            CardBox =
                 (ListBox)
-                new ListBox(Engine, this)
+                new ListBox(Engine, this, 5)
                     .Margins(40)
                     .SetBorder(0)
                     .BackgroundAlpha(0f)
                     .SetAlign(HAlignment.Right, VAlignment.Bottom)
                 ;
 
-            widgets.Add(cardBox);
+            widgets.Add(CardBox);
 
             CommandCard =
+                (SideBySideWidgets)
                 new SideBySideWidgets(Engine, this, 5)
                     .Padding(5)
                     .SetAlign(HAlignment.Right, VAlignment.Bottom)
                 ;
 
-            ((SideBySideWidgets)CommandCard)
+            CommandCard
                 .AddChild(
                     new TextureButton(
                         "station",
@@ -161,9 +163,10 @@ namespace Farbase
                 )
             ;
 
-            cardBox.AddChild(CommandCard);
+            CardBox.AddChild(CommandCard);
 
             BuildCard =
+                (SideBySideWidgets)
                 new SideBySideWidgets(Engine, this, 5)
                     .Padding(5)
                     .SetVisibleCondition(() => SelectedStation != null)
@@ -172,7 +175,7 @@ namespace Farbase
             foreach (UnitType ut in UnitType.UnitTypes)
             {
                 UnitType unitType = ut;
-                ((SideBySideWidgets)BuildCard)
+                BuildCard
                     .AddChild(
                         new TextureButton(
                             ut.Name,
@@ -195,7 +198,7 @@ namespace Farbase
                     );
             }
 
-            cardBox.AddChild(BuildCard);
+            CardBox.AddChild(BuildCard);
 
             ListBox turnInfo =
                 (ListBox)
@@ -547,7 +550,7 @@ namespace Farbase
         private void DrawWidgets()
         {
             foreach (Widget w in widgets)
-                if (w.Visible)
+                if (w.IsVisible())
                     w.Render();
         }
 
@@ -843,7 +846,7 @@ namespace Farbase
                         Game.We,
                         SelectedTile.Position.X,
                         SelectedTile.Position.Y
-                    )
+                     )
                 );
             }
         }
