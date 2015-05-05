@@ -119,16 +119,23 @@ namespace Farbase
 
         public ContainerWidget Parent;
 
-        public bool Visible;
+        public bool Visible {
+            get {
+                if (visibleCondition == null)
+                    return true;
+                return visibleCondition();
+            }
+        }
 
         public bool Disabled
         {
             get {
-                return condition != null && !condition();
+                return enabledCondition != null && !enabledCondition();
             }
         }
 
-        public Func<bool> condition; 
+        public Func<bool> enabledCondition; 
+        private Func<bool> visibleCondition;
 
         public abstract bool IsInteractive();
 
@@ -144,7 +151,6 @@ namespace Farbase
                 );
             }
         }
-
         public Vector2 PaddingSize
         {
             get {
@@ -158,7 +164,6 @@ namespace Farbase
         public Vector2 TopLeftMargin {
             get { return new Vector2(LeftMargin, TopMargin); }
         }
-
         public Vector2 TopLeftPadding {
             get { return new Vector2(LeftPadding, TopPadding); }
         }
@@ -166,8 +171,8 @@ namespace Farbase
         public HAlignment HAlignment;
         public VAlignment VAlignment;
 
-        private int borderWidth;
-        //private float backgroundAlpha
+        private int borderWidth = 1;
+        private float backgroundAlpha = 1f;
 
         private Theme theme;
         public Theme Theme {
@@ -197,9 +202,7 @@ namespace Farbase
         ) {
             this.engine = engine;
             this.ui = ui;
-            Visible = true;
             this.depth = depth;
-            borderWidth = 1;
         }
 
         public abstract Vector2 GetSize();
@@ -316,9 +319,20 @@ namespace Farbase
         {
             if (Disabled) return Theme.Background.Disabled;
 
-            return IsHovered && IsInteractive()
+            Color c = IsHovered && IsInteractive()
                 ? Theme.Background.Hover
                 : Theme.Background.Color;
+
+            //because 0 0 0 0 == 255 255 255 255 apparently
+            //seems fine as long as any single one field isn't 0
+            byte alpha = (byte)Math.Max(1, c.A * backgroundAlpha);
+
+            return new Color(
+                c.R,
+                c.G,
+                c.B,
+                alpha
+            );
         }
 
         protected Color GetBorderColor()
@@ -330,26 +344,30 @@ namespace Farbase
                 : Theme.Borders.Color;
         }
 
-        public Widget SetVisible(bool visible)
+        public Widget SetVisibleCondition(Func<bool> condition)
         {
-            Visible = visible;
+            visibleCondition = condition;
             return this;
         }
 
-        public Widget SetCondition(Func<bool> enabledCondition)
+        public Widget SetEnabledCondition(Func<bool> condition)
         {
-            condition = enabledCondition;
+            enabledCondition = condition;
             return this;
         }
 
         public void DrawBackground()
         {
+            var a =
+                GetBackgroundColor();
+            var b = a * backgroundAlpha;
+
             new DrawCall(
                 engine.GetTexture("blank"),
                 new fbRectangle(
                     GetScreenPosition() + TopLeftMargin,
                     GetSizeInternal()
-                    ),
+                ),
                 Depth + 1,
                 GetBackgroundColor()
             ).Draw(engine);
@@ -410,6 +428,12 @@ namespace Farbase
             return this;
         }
 
+        public Widget BackgroundAlpha(float alpha)
+        {
+            backgroundAlpha = alpha;
+            return this;
+        }
+
         public Widget SetTooltip(string tip)
         {
             tooltip = new SmartText(tip, ui);
@@ -456,7 +480,8 @@ namespace Farbase
         public override void OnClick()
         {
             foreach(Widget c in Children)
-                if (c.IsHovered) c.OnClick();
+                if (c.Visible && c.IsHovered)
+                    c.OnClick();
         }
 
         public override Widget GetHovered()
@@ -464,7 +489,7 @@ namespace Farbase
             if (!IsHovered) return null;
 
             foreach(Widget c in Children)
-                if (c.IsHovered)
+                if (c.Visible && c.IsHovered)
                     return c.GetHovered();
             return this;
         }
@@ -660,6 +685,8 @@ namespace Farbase
 
             foreach (Widget c in Children)
             {
+                if (!c.Visible) continue;
+
                 Vector2 childSize = c.GetSize();
 
                 size.X += childSize.X;
@@ -696,7 +723,8 @@ namespace Farbase
                 + TopLeftMargin + TopLeftPadding;
 
             for (int i = 0; i < childIndex; i++)
-                position.X += Children[i].GetSize().X + internalPadding;
+                if(Children[i].Visible)
+                    position.X += Children[i].GetSize().X + internalPadding;
 
             //center vertically
             position.Y +=

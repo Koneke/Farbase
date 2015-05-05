@@ -160,14 +160,6 @@ namespace Farbase
             ;
 
             SetupSignature(
-                "set-moves",
-                NM3MessageType.set_unit_moves
-            )
-                .AddArgument<int>("id")
-                .AddArgument<int>("amount")
-            ;
-
-            SetupSignature(
                 "new-player",
                 NM3MessageType.new_player
             )
@@ -235,6 +227,9 @@ namespace Farbase
                 .AddArgument<int>("targetid")
             ;
 
+            //todo: replace these two with a generic unit-info,
+            //      transferring the current state of the unit?
+            // ~~~ ~~~ ~~~ ~~~ ~~~
             SetupSignature(
                 "hurt",
                 NM3MessageType.hurt
@@ -242,6 +237,15 @@ namespace Farbase
                 .AddArgument<int>("id")
                 .AddArgument<int>("amount")
             ;
+
+            SetupSignature(
+                "set-moves",
+                NM3MessageType.set_unit_moves
+            )
+                .AddArgument<int>("id")
+                .AddArgument<int>("amount")
+            ;
+            // ~~~ ~~~ ~~~ ~~~ ~~~
 
             SetupSignature(
                 "build-unit",

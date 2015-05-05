@@ -6,7 +6,9 @@ namespace Farbase
     public enum EventType
     {
         NameEvent,
-        UnitMoveEvent
+        UnitMoveEvent,
+        BuildUnitEvent,
+        BuildStationEvent
     }
 
     public abstract class Event
@@ -56,13 +58,56 @@ namespace Farbase
         }
     }
 
+    public class BuildStationEvent : Event
+    {
+        public const EventType Type = EventType.BuildStationEvent;
+        public override EventType GetEventType() { return Type; }
+
+        public int Owner;
+        public int x, y;
+
+        public BuildStationEvent(
+            int owner,
+            int x,
+            int y
+        ) {
+            Owner = owner;
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    public class BuildUnitEvent : Event
+    {
+        public const EventType Type = EventType.BuildUnitEvent;
+        public override EventType GetEventType() { return Type; }
+
+        public string UnitType;
+        public int Owner;
+        public int x, y;
+
+        public BuildUnitEvent(
+            string unitType,
+            int owner,
+            int x,
+            int y
+        ) {
+            UnitType = unitType;
+            Owner = owner;
+            this.x = x;
+            this.y = y;
+        }
+    }
+
     public abstract class fbEventHandler
     {
         protected fbGame Game;
+        protected fbEngine Engine;
 
         protected fbEventHandler(fbGame game)
         {
             Game = game;
+            Engine = Game.Engine;
         }
 
         public abstract void Handle(Event e);
@@ -91,6 +136,18 @@ namespace Farbase
                     u.MoveTo(ume.x, ume.y);
                     break;
 
+                case EventType.BuildStationEvent:
+                    BuildStationEvent bse = (BuildStationEvent)e;
+                    Engine.NetClient.Send(
+                        new NetMessage3(
+                            NM3MessageType.create_station,
+                            bse.Owner,
+                            bse.x,
+                            bse.y
+                        )
+                    );
+                    break;
+
                 default:
                     throw new ArgumentException();
             }
@@ -113,8 +170,7 @@ namespace Farbase
             switch (e.GetEventType())
             {
                 case EventType.NameEvent:
-
-                NameEvent ne = (NameEvent)e;
+                    NameEvent ne = (NameEvent)e;
                     Game.Log.Add(
                         string.Format(
                             "{0}<{2}> is now known as {1}<{2}>.",
@@ -124,6 +180,19 @@ namespace Farbase
                         )
                     );
                     break;
+
+                case EventType.BuildUnitEvent:
+                    BuildUnitEvent bue = (BuildUnitEvent)e;
+                    Vector2i selected = ui.Selection.GetSelection();
+
+                    //reselect, so our tile selection -> unit selection
+                    //still clunky, but it's what we go with for now
+                    if (bue.x == selected.X && bue.y == selected.Y)
+                        ui.Select(new Vector2i(bue.x, bue.y));
+                    break;
+
+                default:
+                    throw new ArgumentException();
             }
         }
     }

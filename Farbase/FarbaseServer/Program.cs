@@ -68,8 +68,8 @@ namespace FarbaseServer
                     u.UnitType.Name,
                     u.Owner,
                     u.ID,
-                    (int)u.Position.X,
-                    (int)u.Position.Y
+                    u.Position.X,
+                    u.Position.Y
                 )
             );
         }
@@ -215,11 +215,14 @@ namespace FarbaseServer
                 case NM3MessageType.build_unit:
                     Unit unit = new Unit(
                         UnitType.GetType(message.Get<string>("type")),
-                        message.Get<int>("owner"),
+                        //message.Get<int>("owner"),
+                        message.Sender,
                         fbGame.World.UnitIDCounter++,
                         message.Get<int>("x"),
                         message.Get<int>("y")
                     );
+
+                    fbGame.World.SpawnUnit(unit);
 
                     BroadcastUnit(unit);
 
@@ -234,6 +237,15 @@ namespace FarbaseServer
                             newMoney
                         )
                     );
+                    break;
+
+                case NM3MessageType.create_station:
+                    fbGame.World.SpawnStation(
+                        message.Get<int>("owner"),
+                        message.Get<int>("x"),
+                        message.Get<int>("y")
+                    );
+                    SendAll(message);
                     break;
 
                 default:

@@ -27,7 +27,7 @@ namespace Farbase
 
     public class fbGame
     {
-        private fbEngine engine;
+        public fbEngine Engine;
 
         private Dictionary<string, Property> properties;
 
@@ -56,7 +56,7 @@ namespace Farbase
         {
             NetMessage3.Setup();
 
-            this.engine = engine;
+            this.Engine = engine;
             Unit.Game = this;
             fbNetClient.Game = this;
 
@@ -68,6 +68,7 @@ namespace Farbase
             GameEventHandler eventHandler = new GameEventHandler(this);
             engine.Subscribe(eventHandler, EventType.NameEvent);
             engine.Subscribe(eventHandler, EventType.UnitMoveEvent);
+            engine.Subscribe(eventHandler, EventType.BuildStationEvent);
 
             Initialize();
         }
@@ -76,8 +77,9 @@ namespace Farbase
         {
             //need to be centralized to somewhere
             //world sets the exact same stuff up, DRY
+            //we probably want to enum the types too
             UnitType scout = new UnitType();
-            scout.Texture = engine.GetTexture("scout");
+            scout.Texture = Engine.GetTexture("scout");
             scout.Moves = 2;
             scout.Strength = 3;
             scout.Attacks = 1;
@@ -85,7 +87,7 @@ namespace Farbase
             UnitType.RegisterType("scout", scout);
 
             UnitType worker = new UnitType();
-            worker.Texture = engine.GetTexture("worker");
+            worker.Texture = Engine.GetTexture("worker");
             worker.Moves = 1;
             worker.Strength = 1;
             worker.Cost = 5;
@@ -219,7 +221,7 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.move_unit:
-                    engine.QueueEvent(
+                    Engine.QueueEvent(
                         new UnitMoveEvent(
                             (int)message.Get("id"),
                             (int)message.Get("x"),
@@ -253,7 +255,7 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.name_player:
-                    engine.QueueEvent(
+                    Engine.QueueEvent(
                         new NameEvent(
                             (int)message.Get("id"),
                             (string)message.Get("name"),
@@ -286,11 +288,11 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.client_ready:
-                    engine.NetClient.Ready = true;
+                    Engine.NetClient.Ready = true;
                     break;
 
                 case NM3MessageType.client_unready:
-                    engine.NetClient.Ready = false;
+                    Engine.NetClient.Ready = false;
                     break;
 
                 default:

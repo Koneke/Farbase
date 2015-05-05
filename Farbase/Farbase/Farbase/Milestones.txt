@@ -23,8 +23,11 @@ Prototype 4: REACHED.
 	- Formalize net messages.
 	- Fix selection.
 
-Prototype 5:
+Prototype 5: REACHED.
 	- Network money.
 	- Station ownership.
 	- Unit purchase/building.
-	- Station building?
+	- Station building
+
+Interlude:
+	- FLOW CHARTS.

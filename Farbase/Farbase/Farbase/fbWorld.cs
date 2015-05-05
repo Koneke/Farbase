@@ -129,6 +129,16 @@ namespace Farbase
             Map.At(x, y).Planet = p;
         }
 
+        public Unit SpawnUnit(Unit u)
+        {
+            Map.At(u.x, u.y).Unit = u;
+
+            Units.Add(u);
+            UnitLookup.Add(u.ID, u);
+            Players[u.Owner].OwnedUnits.Add(u.ID);
+            return u;
+        }
+
         public Unit SpawnUnit(
             String type,
             int owner,

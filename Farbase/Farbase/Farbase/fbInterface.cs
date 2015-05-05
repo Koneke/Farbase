@@ -6,44 +6,6 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Farbase
 {
-    public interface ISelection
-    {
-        Vector2i GetSelection();
-    }
-
-    public class TileSelection : ISelection
-    {
-        private Tile selected;
-
-        public TileSelection(Tile t)
-        {
-            selected = t;
-        }
-
-        public Vector2i GetSelection()
-        {
-            return new Vector2i(
-                selected.Position.X,
-                selected.Position.Y
-            );
-        }
-    }
-
-    public class UnitSelection : ISelection
-    {
-        private Unit selected;
-
-        public UnitSelection(Unit unit)
-        {
-            selected = unit;
-        }
-
-        public Vector2i GetSelection()
-        {
-            return selected.Position;
-        }
-    }
-
     public class fbInterface
     {
         public fbGame Game;
@@ -86,6 +48,7 @@ namespace Farbase
         public Theme DefaultTheme;
 
         private Widget BuildCard;
+        private Widget CommandCard;
 
         private string tooltip;
 
@@ -119,10 +82,9 @@ namespace Farbase
             SetupUI();
             //SetupTestUI();
 
-
             InterfaceEventHandler ieh = new InterfaceEventHandler(game, this);
             engine.Subscribe(ieh, EventType.NameEvent);
-            engine.Subscribe(ieh, EventType.UnitMoveEvent);
+            engine.Subscribe(ieh, EventType.BuildUnitEvent);
         }
 
         public void SetupUI()
@@ -148,11 +110,64 @@ namespace Farbase
                     .Margins(60, 40)
             );
 
+            ListBox cardBox =
+                (ListBox)
+                new ListBox(Engine, this)
+                    .Margins(40)
+                    .SetBorder(0)
+                    .BackgroundAlpha(0f)
+                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
+                ;
+
+            widgets.Add(cardBox);
+
+            CommandCard =
+                new SideBySideWidgets(Engine, this, 5)
+                    .Padding(5)
+                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
+                ;
+
+            ((SideBySideWidgets)CommandCard)
+                .AddChild(
+                    new TextureButton(
+                        "station",
+                        () =>
+                            Engine.QueueEvent(
+                                new BuildStationEvent(
+                                    Game.We,
+                                    SelectedTile.Position.X,
+                                    SelectedTile.Position.Y
+                                )
+                            )
+                        ,
+                        Engine,
+                        this,
+                        2f
+                        )
+                        .Padding(2)
+                        .SetVisibleCondition(
+                            () =>
+                                SelectedUnit != null &&
+                                SelectedUnit.UnitType.Name == "worker"
+                        )
+                        .SetEnabledCondition( //enough money for station
+                            () =>
+                                SelectedTile != null &&
+                                SelectedTile.Station == null
+                        )
+                        .SetTooltip(
+                            "Build station - $"
+                        )
+                )
+            ;
+
+            cardBox.AddChild(CommandCard);
+
             BuildCard =
                 new SideBySideWidgets(Engine, this, 5)
-                    .Margins(40)
                     .Padding(5)
-                    .SetAlign(HAlignment.Right, VAlignment.Bottom);
+                    .SetVisibleCondition(() => SelectedStation != null)
+                ;
 
             foreach (UnitType ut in UnitType.UnitTypes)
             {
@@ -167,7 +182,7 @@ namespace Farbase
                             2f
                         )
                         .Padding(2)
-                        .SetCondition(
+                        .SetEnabledCondition(
                             () => Game.LocalPlayer.Money > unitType.Cost
                         )
                         .SetTooltip(
@@ -180,7 +195,7 @@ namespace Farbase
                     );
             }
 
-            widgets.Add(BuildCard);
+            cardBox.AddChild(BuildCard);
 
             ListBox turnInfo =
                 (ListBox)
@@ -229,7 +244,7 @@ namespace Farbase
                 new Button("greyed out", null, Engine, this)
                     .Margins(2)
                     .Padding(5)
-                    .SetCondition(() => false)
+                    .SetEnabledCondition(() => false)
             );
 
             b.AddChild(
@@ -551,15 +566,13 @@ namespace Farbase
 
         public void UpdateUI()
         {
-            BuildCard.Visible = SelectedStation != null;
-
             tooltip = null;
 
             foreach(Widget w in widgets)
                 if (w.IsHovered)
                     tooltip = w.GetHovered().Tooltip;
 
-            //no tooltip from widgets
+            //if no tooltip from widgets
             if (tooltip == null)
             {
                 Vector2? hoveredSquare = ScreenToGrid(Engine.MousePosition);
@@ -806,6 +819,8 @@ namespace Farbase
             return null;
         }
 
+        //uh, this should probably not be in interface
+        //or if it should, it should be generating an event or something
         private void TryBuildUnit(string type)
         {
             if (
@@ -822,116 +837,15 @@ namespace Farbase
                         SelectedTile.Position.Y
                     )
                 );
+                Engine.QueueEvent(
+                    new BuildUnitEvent(
+                        type,
+                        Game.We,
+                        SelectedTile.Position.X,
+                        SelectedTile.Position.Y
+                    )
+                );
             }
-        }
-    }
-
-    public class fbCamera
-    {
-        public fbRectangle Camera;
-        private fbEngine engine;
-
-        public fbCamera(fbEngine engine)
-        {
-            this.engine = engine;
-            Camera = new fbRectangle(
-                Vector2.Zero,
-                engine.GetSize()
-            );
-        }
-
-        private float cameraScaling
-        {
-            get { return Camera.Size.X / engine.GetSize().X; }
-        }
-
-        private const float keyboardScrollSpeed = 10f;
-        private const float mouseScrollSpeed = 8f;
-        private const float edgeSize = 10f;
-
-        //position ON SCREEN
-        private void ZoomAt(Vector2 position, float amount)
-        {
-            amount *= -1;
-
-            if (
-                position.X < 0 || position.X > engine.GetSize().X ||
-                    position.Y < 0 || position.Y > engine.GetSize().Y
-                )
-                throw new ArgumentException("Bad zoom point.");
-
-            Vector2 deltaSize = Camera.Size - Camera.Size + new Vector2(amount);
-            deltaSize.Y = deltaSize.X / engine.GetAspectRatio();
-
-            Vector2 bias = position / engine.GetSize();
-            Camera.Position -= deltaSize * bias;
-            Camera.Size += deltaSize;
-        }
-
-        public void Update()
-        {
-            if (engine.KeyPressed(Keys.OemPlus))
-                ZoomAt(engine.GetSize() / 2f, 100f);
-
-            if (engine.KeyPressed(Keys.OemMinus))
-                ZoomAt(engine.GetSize() / 2f, -100f);
-
-            Vector2 keyboardScroll = Vector2.Zero;
-            if (engine.KeyDown(Keys.Right)) keyboardScroll.X += 1;
-            if (engine.KeyDown(Keys.Left)) keyboardScroll.X -= 1;
-            if (engine.KeyDown(Keys.Up)) keyboardScroll.Y -= 1;
-            if (engine.KeyDown(Keys.Down)) keyboardScroll.Y += 1;
-
-            Camera.Position +=
-                keyboardScroll * keyboardScrollSpeed * cameraScaling;
-
-            ZoomAt(engine.MousePosition, engine.MouseWheelDelta * 1f);
-
-            Vector2 mouseScroll = Vector2.Zero;
-            if (engine.Active)
-            {
-                if (engine.MousePosition.X < edgeSize) mouseScroll.X -= 1;
-                if (engine.MousePosition.X > engine.GetSize().X - edgeSize)
-                    mouseScroll.X += 1;
-                if (engine.MousePosition.Y < edgeSize) mouseScroll.Y -= 1;
-                if (engine.MousePosition.Y > engine.GetSize().Y - edgeSize)
-                    mouseScroll.Y += 1;
-            }
-
-            Camera.Position +=
-                mouseScroll * mouseScrollSpeed * cameraScaling;
-        }
-
-        public fbRectangle WorldToScreen(fbRectangle rectangle)
-        {
-            rectangle.Position -= Camera.Position;
-
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            rectangle.Position *= scaleFactor;
-            rectangle.Size *= scaleFactor;
-
-            return rectangle;
-        }
-
-        public Vector2 ScreenToWorld(
-            Vector2 position
-        ) {
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            return position / scaleFactor + Camera.Position;
-        }
-
-        public Rectangle ScreenToWorld(Rectangle rectangle)
-        {
-            Vector2 scaleFactor = engine.GetSize() / Camera.Size;
-            rectangle.X = (int)(rectangle.X / scaleFactor.X);
-            rectangle.Y = (int)(rectangle.Y / scaleFactor.Y);
-            rectangle.Width = (int)(rectangle.Width / scaleFactor.X);
-            rectangle.Height = (int)(rectangle.Height / scaleFactor.Y);
-
-            rectangle.X += (int)Camera.Position.X;
-            rectangle.Y += (int)Camera.Position.Y;
-
-            return rectangle;
         }
     }
 }
