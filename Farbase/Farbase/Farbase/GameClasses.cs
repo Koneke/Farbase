@@ -4,13 +4,7 @@ namespace Farbase
 {
     public class Station
     {
-        public Vector2 Position;
-        public Tile Tile
-        {
-            get {
-                return fbGame.World.Map.At(Position);
-            }
-        }
+        public Vector2i Position;
 
         public int Owner;
 
@@ -22,7 +16,5 @@ namespace Farbase
     public class Planet
     {
         public Vector2 Position;
-        public Tile Tile
-        { get { return fbGame.World.Map.At(Position); } }
     }
 }

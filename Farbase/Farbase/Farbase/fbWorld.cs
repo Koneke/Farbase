@@ -118,7 +118,7 @@ namespace Farbase
         {
             Station s = new Station();
             s.Owner = owner;
-            s.Position = new Vector2(x, y);
+            s.Position = new Vector2i(x, y);
             Map.At(x, y).Station = s;
         }
 
@@ -147,6 +147,7 @@ namespace Farbase
             int y
         ) {
             Unit u = new Unit(
+                this,
                 UnitType.GetType(type),
                 owner,
                 id,
