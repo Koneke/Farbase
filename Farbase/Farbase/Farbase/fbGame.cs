@@ -25,144 +25,11 @@ namespace Farbase
         }
     }
 
-    public class Map
-    {
-        private Tile[,] map;
-
-        public Map(int w, int h)
-        {
-            Width = w;
-            Height = h;
-
-            map = new Tile[w, h];
-            for (int x = 0; x < w; x++)
-            for (int y = 0; y < h; y++)
-                map[x, y] = new Tile(this, x, y);
-        }
-
-        public int Width;
-        public int Height;
-
-        public Tile At(int x, int y)
-        {
-            if (x < 0 || y < 0 || x >= Width || y >= Height)
-                return null;
-            return map[x, y];
-        }
-
-        public Tile At(Vector2i p)
-        {
-            return At(p.X, p.Y);
-        }
-
-        public Tile At(Vector2 position)
-        {
-            return At(
-                (int)position.X,
-                (int)position.Y
-            );
-        }
-    }
-
-    public class Tile
-    {
-        private Map map;
-        public Unit Unit;
-        public Station Station;
-        public Planet Planet;
-        public Vector2i Position;
-
-        public Tile(Map map, int x, int y)
-        {
-            this.map = map;
-            Position = new Vector2i(x, y);
-        }
-
-        public List<Tile> GetNeighbours()
-        {
-            List<Tile> neighbours = new List<Tile>();
-
-            for (int x = -1; x < 1; x++)
-            for (int y = -1; y < 1; y++)
-                if (!(x == 0 && y == 0))
-                {
-                    Tile t = map.At(x, y);
-                    if (t != null)
-                        neighbours.Add(t);
-                }
-
-            return neighbours;
-        }
-    }
-
-    public class Station
-    {
-        public Vector2 Position;
-        public Tile Tile
-            { get { return fbGame.World.Map.At(Position); } }
-
-        private Dictionary<int, int> loyalty;
-
-        public Station()
-        {
-            loyalty = new Dictionary<int, int>();
-        }
-
-        public int GetLoyalty(int id)
-        {
-            if (loyalty.ContainsKey(id))
-                return loyalty[id];
-            return 0;
-        }
-
-        public void SetLoyalty(int id, int amount)
-        {
-            if (loyalty.ContainsKey(id))
-                loyalty[id] = amount;
-            else loyalty.Add(id, amount);
-        }
-
-        public void AddLoyalty(int id, int amount)
-        {
-            if (loyalty.ContainsKey(id))
-                loyalty[id] =
-                    Math.Min(100, GetLoyalty(id) + amount);
-            else loyalty.Add(id, amount);
-        }
-
-        public void RemoveLoyalty(int id, int amount)
-        {
-            if (loyalty.ContainsKey(id))
-                loyalty[id] =
-                    Math.Max(0, GetLoyalty(id) - amount);
-            else loyalty.Add(id, 0);
-        }
-    }
-
-    public class Planet
-    {
-        public Vector2 Position;
-        public Tile Tile
-            { get { return fbGame.World.Map.At(Position); } }
-    }
-
     public class fbGame
     {
         private fbEngine engine;
 
         private Dictionary<string, Property> properties;
-
-        public Property GetProperty(string name)
-        {
-            if(properties.ContainsKey(name.ToLower()))
-                return properties[name.ToLower()];
-            return null;
-        }
-
-        public void RegisterProperty(string name, Property property)
-        {
-            properties.Add(name.ToLower(), property);
-        }
 
         //our ID
         public int We = -1;
@@ -185,6 +52,8 @@ namespace Farbase
 
         public List<string> Log;
 
+        private GameEventHandler eventHandler;
+
         public fbGame(fbEngine engine)
         {
             NetMessage3.Setup();
@@ -192,16 +61,21 @@ namespace Farbase
             this.engine = engine;
             Unit.Game = this;
             fbNetClient.Game = this;
-            Initialize();
-        }
 
-        public void Initialize()
-        {
             engine.SetSize(1280, 720);
             properties = new Dictionary<string, Property>();
 
             Log = new List<string>();
 
+            eventHandler = new GameEventHandler();
+
+            Initialize();
+        }
+
+        public void Initialize()
+        {
+            //need to be centralized to somewhere
+            //world sets the exact same stuff up, DRY
             UnitType scout = new UnitType();
             scout.Texture = engine.GetTexture("scout");
             scout.Moves = 2;
@@ -218,12 +92,25 @@ namespace Farbase
             UnitType.RegisterType("worker", worker);
         }
 
+        public Property GetProperty(string name)
+        {
+            if(properties.ContainsKey(name.ToLower()))
+                return properties[name.ToLower()];
+            return null;
+        }
+
+        public void RegisterProperty(string name, Property property)
+        {
+            properties.Add(name.ToLower(), property);
+        }
+
+
         public void Update()
         {
-            foreach (Event e in engine.Poll(NameEvent.EventType))
+            foreach (Event e in engine.Poll(NameEvent.Type))
                 HandleEvent((NameEvent)e);
 
-            foreach (Event e in engine.Poll(UnitMoveEvent.EventType))
+            foreach (Event e in engine.Poll(UnitMoveEvent.Type))
                 HandleEvent((UnitMoveEvent)e);
 
             //have yet to get map data from server
@@ -270,19 +157,6 @@ namespace Farbase
             u.MoveTo(ume.x, ume.y);
         }
 
-        public void BuyLoyalty(Station station)
-        {
-            if (LocalPlayer.DiplomacyPoints >= 20)
-                engine.NetClient.Send(
-                    new NetMessage3(
-                        NM3MessageType.station_buy_loyalty,
-                        We,
-                        station.Tile.Position.X,
-                        station.Tile.Position.Y
-                    )
-                );
-        }
-
         public void HandleNetMessage(NetMessage3 message)
         {
             switch (message.Signature.MessageType)
@@ -300,6 +174,7 @@ namespace Farbase
 
                 case NM3MessageType.create_station:
                     World.SpawnStation(
+                        (int)message.Get("owner"),
                         (int)message.Get("x"),
                         (int)message.Get("y")
                     );
@@ -389,17 +264,10 @@ namespace Farbase
                         .Money = (int)message.Get("amount");
                     break;
 
-                case NM3MessageType.player_set_diplo:
-                    World.Players[(int)message.Get("id")]
-                        .DiplomacyPoints = (int)message.Get("amount");
-                    break;
-
-                //todo: might want to make ready part of game..?
                 case NM3MessageType.client_ready:
                     engine.NetClient.Ready = true;
                     break;
 
-                //todo: might want to make ready part of game..?
                 case NM3MessageType.client_unready:
                     engine.NetClient.Ready = false;
                     break;

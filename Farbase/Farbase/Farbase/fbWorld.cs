@@ -4,6 +4,77 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
+    public class Map
+    {
+        private Tile[,] map;
+
+        public Map(int w, int h)
+        {
+            Width = w;
+            Height = h;
+
+            map = new Tile[w, h];
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                    map[x, y] = new Tile(this, x, y);
+        }
+
+        public int Width;
+        public int Height;
+
+        public Tile At(int x, int y)
+        {
+            if (x < 0 || y < 0 || x >= Width || y >= Height)
+                return null;
+            return map[x, y];
+        }
+
+        public Tile At(Vector2i p)
+        {
+            return At(p.X, p.Y);
+        }
+
+        public Tile At(Vector2 position)
+        {
+            return At(
+                (int)position.X,
+                (int)position.Y
+                );
+        }
+    }
+
+    public class Tile
+    {
+        private Map map;
+        public Unit Unit;
+        public Station Station;
+        public Planet Planet;
+        public Vector2i Position;
+
+        public Tile(Map map, int x, int y)
+        {
+            this.map = map;
+            Position = new Vector2i(x, y);
+        }
+
+        public List<Tile> GetNeighbours()
+        {
+            List<Tile> neighbours = new List<Tile>();
+
+            for (int x = -1; x < 1; x++)
+                for (int y = -1; y < 1; y++)
+                    if (!(x == 0 && y == 0))
+                    {
+                        Tile t = map.At(x, y);
+                        if (t != null)
+                            neighbours.Add(t);
+                    }
+
+            return neighbours;
+        }
+    }
+
+
     public class fbWorld
     {
         public List<int> PlayerIDs;
@@ -37,9 +108,17 @@ namespace Farbase
             UnitLookup = new Dictionary<int, Unit>();
         }
 
-        public void SpawnStation(int x, int y)
+        public Player GetPlayer(int id)
+        {
+            if (!Players.ContainsKey(id))
+                return null;
+            return Players[id];
+        }
+
+        public void SpawnStation(int owner, int x, int y)
         {
             Station s = new Station();
+            s.Owner = owner;
             s.Position = new Vector2(x, y);
             Map.At(x, y).Station = s;
         }

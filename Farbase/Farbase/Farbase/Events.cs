@@ -3,15 +3,21 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
+    public enum EventType
+    {
+        NameEvent,
+        UnitMoveEvent
+    }
+
     public abstract class Event
     {
-        public abstract string GetEventType();
+        public abstract EventType GetEventType();
     }
 
     public class NameEvent : Event
     {
-        public const string EventType = "name";
-        public override string GetEventType() { return EventType; }
+        public const EventType Type = EventType.NameEvent;
+        public override EventType GetEventType() { return Type; }
 
         public int ID;
         public string Name;
@@ -33,8 +39,8 @@ namespace Farbase
 
     public class UnitMoveEvent : Event
     {
-        public const string EventType = "unit-move";
-        public override string GetEventType() { return EventType; }
+        public const EventType Type = EventType.UnitMoveEvent;
+        public override EventType GetEventType() { return Type; }
 
         public int ID;
         public int x, y;
@@ -47,6 +53,29 @@ namespace Farbase
             ID = id;
             this.x = x;
             this.y = y;
+        }
+    }
+
+    public abstract class fbEventHandler
+    {
+        protected abstract void Handle(Event e);
+    }
+
+    public class GameEventHandler : fbEventHandler
+    {
+        protected override void Handle(Event e)
+        {
+            switch (e.GetEventType())
+            {
+                case EventType.NameEvent:
+                    break;
+
+                case EventType.UnitMoveEvent:
+                    break;
+
+                default:
+                    throw new ArgumentException();
+            }
         }
     }
 }

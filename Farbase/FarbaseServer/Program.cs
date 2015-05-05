@@ -236,41 +236,6 @@ namespace FarbaseServer
                     );
                     break;
 
-                case NM3MessageType.station_buy_loyalty:
-                    Player pl = fbGame.World.Players
-                        //we could just use sender...?
-                        [message.Get<int>("id")];
-
-                    Station s =
-                        fbGame.World.Map.At(
-                            message.Get<int>("x"),
-                            message.Get<int>("y")
-                        )
-                        .Station;
-
-                    if (pl.DiplomacyPoints >= 20 && s != null)
-                        s.AddLoyalty(pl.ID, 20);
-                    else return;
-
-                    SendAll(
-                        new NetMessage3(
-                            NM3MessageType.player_set_diplo,
-                            pl.ID,
-                            pl.DiplomacyPoints - 20
-                        )
-                    );
-
-                    SendAll(
-                        new NetMessage3(
-                            NM3MessageType.station_set_loyalty,
-                            pl.ID,
-                            message.Get<int>("x"),
-                            message.Get<int>("y"),
-                            s.GetLoyalty(pl.ID)
-                        )
-                    );
-                    break;
-
                 default:
                     throw new ArgumentException();
             }
@@ -300,7 +265,7 @@ namespace FarbaseServer
             UnitType.RegisterType("worker", worker);
 
             fbGame.World = new fbWorld(80, 45);
-            fbGame.World.SpawnStation(10, 12);
+            fbGame.World.SpawnStation(0, 10, 12);
             fbGame.World.SpawnPlanet(14, 14);
 
             netStart();
@@ -408,11 +373,12 @@ namespace FarbaseServer
             for (int x = 0; x < fbGame.World.Map.Width; x++)
             for (int y = 0; y < fbGame.World.Map.Height; y++)
             {
-                if (fbGame.World.Map.At(x, y).Station != null)
+                Tile t = fbGame.World.Map.At(x, y);
+                if (t.Station != null)
                     p.SendMessage(
                         string.Format(
-                            "create-station:{0},{1}",
-                            x, y
+                            "create-station:{0},{1},{2}",
+                            t.Station.Owner, x, y
                         )
                     );
                 if (fbGame.World.Map.At(x, y).Planet != null)

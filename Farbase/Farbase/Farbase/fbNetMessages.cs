@@ -25,10 +25,8 @@ namespace Farbase
         hurt,
         build_unit,
         player_set_money,
-        player_set_diplo,
-        station_set_loyalty,
-        station_buy_loyalty,
-        replenish_player
+        replenish_player,
+        build_station
     }
 
     public class NM3Sig
@@ -128,6 +126,7 @@ namespace Farbase
                 "create-station",
                 NM3MessageType.create_station
             )
+                .AddArgument<int>("owner")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
@@ -262,30 +261,12 @@ namespace Farbase
             ;
 
             SetupSignature(
-                "set-diplo",
-                NM3MessageType.player_set_diplo
+                "build-station",
+                NM3MessageType.build_station
             )
-                .AddArgument<int>("id")
-                .AddArgument<int>("amount")
-            ;
-
-            SetupSignature(
-                "station-set-loyalty",
-                NM3MessageType.station_set_loyalty
-            )
-                .AddArgument<int>("id")
-                .AddArgument<int>("station-x")
-                .AddArgument<int>("station-y")
-                .AddArgument<int>("amount")
-            ;
-
-            SetupSignature(
-                "station-buy-loyalty",
-                NM3MessageType.station_buy_loyalty
-            )
-                .AddArgument<int>("id")
-                .AddArgument<int>("station-x")
-                .AddArgument<int>("station-y")
+                .AddArgument<int>("owner")
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
             ;
         }
 

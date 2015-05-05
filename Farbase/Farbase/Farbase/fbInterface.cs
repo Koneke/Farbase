@@ -374,11 +374,16 @@ namespace Farbase
 
             if (t.Station != null)
             {
+                Player owner = fbGame.World.GetPlayer(t.Station.Owner);
+
                 Engine.Draw(
                     t.Unit == null
-                    ? Engine.GetTexture("station")
-                    : Engine.GetTexture("station-bg"),
-                    destination
+                        ? Engine.GetTexture("station")
+                        : Engine.GetTexture("station-bg"),
+                    destination,
+                    owner == null
+                        ? Color.White
+                        : owner.Color
                 );
             }
 
@@ -386,8 +391,8 @@ namespace Farbase
             {
                 Engine.Draw(
                     t.Unit == null
-                    ? Engine.GetTexture("planet")
-                    : Engine.GetTexture("planet-bg"),
+                        ? Engine.GetTexture("planet")
+                        : Engine.GetTexture("planet-bg"),
                     destination
                 );
             }
@@ -584,13 +589,12 @@ namespace Farbase
                             t.Unit.Strength,
                             t.Unit.UnitType.Strength
                         );
+
                     if (t.Station != null)
                     {
                         stationTooltip = "station";
-                        if (t.Station.GetLoyalty(Game.We) > 0)
-                            stationTooltip +=
-                                "\n" + t.Station.GetLoyalty(Game.We);
                     }
+
                     if (t.Planet != null)
                         planetTooltip = "planet";
 
@@ -618,7 +622,7 @@ namespace Farbase
             //we're doing it like this because the game should NOT need
             //a reference to the interface
 
-            foreach (Event e in Engine.Peek(NameEvent.EventType))
+            foreach (Event e in Engine.Peek(NameEvent.Type))
             {
                 NameEvent ne = (NameEvent)e;
                 Game.Log.Add(
@@ -631,7 +635,7 @@ namespace Farbase
                 );
             }
 
-            foreach (Event e in Engine.Peek(UnitMoveEvent.EventType))
+            foreach (Event e in Engine.Peek(UnitMoveEvent.Type))
             {
                 if (SelectedUnit == null) break;
 
@@ -795,28 +799,6 @@ namespace Farbase
                     SelectedUnit.Moves -= 1;
                 }
             }*/
-
-            /*if (engine.KeyPressed(Keys.W))
-                if (
-                    SelectedStation != null &&
-                    SelectedUnit == null &&
-                    CurrentPlayer.Money >= 25
-                ) {
-                    SpawnUnit(
-                        UnitType.GetType("worker"),
-                        CurrentPlayer,
-                        Selection.Position
-                    );
-                    CurrentPlayer.Money -= 25;
-                }*/
-
-            if (
-                Game.OurTurn &&
-                SelectedStation != null &&
-                Engine.KeyPressed(Keys.L)
-            ) {
-                Game.BuyLoyalty(SelectedStation);
-            }
 
             //handled more gracefully in the future, hopefully...
             bool passClickToWorld = true;

@@ -20,7 +20,9 @@ namespace Farbase
         private KeyboardState? ks, oks;
         private MouseState? ms, oms;
 
-        private List<Event> eventQueue; 
+        private List<Event> eventQueue;
+
+        private Dictionary<EventType, List<fbEventHandler>> subscribers;
 
         private List<DrawCall> drawCalls;
 
@@ -31,6 +33,7 @@ namespace Farbase
             this.app = app;
             drawCalls = new List<DrawCall>();
             eventQueue = new List<Event>();
+            subscribers = new Dictionary<EventType, List<fbEventHandler>>();
         }
 
         public void QueueEvent(Event e)
@@ -38,9 +41,8 @@ namespace Farbase
             eventQueue.Add(e);
         }
 
-        public List<Event> Poll(string type)
+        public List<Event> Poll(EventType type)
         {
-            type = type.ToLower();
             List<Event> matchingEvents =
                 eventQueue
                     .Where(e => e.GetEventType() == type)
@@ -52,15 +54,27 @@ namespace Farbase
             return matchingEvents;
         }
 
-        public List<Event> Peek(string type)
+        public List<Event> Peek(EventType type)
         {
-            type = type.ToLower();
             List<Event> matchingEvents =
                 eventQueue
                     .Where(e => e.GetEventType() == type)
                     .ToList();
 
             return matchingEvents;
+        }
+
+        public void Subscribe(fbEventHandler handler, EventType eventType)
+        {
+            if (subscribers[eventType] == null)
+                subscribers.Add(eventType, new List<fbEventHandler>());
+
+            subscribers[eventType].Add(handler);
+        }
+
+        public void Unsubscribe(fbEventHandler handler, EventType eventType)
+        {
+            subscribers[eventType].Remove(handler);
         }
 
         public void StartNetClient()

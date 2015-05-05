@@ -116,6 +116,7 @@
     <Compile Include="fbNetMessages.cs" />
     <Compile Include="fbUI.cs" />
     <Compile Include="fbWorld.cs" />
+    <Compile Include="GameClasses.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="fbApplication.cs" />
