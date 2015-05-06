@@ -21,7 +21,6 @@ namespace Farbase
         player_name,
         player_new,
         player_status,
-        player_replenish,
 
         station_build,
         station_create,
@@ -135,7 +134,7 @@ namespace Farbase
                 "disconnect",
                 NM3MessageType.client_disconnect
             )
-                .AddArgument<int>("id");
+                .AddArgument<int>("id")
             ;
 
             SetupSignature(
@@ -201,14 +200,6 @@ namespace Farbase
             )
                 .AddArgument<int>("id")
                 .AddArgument<int>("money")
-            ;
-
-            //todo: can probably be replaced by using pass from server to client
-            SetupSignature(
-                "replenish",
-                NM3MessageType.player_replenish
-            )
-                .AddArgument<int>("id")
             ;
 
             //=== === === === === === === === === ===//

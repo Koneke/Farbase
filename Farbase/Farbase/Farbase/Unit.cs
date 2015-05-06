@@ -121,11 +121,6 @@ namespace Farbase
             Moves = UnitType.Moves;
             Attacks = UnitType.Attacks;
 
-            //workers generate cash if they start the turn on a planet
-            /*if(UnitType == UnitType.GetType("worker"))
-                if (Tile.Planet != null)
-                    fbGame.World.Players[Owner].Money += 10;*/
-
             if (Tile.Station != null)
             {
                 if (Strength < UnitType.Strength)
@@ -157,7 +152,6 @@ namespace Farbase
 
         public void MoveTo(int tx, int ty)
         {
-            //Tile.Unit = null;
             World.Map.At(x, y).Unit = null;
             x = tx;
             y = ty;

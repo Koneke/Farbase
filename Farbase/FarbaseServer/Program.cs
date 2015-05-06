@@ -49,7 +49,7 @@ namespace FarbaseServer
         public Dictionary<int, Client> TcpPlayers =
             new Dictionary<int, Client>();
 
-        //private fbWorld World;
+        private bool Verbose = false;
         private fbGame Game;
 
         private void SendAll(
@@ -192,6 +192,19 @@ namespace FarbaseServer
                     Unit target = Game.World.UnitLookup
                         [message.Get<int>("targetid")];
 
+                    if(Verbose)
+                        Console.WriteLine(
+                            "{0}:{1},{2},{3} attacking {4}:{5},{6},{7}.",
+                            attacker.ID,
+                            attacker.Moves,
+                            attacker.Attacks,
+                            attacker.Strength,
+                            target.ID,
+                            target.Moves,
+                            target.Attacks,
+                            target.Strength
+                        );
+
                     int totalStrength = attacker.Strength + target.Strength;
                     int roll = random.Next(totalStrength) + 1;
 
@@ -269,9 +282,10 @@ namespace FarbaseServer
 
         private void Pass()
         {
-            Game.World.Pass();
             SendAll(
-                new NetMessage3(NM3MessageType.client_pass)
+                new NetMessage3(
+                    NM3MessageType.client_pass
+                )
             );
         }
 

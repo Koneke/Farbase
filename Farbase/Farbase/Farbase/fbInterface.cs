@@ -178,14 +178,14 @@ namespace Farbase
                     .AddChild(
                         new TextureButton(
                             ut.Name,
-                            () => TryBuildUnit(unitType.Name),
+                            () => Game.Build(unitType, SelectedStation),
                             Engine,
                             this,
                             2f
                         )
                         .Padding(2)
                         .SetEnabledCondition(
-                            () => Game.LocalPlayer.Money >= unitType.Cost
+                            () => Game.CanBuild(unitType, SelectedStation)
                         )
                         .SetTooltip(
                             string.Format(
@@ -821,35 +821,6 @@ namespace Farbase
                 return square;
 
             return null;
-        }
-
-        //uh, this should probably not be in interface
-        //or if it should, it should be generating an event or something
-        private void TryBuildUnit(string type)
-        {
-            if (
-                SelectedTile.Station != null &&
-                SelectedTile.Unit == null &&
-                Game.World.GetPlayer(Game.We).Money >=
-                    UnitType.GetType(type).Cost
-            ) {
-                Engine.NetClient.Send(
-                    new NetMessage3(
-                        NM3MessageType.unit_build,
-                        type,
-                        SelectedTile.Position.X,
-                        SelectedTile.Position.Y
-                    )
-                );
-                Engine.QueueEvent(
-                    new BuildUnitEvent(
-                        type,
-                        Game.We,
-                        SelectedTile.Position.X,
-                        SelectedTile.Position.Y
-                     )
-                );
-            }
         }
     }
 }

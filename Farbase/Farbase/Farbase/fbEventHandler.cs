@@ -142,6 +142,18 @@ namespace Farbase
                         );
                     break;
 
+                case EventType.BuildUnitEvent:
+                    BuildUnitEvent bue = (BuildUnitEvent)e;
+                    engine.NetClient.Send(
+                        new NetMessage3(
+                            NM3MessageType.unit_build,
+                            bue.UnitType,
+                            bue.x,
+                            bue.y
+                        )
+                    );
+                    break;
+
                 case EventType.PlayerDisconnect:
                     PlayerDisconnectEvent pde = (PlayerDisconnectEvent)e;
                     Game.Log.Add(

@@ -164,9 +164,8 @@ namespace Farbase
         {
             int col = 0;
             int row = 0;
-            for(int i = 0; i < Text.Length; i++)
+            foreach (char c in Text)
             {
-                int c = Text[i];
                 if (c == '\n')
                 {
                     col = 0;
@@ -189,9 +188,9 @@ namespace Farbase
                                 Font.CharSize * new Vector2(col++, row),
                             Font.CharSize
                         ),
-                        new fbRectangle(fontSpot, Font.CharSize),
-                        Depth,
-                        Coloring
+                    new fbRectangle(fontSpot, Font.CharSize),
+                    Depth,
+                    Coloring
                     )
                 );
             }

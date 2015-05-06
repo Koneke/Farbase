@@ -641,7 +641,7 @@ namespace Farbase
         public override void OnClick()
         {
             if (reaction == null) return;
-            reaction();
+            if (!Disabled) reaction();
         }
     }
 

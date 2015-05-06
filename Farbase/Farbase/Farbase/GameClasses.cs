@@ -7,10 +7,6 @@ namespace Farbase
         public Vector2i Position;
 
         public int Owner;
-
-        public Station()
-        {
-        }
     }
 
     public class Planet

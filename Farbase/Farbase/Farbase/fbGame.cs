@@ -73,6 +73,7 @@ namespace Farbase
             engine.Subscribe(EventHandler, EventType.NameEvent);
             engine.Subscribe(EventHandler, EventType.UnitMoveEvent);
             engine.Subscribe(EventHandler, EventType.BuildStationEvent);
+            engine.Subscribe(EventHandler, EventType.BuildUnitEvent);
             engine.Subscribe(EventHandler, EventType.PlayerDisconnect);
         }
 
@@ -143,6 +144,30 @@ namespace Farbase
         public void RegisterProperty(string name, Property property)
         {
             properties.Add(name.ToLower(), property);
+        }
+
+        public bool CanBuild(UnitType unitType, Station s)
+        {
+            if (s == null) return false; //only build at stations
+            if (s.Owner != We) return false; //and only stations owed by us
+            if (World.Map.At(s.Position).Unit != null) //only empty tiles
+                return false;
+            if (LocalPlayer.Money < unitType.Cost)
+                return false;
+
+            return true;
+        }
+
+        public void Build(UnitType unitType, Station s)
+        {
+            EventHandler.Push(
+                new BuildUnitEvent(
+                    unitType.Name,
+                    We,
+                    s.Position.X,
+                    s.Position.Y
+                )
+            );
         }
 
         public void Update()
@@ -229,15 +254,11 @@ namespace Farbase
                 case NM3MessageType.player_new:
                     World.AddPlayer(
                         new Player(
-                            "Unnnamed player",
+                            "Unnamed player",
                             (int)message.Get("id"),
                             Color.White
                         )
                     );
-                    break;
-
-                case NM3MessageType.player_replenish:
-                    World.PassTo(World.GetPlayer(message.Get<int>("id")));
                     break;
 
                 case NM3MessageType.player_assign_id:
