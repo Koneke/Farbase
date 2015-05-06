@@ -745,32 +745,45 @@ namespace Farbase
                 }
             }
 
-            /*if (SelectedUnit != null)
+            if (Engine.KeyPressed(Keys.OemPeriod))
             {
-                if (engine.KeyPressed(Keys.OemPeriod))
+                List<Unit> selectable =
+                    Game.LocalPlayer.OwnedUnits
+                    .Select(id => Game.World.UnitLookup[id])
+                    .Where(u => u.Attacks > 0 || u.Moves > 0)
+                    .ToList()
+                ;
+
+                if (selectable.Count > 0)
                 {
-                    int index = CurrentPlayer.Units.IndexOf(SelectedUnit);
-                    index = (index + 1) % CurrentPlayer.Units.Count;
-                    SelectedUnit = CurrentPlayer.Units[index];
+                    if (SelectedUnit != null)
+                    {
+                        int index = selectable.IndexOf(SelectedUnit);
+                        //if the selected is not one of ours, we get -1
+                        //which still works with the code (because the
+                        //new selected index then becomes 0)
+                        //which is absolutely fine
+                        //only works with forward selection though.
+
+                        index = (index + 1) % selectable.Count;
+
+                        Select(selectable[index].Position);
+                    }
+                    else
+                    {
+                        Select(selectable[0].Position);
+                    }
                 }
 
-                if (engine.KeyPressed(Keys.OemComma))
-                {
-                    int index = CurrentPlayer.Units.IndexOf(SelectedUnit);
-                    index = (index + CurrentPlayer.Units.Count - 1)
-                        % CurrentPlayer.Units.Count;
-                    SelectedUnit = CurrentPlayer.Units[index];
-                }
-
-                if (engine.KeyPressed(Keys.A))
+                /*if (engine.KeyPressed(Keys.A))
                 {
                     SelectedUnit.MoveTo(
                         SelectedUnit.Position +
                         SelectedUnit.StepTowards(new Vector2(0))
                     );
                     SelectedUnit.Moves -= 1;
-                }
-            }*/
+                }*/
+            }
 
             //handled more gracefully in the future, hopefully...
             bool passClickToWorld = true;

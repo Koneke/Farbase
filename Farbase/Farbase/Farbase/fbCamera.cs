@@ -34,16 +34,28 @@ namespace Farbase
 
             if (
                 position.X < 0 || position.X > engine.GetSize().X ||
-                    position.Y < 0 || position.Y > engine.GetSize().Y
-                )
+                position.Y < 0 || position.Y > engine.GetSize().Y
+            )
                 throw new ArgumentException("Bad zoom point.");
 
             Vector2 deltaSize = Camera.Size - Camera.Size + new Vector2(amount);
             deltaSize.Y = deltaSize.X / engine.GetAspectRatio();
 
+            Vector2 minSize = engine.GetSize() / 20f;
+
+            if (Camera.Size.X + deltaSize.X < minSize.X)
+                deltaSize.X = minSize.X - Camera.Size.X;
+            if (Camera.Size.Y + deltaSize.Y < minSize.Y)
+                deltaSize.Y = minSize.Y - Camera.Size.Y;
+
             Vector2 bias = position / engine.GetSize();
             Camera.Position -= deltaSize * bias;
             Camera.Size += deltaSize;
+        }
+
+        public void CenterAt(Vector2 worldPoint)
+        {
+            throw new NotImplementedException();
         }
 
         public void Update()
@@ -63,7 +75,8 @@ namespace Farbase
             Camera.Position +=
                 keyboardScroll * keyboardScrollSpeed * cameraScaling;
 
-            ZoomAt(engine.MousePosition, engine.MouseWheelDelta * 1f);
+            if(engine.MouseWheelDelta != 0)
+                ZoomAt(engine.MousePosition, engine.MouseWheelDelta * 1f);
 
             Vector2 mouseScroll = Vector2.Zero;
             if (engine.Active)
@@ -93,10 +106,10 @@ namespace Farbase
 
         public Vector2 ScreenToWorld(
             Vector2 position
-            ) {
+        ) {
             Vector2 scaleFactor = engine.GetSize() / Camera.Size;
             return position / scaleFactor + Camera.Position;
-            }
+        }
 
         public Rectangle ScreenToWorld(Rectangle rectangle)
         {
