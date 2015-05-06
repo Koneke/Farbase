@@ -74,6 +74,7 @@ namespace Farbase
             engine.Subscribe(EventHandler, EventType.UnitMoveEvent);
             engine.Subscribe(EventHandler, EventType.BuildStationEvent);
             engine.Subscribe(EventHandler, EventType.BuildUnitEvent);
+            engine.Subscribe(EventHandler, EventType.CreateUnitEvent);
             engine.Subscribe(EventHandler, EventType.PlayerDisconnect);
         }
 
@@ -84,7 +85,7 @@ namespace Farbase
             //we probably want to enum the types too
             UnitType scout = new UnitType();
             scout.Texture = "scout";
-            scout.Moves = 2;
+            scout.Moves = 3;
             scout.Strength = 3;
             scout.Attacks = 1;
             scout.Cost = 10;
@@ -232,9 +233,8 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.unit_create:
-                    World.SpawnUnit(
-                        new Unit(
-                            World,
+                    EventHandler.Push(
+                        new CreateUnitEvent(
                             UnitType.GetType(message.Get<string>("type")),
                             message.Get<int>("owner"),
                             message.Get<int>("id"),
