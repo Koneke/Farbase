@@ -185,7 +185,7 @@ namespace Farbase
                         )
                         .Padding(2)
                         .SetEnabledCondition(
-                            () => Game.LocalPlayer.Money > unitType.Cost
+                            () => Game.LocalPlayer.Money >= unitType.Cost
                         )
                         .SetTooltip(
                             string.Format(

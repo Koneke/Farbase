@@ -202,8 +202,6 @@ namespace FarbaseServer
                         loser = target;
 
                     loser.Strength -= 1;
-                    if (loser.Strength <= 0)
-                        loser.Despawn();
 
                     SendAll(
                         new NetMessage3(
@@ -231,8 +229,6 @@ namespace FarbaseServer
                         message.Get<int>("x"),
                         message.Get<int>("y")
                     );
-
-                    //Game.World.SpawnUnit(unit);
 
                     BroadcastUnit(unit);
 
