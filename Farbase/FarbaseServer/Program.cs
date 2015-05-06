@@ -49,12 +49,16 @@ namespace FarbaseServer
         public Dictionary<int, Client> TcpPlayers =
             new Dictionary<int, Client>();
 
-        private fbWorld World;
+        //private fbWorld World;
+        private fbGame Game;
 
         private void SendAll(
             NetMessage3 message,
             int except = -1
         ) {
+            //let our local world handle a copy of the same message
+            Game.HandleNetMessage(message);
+
             foreach(int id in TcpPlayers.Keys)
                 if (id != except)
                    TcpPlayers[id].SendMessage(message);
@@ -91,7 +95,9 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.player_name:
-                    Player p = World.GetPlayer(message.Get<int>("id"));
+                    Player p = Game.World.GetPlayer(
+                        message.Get<int>("id")
+                    );
 
                     p.Name = message.Get<string>("name");
                     p.Color = ExtensionMethods.ColorFromString(
@@ -108,9 +114,9 @@ namespace FarbaseServer
                 case NM3MessageType.unit_move:
                     Unit un;
                     //lock necessary?
-                    lock (World)
+                    lock (Game)
                     {
-                        un = World.UnitLookup
+                        un = Game.World.UnitLookup
                             [message.Get<int>("id")];
 
                         if (un.Moves > 0)
@@ -145,16 +151,17 @@ namespace FarbaseServer
                     switch (message.Get<int>("number"))
                     {
                         case 0:
-                            Unit u = World.SpawnUnit(
-                                "scout",
-                                message.Sender,
-                                //we need to manually update the ID counter
-                                World.UnitIDCounter++,
-                                10, 10
+                            BroadcastUnit(
+                                new Unit(
+                                    Game.World,
+                                    UnitType.GetType("scout"),
+                                    message.Sender,
+                                    Game.World.UnitIDCounter++,
+                                    10, 10
+                                )
                             );
-                            BroadcastUnit(u);
 
-                            World.GetPlayer(message.Sender).Money = 10;
+                            Game.World.GetPlayer(message.Sender).Money = 10;
 
                             //might make this a generic "update"
                             //so we don't have to manually resync this every
@@ -163,7 +170,9 @@ namespace FarbaseServer
                                 new NetMessage3(
                                     NM3MessageType.player_status,
                                     message.Sender,
-                                    World.GetPlayer(message.Sender).Money
+                                    Game.World.GetPlayer(
+                                        message.Sender
+                                    ).Money
                                 )
                             );
                             break;
@@ -177,10 +186,10 @@ namespace FarbaseServer
                             new NetMessage3(NM3MessageType.client_unready)
                         );
 
-                    Unit attacker = World.UnitLookup
+                    Unit attacker = Game.World.UnitLookup
                         [message.Get<int>("attackerid")];
 
-                    Unit target = World.UnitLookup
+                    Unit target = Game.World.UnitLookup
                         [message.Get<int>("targetid")];
 
                     int totalStrength = attacker.Strength + target.Strength;
@@ -215,19 +224,19 @@ namespace FarbaseServer
 
                 case NM3MessageType.unit_build:
                     Unit unit = new Unit(
-                        World,
+                        Game.World,
                         UnitType.GetType(message.Get<string>("type")),
                         message.Sender,
-                        World.UnitIDCounter++,
+                        Game.World.UnitIDCounter++,
                         message.Get<int>("x"),
                         message.Get<int>("y")
                     );
 
-                    World.SpawnUnit(unit);
+                    //Game.World.SpawnUnit(unit);
 
                     BroadcastUnit(unit);
 
-                    int newMoney = World
+                    int newMoney = Game.World
                         .GetPlayer(message.Sender)
                         .Money - unit.UnitType.Cost;
 
@@ -241,24 +250,19 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.station_create:
-                    World.SpawnStation(
-                        message.Get<int>("owner"),
-                        message.Get<int>("x"),
-                        message.Get<int>("y")
-                    );
                     SendAll(message);
                     break;
 
                 case NM3MessageType.client_disconnect:
-                    TcpPlayers[message.Sender].Disconnected = true;
-                    World.RemovePlayer(message.Sender);
-
-                    TcpPlayers.Remove(message.Sender);
-
+                    //this should automatically remove it from our local
+                    //world as well, FUCKIN' SWEET :D
                     SendAll(
                         message,
                         except: message.Sender
                     );
+
+                    TcpPlayers[message.Sender].Disconnected = true;
+                    TcpPlayers.Remove(message.Sender);
 
                     break;
 
@@ -269,7 +273,7 @@ namespace FarbaseServer
 
         private void Pass()
         {
-            World.Pass();
+            Game.World.Pass();
             SendAll(
                 new NetMessage3(NM3MessageType.client_pass)
             );
@@ -287,23 +291,13 @@ namespace FarbaseServer
             TcpPlayers = new Dictionary<int, Client>();
             random = new Random();
 
-            UnitType scout = new UnitType();
-            scout.Moves = 2;
-            scout.Strength = 3;
-            scout.Attacks = 1;
-            scout.Cost = 10;
-            UnitType.RegisterType("scout", scout);
+            //todo: should probably create this like if it was a client
+            Game = new fbGame();
+            Game.EventHandler = new ServerGameEventHandler(Game);
 
-            UnitType worker = new UnitType();
-            worker.Moves = 1;
-            worker.Strength = 1;
-            worker.Cost = 5;
-            worker.Abilities.Add(UnitAbilites.Mining);
-            UnitType.RegisterType("worker", worker);
-
-            World = new fbWorld(80, 45);
-            World.SpawnStation(0, 10, 12);
-            World.SpawnPlanet(14, 14);
+            Game.World = new fbWorld(80, 45);
+            Game.World.SpawnStation(0, 10, 12);
+            Game.World.SpawnPlanet(14, 14);
 
             netStart();
         }
@@ -392,15 +386,15 @@ namespace FarbaseServer
             p.SendMessage(
                 new NetMessage3(
                     NM3MessageType.world_create,
-                    World.Map.Width,
-                    World.Map.Height
+                    Game.World.Map.Width,
+                    Game.World.Map.Height
                 )
             );
 
             //tell new client about all existing players
-            foreach (int id in World.Players.Keys)
+            foreach (int id in Game.World.Players.Keys)
             {
-                Player existingPlayer = World.Players[id];
+                Player existingPlayer = Game.World.Players[id];
 
                 p.SendMessage(
                     new NetMessage3(
@@ -429,10 +423,10 @@ namespace FarbaseServer
                 );
             }
 
-            for (int x = 0; x < World.Map.Width; x++)
-            for (int y = 0; y < World.Map.Height; y++)
+            for (int x = 0; x < Game.World.Map.Width; x++)
+            for (int y = 0; y < Game.World.Map.Height; y++)
             {
-                Tile t = World.Map.At(x, y);
+                Tile t = Game.World.Map.At(x, y);
                 if (t.Station != null)
                 {
                     p.SendMessage(
@@ -445,7 +439,7 @@ namespace FarbaseServer
                     );
                 }
 
-                if (World.Map.At(x, y).Planet != null)
+                if (Game.World.Map.At(x, y).Planet != null)
                 {
                     p.SendMessage(
                         new NetMessage3(
@@ -456,7 +450,7 @@ namespace FarbaseServer
                     );
                 }
 
-                Unit u = World.Map.At(x, y).Unit;
+                Unit u = Game.World.Map.At(x, y).Unit;
 
                 if (u != null)
                 {
@@ -484,14 +478,14 @@ namespace FarbaseServer
             }
 
             //no current player -> new player is current player
-            if (World.CurrentID == -1)
-                World.CurrentID = p.ID;
+            if (Game.World.CurrentID == -1)
+                Game.World.CurrentID = p.ID;
 
             //tell new client about whose turn it is
             p.SendMessage(
                 new NetMessage3(
                     NM3MessageType.player_current,
-                    World.CurrentID
+                    Game.World.CurrentID
                 )
             );
 
@@ -510,7 +504,7 @@ namespace FarbaseServer
                 p = new Client((TcpClient)clientObject);
                 TcpPlayers.Add(p.ID, p);
 
-                World.AddPlayer(
+                Game.World.AddPlayer(
                     new Player(
                         "Unnamed player",
                         p.ID,

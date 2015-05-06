@@ -58,6 +58,9 @@ namespace Farbase
         {
             foreach (Event e in eventQueue)
             {
+                if(!subscribers.ContainsKey(e.GetEventType()))
+                    continue;
+
                 foreach (
                     fbEventHandler handler in
                     subscribers[e.GetEventType()]

@@ -106,6 +106,14 @@ namespace Farbase
 
         public void RemovePlayer(int id)
         {
+            List<int> ownedIDs =
+                new List<int>(
+                    Players[id].OwnedUnits
+                );
+
+            foreach (int unitid in ownedIDs)
+                UnitLookup[unitid].Despawn();
+
             if (Players.Count == 1)
             {
                 Players.Remove(id);

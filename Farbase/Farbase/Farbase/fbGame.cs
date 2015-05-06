@@ -24,7 +24,7 @@ namespace Farbase
 
     public class fbGame
     {
-        private fbEventHandler EventHandler;
+        public fbEventHandler EventHandler;
 
         //whether or not the world is ready to be interacted with
         //(i.e. has been loaded, and not waiting for the server to solve stuff
@@ -73,6 +73,7 @@ namespace Farbase
             engine.Subscribe(EventHandler, EventType.NameEvent);
             engine.Subscribe(EventHandler, EventType.UnitMoveEvent);
             engine.Subscribe(EventHandler, EventType.BuildStationEvent);
+            engine.Subscribe(EventHandler, EventType.PlayerDisconnect);
         }
 
         public void Initialize()
@@ -282,14 +283,11 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.client_disconnect:
-                    Log.Add(
-                        string.Format(
-                            "{0} disconnected.",
-                            World.GetPlayer(message.Get<int>("id")).Name
+                    EventHandler.Push(
+                        new PlayerDisconnectEvent(
+                            message.Get<int>("id")
                         )
                     );
-
-                    World.RemovePlayer(message.Get<int>("id"));
                     break;
 
                 case NM3MessageType.client_pass:

@@ -111,6 +111,7 @@
     <Compile Include="Events.cs" />
     <Compile Include="fbCamera.cs" />
     <Compile Include="fbEngine.cs" />
+    <Compile Include="fbEventHandler.cs" />
     <Compile Include="fbGame.cs" />
     <Compile Include="fbInterface.cs" />
     <Compile Include="fbNetClient.cs" />
