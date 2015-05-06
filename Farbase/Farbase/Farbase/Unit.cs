@@ -195,15 +195,6 @@ namespace Farbase
             return new Vector2i(0);
         }
 
-        public void Despawn()
-        {
-            //fbGame.World.DespawnUnit(this)?
-            World.Units.Remove(this);
-            World.Map.At(x, y).Unit = null;
-            World.UnitLookup.Remove(ID);
-            World.GetPlayer(Owner).OwnedUnits.Remove(ID);
-        }
-
         public bool HasAbility(UnitAbilites ability)
         {
             return UnitType.Abilities.Contains(ability);

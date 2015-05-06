@@ -233,11 +233,14 @@ namespace Farbase
 
                 case NM3MessageType.unit_create:
                     World.SpawnUnit(
-                        (string)message.Get("type"),
-                        (int)message.Get("owner"),
-                        (int)message.Get("id"),
-                        (int)message.Get("x"),
-                        (int)message.Get("y")
+                        new Unit(
+                            World,
+                            UnitType.GetType(message.Get<string>("type")),
+                            message.Get<int>("owner"),
+                            message.Get<int>("id"),
+                            message.Get<int>("x"),
+                            message.Get<int>("y")
+                        )
                     );
                     break;
 
@@ -295,7 +298,7 @@ namespace Farbase
 
                     //todo: should probably be an event
                     if (u.Strength <= 0)
-                        u.Despawn();
+                        World.DespawnUnit(u);
                     break;
 
                 case NM3MessageType.player_status:

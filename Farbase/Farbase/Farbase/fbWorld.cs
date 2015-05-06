@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 
@@ -112,7 +111,7 @@ namespace Farbase
                 );
 
             foreach (int unitid in ownedIDs)
-                UnitLookup[unitid].Despawn();
+                DespawnUnit(UnitLookup[unitid]);
 
             if (Players.Count == 1)
             {
@@ -155,34 +154,19 @@ namespace Farbase
 
         public Unit SpawnUnit(Unit u)
         {
-            Map.At(u.x, u.y).Unit = u;
-
             Units.Add(u);
+            Map.At(u.x, u.y).Unit = u;
             UnitLookup.Add(u.ID, u);
             GetPlayer(u.Owner).OwnedUnits.Add(u.ID);
             return u;
         }
 
-        public Unit SpawnUnit(
-            String type,
-            int owner,
-            int id,
-            int x,
-            int y
-        ) {
-            Unit u = new Unit(
-                this,
-                UnitType.GetType(type),
-                owner,
-                id,
-                x, y
-            );
-            Map.At(x, y).Unit = u;
-
-            Units.Add(u);
-            UnitLookup.Add(u.ID, u);
-            GetPlayer(u.Owner).OwnedUnits.Add(u.ID);
-            return u;
+        public void DespawnUnit(Unit u)
+        {
+            Units.Remove(u);
+            Map.At(u.Position).Unit = null;
+            UnitLookup.Remove(u.ID);
+            GetPlayer(u.Owner).OwnedUnits.Remove(u.ID);
         }
 
         public void AddPlayer(Player p)
