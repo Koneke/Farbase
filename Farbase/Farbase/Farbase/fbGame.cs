@@ -7,8 +7,6 @@ namespace Farbase
 {
     public class Player
     {
-        public const int DiplomacyPointsMax = 100;
-
         public int ID;
         public string Name;
         public Color Color;
@@ -26,7 +24,12 @@ namespace Farbase
 
     public class fbGame
     {
-        public fbEngine Engine;
+        private fbEventHandler EventHandler;
+
+        //whether or not the world is ready to be interacted with
+        //(i.e. has been loaded, and not waiting for the server to solve stuff
+        //on its side of things)
+        public bool Ready;
 
         private Dictionary<string, Property> properties;
 
@@ -34,7 +37,9 @@ namespace Farbase
         public int We = -1;
 
         public bool OurTurn {
-            get { return World.PlayerIDs[World.CurrentPlayerIndex] == We; }
+            get {
+                return World.CurrentID == We;
+            }
         }
 
         public Player LocalPlayer {
@@ -42,33 +47,32 @@ namespace Farbase
             {
                 return We == -1
                     ? null
-                    : World.Players[We];
+                    : World.GetPlayer(We);
             }
         }
 
-        //client side of world
         public fbWorld World;
 
         public List<string> Log;
 
-        public fbGame(fbEngine engine)
+        public fbGame()
         {
-            NetMessage3.Setup();
-
-            Engine = engine;
-            fbNetClient.Game = this;
-
-            engine.SetSize(1280, 720);
             properties = new Dictionary<string, Property>();
-
             Log = new List<string>();
-
-            GameEventHandler eventHandler = new GameEventHandler(this);
-            engine.Subscribe(eventHandler, EventType.NameEvent);
-            engine.Subscribe(eventHandler, EventType.UnitMoveEvent);
-            engine.Subscribe(eventHandler, EventType.BuildStationEvent);
-
             Initialize();
+        }
+
+        //moving this out like this and *MANUALLY* calling it in fbApplication.
+        //this means that fbGame doesn't even need an engine reference any more.
+        //that in turn means that we can keep an entire fbGame in our server
+        //app, which acts exactly like a normal client would.
+        //only difference is that we give it another eventhandler.
+        public void SetupClientSideEventHandler(fbEngine engine)
+        {
+            EventHandler = new GameEventHandler(this, engine);
+            engine.Subscribe(EventHandler, EventType.NameEvent);
+            engine.Subscribe(EventHandler, EventType.UnitMoveEvent);
+            engine.Subscribe(EventHandler, EventType.BuildStationEvent);
         }
 
         public void Initialize()
@@ -77,7 +81,7 @@ namespace Farbase
             //world sets the exact same stuff up, DRY
             //we probably want to enum the types too
             UnitType scout = new UnitType();
-            scout.Texture = Engine.GetTexture("scout");
+            scout.Texture = "scout";
             scout.Moves = 2;
             scout.Strength = 3;
             scout.Attacks = 1;
@@ -85,10 +89,11 @@ namespace Farbase
             UnitType.RegisterType("scout", scout);
 
             UnitType worker = new UnitType();
-            worker.Texture = Engine.GetTexture("worker");
+            worker.Texture = "worker";
             worker.Moves = 1;
             worker.Strength = 1;
             worker.Cost = 5;
+            worker.Abilities.Add(UnitAbilites.Mining);
             UnitType.RegisterType("worker", worker);
 
             SetupProperties();
@@ -148,16 +153,16 @@ namespace Farbase
 
             GetProperty("player-names")
                 .SetValue(
-                    World.PlayerIDs
-                        .Select(id => World.Players[id].Name)
+                    World.Players.Keys
+                        .Select(p => World.Players[p].Name)
                         .ToList()
                 );
 
             GetProperty("current-player-name")
-                .SetValue(World.CurrentPlayer.Name);
+                .SetValue(World.Players[World.CurrentID].Name);
 
             GetProperty("current-player-id")
-                .SetValue(World.CurrentPlayer.ID);
+                .SetValue(World.Players[World.CurrentID].ID);
 
             GetProperty("local-player-name")
                 .SetValue(LocalPlayer.Name);
@@ -211,7 +216,7 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.unit_move:
-                    Engine.QueueEvent(
+                    EventHandler.Push(
                         new UnitMoveEvent(
                             (int)message.Get("id"),
                             (int)message.Get("x"),
@@ -231,7 +236,7 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.player_replenish:
-                    World.PassTo((int)message.Get("id"));
+                    World.PassTo(World.GetPlayer(message.Get<int>("id")));
                     break;
 
                 case NM3MessageType.player_assign_id:
@@ -239,7 +244,7 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.player_name:
-                    Engine.QueueEvent(
+                    EventHandler.Push(
                         new NameEvent(
                             (int)message.Get("id"),
                             (string)message.Get("name"),
@@ -249,14 +254,13 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.player_current:
-                    World.CurrentPlayerIndex =
-                        (int)message.Get("index");
+                    World.CurrentID = message.Get<int>("index");
 
                     //todo: event this?
                     Log.Add(
                         string.Format(
                             "It is now {0}'s turn.",
-                            World.CurrentPlayer.Name
+                            World.Players[World.CurrentID].Name
                         )
                     );
                     break;
@@ -273,16 +277,31 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.player_status:
-                    World.Players[(int)message.Get("id")]
+                    World.GetPlayer((int)message.Get("id"))
                         .Money = (int)message.Get("money");
                     break;
 
+                case NM3MessageType.client_disconnect:
+                    Log.Add(
+                        string.Format(
+                            "{0} disconnected.",
+                            World.GetPlayer(message.Get<int>("id")).Name
+                        )
+                    );
+
+                    World.RemovePlayer(message.Get<int>("id"));
+                    break;
+
+                case NM3MessageType.client_pass:
+                    World.Pass();
+                    break;
+
                 case NM3MessageType.client_ready:
-                    Engine.NetClient.Ready = true;
+                    Ready = true;
                     break;
 
                 case NM3MessageType.client_unready:
-                    Engine.NetClient.Ready = false;
+                    Ready = false;
                     break;
 
                 default:

@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace Farbase
 {
+    public enum UnitAbilites
+    {
+        Mining
+    }
+
     public class UnitType
     {
         private static Dictionary<string, UnitType> types =
@@ -14,6 +18,11 @@ namespace Farbase
         public static List<UnitType> UnitTypes
         {
             get { return types.Values.ToList(); }
+        }
+
+        public UnitType()
+        {
+            Abilities = new List<UnitAbilites>();
         }
 
         public static void RegisterType(string name, UnitType type)
@@ -30,11 +39,12 @@ namespace Farbase
         }
 
         public string Name;
-        public Texture2D Texture;
+        public string Texture;
         public int Cost;
         public int Moves;
         public int Attacks;
         public int Strength;
+        public List<UnitAbilites> Abilities;
     }
 
     public class Unit
@@ -106,7 +116,7 @@ namespace Farbase
         ) {
         }
 
-        public void Replenish()
+        public void Recharge()
         {
             Moves = UnitType.Moves;
             Attacks = UnitType.Attacks;
@@ -194,7 +204,12 @@ namespace Farbase
             World.Units.Remove(this);
             World.Map.At(x, y).Unit = null;
             World.UnitLookup.Remove(ID);
-            World.Players[Owner].OwnedUnits.Remove(ID);
+            World.GetPlayer(Owner).OwnedUnits.Remove(ID);
+        }
+
+        public bool HasAbility(UnitAbilites ability)
+        {
+            return UnitType.Abilities.Contains(ability);
         }
     }
 }

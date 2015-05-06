@@ -11,13 +11,12 @@ namespace FarbaseServer
 {
     class Client
     {
-        public static Dictionary<int, Client> TcpPlayers =
-            new Dictionary<int, Client>();
         public static int IDCounter = 0;
 
         public int ID;
         public TcpClient tcpClient;
         public NetworkStream Stream;
+        public bool Disconnected;
 
         public Client(TcpClient client)
         {
@@ -46,7 +45,9 @@ namespace FarbaseServer
         }
 
         private Random random;
-        private List<Client> players;
+
+        public Dictionary<int, Client> TcpPlayers =
+            new Dictionary<int, Client>();
 
         private fbWorld World;
 
@@ -54,9 +55,9 @@ namespace FarbaseServer
             NetMessage3 message,
             int except = -1
         ) {
-            foreach(Client p in players)
-                if (p.ID != except)
-                    p.SendMessage(message);
+            foreach(int id in TcpPlayers.Keys)
+                if (id != except)
+                   TcpPlayers[id].SendMessage(message);
         }
 
         private void BroadcastUnit(Unit u)
@@ -75,6 +76,12 @@ namespace FarbaseServer
 
         private void HandleMessage(NetMessage3 message)
         {
+            Console.WriteLine(
+                "<- {0}: {1}", 
+                message.Sender,
+                message.Format()
+            );
+
             switch (message.Signature.MessageType)
             {
                 case NM3MessageType.message:
@@ -84,7 +91,7 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.player_name:
-                    Player p = World.Players[message.Get<int>("id")];
+                    Player p = World.GetPlayer(message.Get<int>("id"));
 
                     p.Name = message.Get<string>("name");
                     p.Color = ExtensionMethods.ColorFromString(
@@ -95,25 +102,7 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.client_pass:
-                    World.CurrentPlayerIndex =
-                        (World.CurrentPlayerIndex + 1) %
-                        World.PlayerIDs.Count;
-
-                    SendAll(
-                        new NetMessage3(
-                            NM3MessageType.player_current,
-                            World.CurrentPlayerIndex
-                        )
-                    );
-
-                    World.PassTo(World.CurrentID);
-
-                    SendAll(
-                        new NetMessage3(
-                            NM3MessageType.player_replenish,
-                            World.CurrentID
-                        )
-                    );
+                    Pass();
                     break;
 
                 case NM3MessageType.unit_move:
@@ -183,7 +172,7 @@ namespace FarbaseServer
 
                 case NM3MessageType.unit_attack:
                     //please don't do shit until we've resolved combat
-                    Client.TcpPlayers[message.Sender]
+                    TcpPlayers[message.Sender]
                         .SendMessage(
                             new NetMessage3(NM3MessageType.client_unready)
                         );
@@ -218,7 +207,7 @@ namespace FarbaseServer
                     );
 
                     //we done here
-                    Client.TcpPlayers[message.Sender]
+                    TcpPlayers[message.Sender]
                         .SendMessage(
                             new NetMessage3(NM3MessageType.client_ready)
                         );
@@ -238,8 +227,8 @@ namespace FarbaseServer
 
                     BroadcastUnit(unit);
 
-                    int newMoney = World.Players
-                        [message.Sender]
+                    int newMoney = World
+                        .GetPlayer(message.Sender)
                         .Money - unit.UnitType.Cost;
 
                     SendAll(
@@ -260,9 +249,30 @@ namespace FarbaseServer
                     SendAll(message);
                     break;
 
+                case NM3MessageType.client_disconnect:
+                    TcpPlayers[message.Sender].Disconnected = true;
+                    World.RemovePlayer(message.Sender);
+
+                    TcpPlayers.Remove(message.Sender);
+
+                    SendAll(
+                        message,
+                        except: message.Sender
+                    );
+
+                    break;
+
                 default:
                     throw new ArgumentException();
             }
+        }
+
+        private void Pass()
+        {
+            World.Pass();
+            SendAll(
+                new NetMessage3(NM3MessageType.client_pass)
+            );
         }
 
         private void ReceiveMessage(Client source, string message)
@@ -274,18 +284,21 @@ namespace FarbaseServer
 
         public void Start()
         {
-            players = new List<Client>();
+            TcpPlayers = new Dictionary<int, Client>();
             random = new Random();
 
             UnitType scout = new UnitType();
             scout.Moves = 2;
             scout.Strength = 3;
             scout.Attacks = 1;
+            scout.Cost = 10;
             UnitType.RegisterType("scout", scout);
 
             UnitType worker = new UnitType();
             worker.Moves = 1;
             worker.Strength = 1;
+            worker.Cost = 5;
+            worker.Abilities.Add(UnitAbilites.Mining);
             UnitType.RegisterType("worker", worker);
 
             World = new fbWorld(80, 45);
@@ -385,22 +398,24 @@ namespace FarbaseServer
             );
 
             //tell new client about all existing players
-            foreach (int id in World.PlayerIDs)
+            foreach (int id in World.Players.Keys)
             {
+                Player existingPlayer = World.Players[id];
+
                 p.SendMessage(
                     new NetMessage3(
                         NM3MessageType.player_new,
-                        id
+                        existingPlayer.ID
                     )
                 );
 
                 p.SendMessage(
                     new NetMessage3(
                         NM3MessageType.player_name,
-                        id,
-                        World.Players[id].Name,
+                        existingPlayer.ID,
+                        existingPlayer.Name,
                         ExtensionMethods.ColorToString(
-                            World.Players[id].Color
+                            existingPlayer.Color
                         )
                     )
                 );
@@ -408,8 +423,8 @@ namespace FarbaseServer
                 p.SendMessage(
                     new NetMessage3(
                         NM3MessageType.player_status,
-                        id,
-                        World.GetPlayer(id).Money
+                        existingPlayer.ID,
+                        existingPlayer.Money
                     )
                 );
             }
@@ -468,11 +483,15 @@ namespace FarbaseServer
                 }
             }
 
+            //no current player -> new player is current player
+            if (World.CurrentID == -1)
+                World.CurrentID = p.ID;
+
             //tell new client about whose turn it is
             p.SendMessage(
                 new NetMessage3(
                     NM3MessageType.player_current,
-                    World.CurrentPlayerIndex
+                    World.CurrentID
                 )
             );
 
@@ -486,11 +505,10 @@ namespace FarbaseServer
         {
             Client p;
 
-            lock (players)
+            lock (TcpPlayers)
             {
                 p = new Client((TcpClient)clientObject);
-                players.Add(p);
-                Client.TcpPlayers.Add(p.ID, p);
+                TcpPlayers.Add(p.ID, p);
 
                 World.AddPlayer(
                     new Player(
@@ -504,10 +522,10 @@ namespace FarbaseServer
             //set up world
             welcomeClient(p);
 
-            foreach (int id in Client.TcpPlayers.Keys)
+            foreach (int id in TcpPlayers.Keys)
             {
                 if (id == p.ID) continue;
-                Client.TcpPlayers[id].SendMessage(
+                TcpPlayers[id].SendMessage(
                     new NetMessage3(
                         NM3MessageType.player_new,
                         p.ID
@@ -546,9 +564,10 @@ namespace FarbaseServer
             }
 
             p.tcpClient.Close();
-            lock (players)
+
+            lock (TcpPlayers)
             {
-                players.Remove(p);
+                TcpPlayers.Remove(p.ID);
             }
         }
     }

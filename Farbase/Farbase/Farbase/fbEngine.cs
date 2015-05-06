@@ -297,9 +297,6 @@ namespace Farbase
 
         public void Exit()
         {
-            if (NetClient != null)
-                NetClient.ShouldDie = true;
-
             app.Exit();
         }
     }

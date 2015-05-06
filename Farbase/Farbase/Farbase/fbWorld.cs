@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 
 namespace Farbase
@@ -76,18 +77,9 @@ namespace Farbase
 
     public class fbWorld
     {
-        public List<int> PlayerIDs;
-        public int CurrentPlayerIndex;
-        public int CurrentID
-        {
-            get { return PlayerIDs[CurrentPlayerIndex]; }
-        }
-        public Player CurrentPlayer
-        {
-            get { return Players[CurrentID]; }
-        }
-
         public Dictionary<int, Player> Players;
+        public int CurrentID;
+
         public Map Map;
 
         //only needs to be serverside
@@ -98,10 +90,8 @@ namespace Farbase
 
         public fbWorld(int w, int h)
         {
-            Players = new Dictionary<int, Player>();
-            PlayerIDs = new List<int>();
-            CurrentPlayerIndex = 0;
             Map = new Map(w, h);
+            Players = new Dictionary<int, Player>();
 
             Units = new List<Unit>();
             UnitLookup = new Dictionary<int, Unit>();
@@ -109,9 +99,35 @@ namespace Farbase
 
         public Player GetPlayer(int id)
         {
-            if (!Players.ContainsKey(id))
-                return null;
-            return Players[id];
+            if (Players.ContainsKey(id))
+                return Players[id];
+            return null;
+        }
+
+        public void RemovePlayer(int id)
+        {
+            if (Players.Count == 1)
+            {
+                Players.Remove(id);
+                CurrentID = -1;
+            }
+
+            if (CurrentID == id)
+            {
+                List<int> ids = Players.Keys.ToList();
+                int index = ids.IndexOf(id);
+                int newIndex = index % (Players.Count - 1);
+                ids.Remove(id);
+                CurrentID = ids[newIndex];
+
+                Players.Remove(id);
+                PassTo(Players[CurrentID]);
+            }
+            //if it's not the current player dcing, we don't have to fiddle
+            //with currentID, since it's a player ID either way, and no longer
+            //an index in the player array
+            else
+                Players.Remove(id);
         }
 
         public void SpawnStation(int owner, int x, int y)
@@ -135,7 +151,7 @@ namespace Farbase
 
             Units.Add(u);
             UnitLookup.Add(u.ID, u);
-            Players[u.Owner].OwnedUnits.Add(u.ID);
+            GetPlayer(u.Owner).OwnedUnits.Add(u.ID);
             return u;
         }
 
@@ -157,23 +173,33 @@ namespace Farbase
 
             Units.Add(u);
             UnitLookup.Add(u.ID, u);
-            Players[owner].OwnedUnits.Add(id);
+            GetPlayer(u.Owner).OwnedUnits.Add(u.ID);
             return u;
         }
 
         public void AddPlayer(Player p)
         {
             Players.Add(p.ID, p);
-            PlayerIDs.Add(p.ID);
         }
 
-        public void PassTo(int playerID)
+        public void Pass()
         {
-            Player p = Players[playerID];
+            List<int> ids = Players.Keys.ToList();
+            int index = ids.IndexOf(CurrentID);
+            index = (index + 1) % Players.Count;
+            CurrentID = ids[index];
 
-            foreach (int id in p.OwnedUnits)
+            PassTo(Players[CurrentID]);
+        }
+
+        public void PassTo(Player next)
+        {
+            foreach (int id in next.OwnedUnits)
             {
-                UnitLookup[id].Replenish();
+                Unit u = UnitLookup[id];
+                u.Recharge();
+                if(u.HasAbility(UnitAbilites.Mining) && u.Tile.Planet != null)
+                    Players[u.Owner].Money += 10;
             }
         }
     }

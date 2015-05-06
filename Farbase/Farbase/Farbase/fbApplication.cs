@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -25,6 +26,7 @@ namespace Farbase
             base.Initialize();
 
             Engine = new fbEngine(this);
+            Engine.SetSize(1280, 720);
 
             //this shit needs to be moved...
             Engine.Textures = new Dictionary<string, Texture2D>();
@@ -60,8 +62,15 @@ namespace Farbase
             Engine.DefaultFont = new Font();
             Engine.DefaultFont.FontSheet = Engine.LoadTexture("font", "gfx/font.png");
             Engine.DefaultFont.CharSize = new Vector2(8);
-            
-            Game = new fbGame(Engine);
+
+            NetMessage3.Setup();
+            Game = new fbGame();
+            Game.Ready = false;
+            Game.SubscribeToEvents(Engine);
+
+            //eugh
+            fbNetClient.Game = Game;
+
             UI = new fbInterface(Game, Engine);
 
             Engine.StartNetClient();
@@ -74,6 +83,19 @@ namespace Farbase
 
         protected override void UnloadContent()
         {
+        }
+
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            Engine.NetClient.Send(
+                new NetMessage3(
+                    NM3MessageType.client_disconnect,
+                    Game.We
+                )
+            );
+
+            if (Engine.NetClient != null)
+                Engine.NetClient.ShouldDie = true;
         }
 
         protected override void Update(GameTime gameTime)

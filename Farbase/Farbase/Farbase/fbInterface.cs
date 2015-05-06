@@ -391,7 +391,7 @@ namespace Farbase
                         : Engine.GetTexture("station-bg"),
                     destination,
                     owner == null
-                        ? Color.White
+                        ? Color.Gray
                         : owner.Color
                 );
             }
@@ -430,9 +430,11 @@ namespace Farbase
                 );
 
             Engine.Draw(
-                u.UnitType.Texture,
+                Engine.GetTexture(u.UnitType.Texture),
                 destination,
-                Game.World.Players[u.Owner].Color
+                u.Owner == -1 //dc:ed
+                    ? Color.Gray
+                    : Game.World.GetPlayer(u.Owner).Color
             );
 
             for (int i = 0; i < u.Moves; i++)
@@ -533,10 +535,11 @@ namespace Farbase
             }
 
             position = new Vector2(Engine.GetSize().X - 10, 0);
-            foreach (int id in Game.World.PlayerIDs)
+            foreach (int id in Game.World.Players.Keys)
             {
-                position += new Vector2(0, Engine.DefaultFont.CharSize.Y + 1);
                 Player p = Game.World.Players[id];
+
+                position += new Vector2(0, Engine.DefaultFont.CharSize.Y + 1);
 
                 new TextCall(
                     p.Name + ": "+ p.Money + "$",
@@ -555,11 +558,15 @@ namespace Farbase
 
         public void Update()
         {
-            if (Engine.KeyPressed(Keys.Escape)) Engine.Exit();
+            if (Engine.KeyPressed(Keys.Escape))
+            {
+                Engine.Exit();
+            }
+
             Camera.Update();
 
             //no (important) interaction if we're waiting for data.
-            if (!Engine.NetClient.Ready) return;
+            if (!Game.Ready) return;
 
             UpdateUI();
 
@@ -589,7 +596,7 @@ namespace Farbase
                         unitTooltip = string.Format(
                             "{0} - {1}\n{2}/{3} moves\n{4}/{5} strength",
                             t.Unit.UnitType.Name,
-                            Game.World.Players[t.Unit.Owner].Name,
+                            Game.World.GetPlayer(t.Unit.Owner).Name,
                             t.Unit.Moves,
                             t.Unit.UnitType.Moves,
                             t.Unit.Strength,
@@ -635,11 +642,6 @@ namespace Farbase
                     Game.Log.Add("Not your turn!");
             }
 
-            if (Engine.KeyPressed(Keys.Space))
-            {
-                Engine.NetClient.ShouldDie = true;
-            }
-
             if (Engine.KeyPressed(Keys.G))
             {
                 List<string> names =
@@ -682,7 +684,7 @@ namespace Farbase
             if (
                 Game.OurTurn &&
                 SelectedUnit != null &&
-                SelectedUnit.Owner == Game.World.CurrentPlayer.ID
+                SelectedUnit.Owner == Game.World.CurrentID
             ) {
                 Vector2i moveOrder = null;
 
@@ -828,7 +830,7 @@ namespace Farbase
             if (
                 SelectedTile.Station != null &&
                 SelectedTile.Unit == null &&
-                Game.World.Players[Game.We].Money >=
+                Game.World.GetPlayer(Game.We).Money >=
                     UnitType.GetType(type).Cost
             ) {
                 Engine.NetClient.Send(

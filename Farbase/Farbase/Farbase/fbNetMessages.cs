@@ -9,6 +9,7 @@ namespace Farbase
         dev_command,
         message,
 
+        client_disconnect,
         client_ready,
         client_unready,
         client_pass,
@@ -129,6 +130,13 @@ namespace Farbase
             ;
 
             //=== === === === === === === === === ===//
+
+            SetupSignature(
+                "disconnect",
+                NM3MessageType.client_disconnect
+            )
+                .AddArgument<int>("id");
+            ;
 
             SetupSignature(
                 "ready",
@@ -376,10 +384,16 @@ namespace Farbase
         //message to the server/client.
         public string Format()
         {
+            if(messageArguments.Count > 0)
+                return string.Format(
+                    "{0}:{1}",
+                    toString[Signature.MessageType],
+                    string.Join(",", messageArguments)
+                );
+
             return string.Format(
-                "{0}:{1}",
-                toString[Signature.MessageType],
-                string.Join(",", messageArguments)
+                "{0}",
+                toString[Signature.MessageType]
             );
         }
     }

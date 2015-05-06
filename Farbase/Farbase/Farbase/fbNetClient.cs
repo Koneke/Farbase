@@ -20,12 +20,6 @@ namespace Farbase
 
         public bool ShouldDie;
         private List<string> SendQueue;
-        public bool Ready;
-
-        public fbNetClient()
-        {
-            Ready = false;
-        }
 
         private void ReceiveMessage(string message)
         {
@@ -47,7 +41,8 @@ namespace Farbase
             SendQueue = new List<string>();
             ConnectTo("127.0.0.1", 7707);
 
-            while (!ShouldDie)
+            //make sure we finish up before dying
+            while (!ShouldDie || SendQueue.Count > 0) 
             {
                 if (stream.DataAvailable)
                 {
@@ -114,7 +109,6 @@ namespace Farbase
         {
             if (client.Connected)
             {
-                send("msg:Client disconnecting.");
                 client.Close();
             }
             else

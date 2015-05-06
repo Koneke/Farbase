@@ -102,22 +102,24 @@ namespace Farbase
     public abstract class fbEventHandler
     {
         protected fbGame Game;
-        protected fbEngine Engine;
 
         protected fbEventHandler(fbGame game)
         {
             Game = game;
-            Engine = Game.Engine;
         }
 
         public abstract void Handle(Event e);
+        public abstract void Push(Event e);
     }
 
     public class GameEventHandler : fbEventHandler
     {
-        public GameEventHandler(fbGame fbGame)
+        private fbEngine engine;
+
+        public GameEventHandler(fbGame fbGame, fbEngine engine)
             : base(fbGame)
         {
+            this.engine = engine;
         }
 
         public override void Handle(Event e)
@@ -126,8 +128,8 @@ namespace Farbase
             {
                 case EventType.NameEvent:
                     NameEvent ne = (NameEvent)e;
-                    Game.World.Players[ne.ID].Name = ne.Name;
-                    Game.World.Players[ne.ID].Color = ne.Color;
+                    Game.World.GetPlayer(ne.ID).Name = ne.Name;
+                    Game.World.GetPlayer(ne.ID).Color = ne.Color;
                     break;
 
                 case EventType.UnitMoveEvent:
@@ -138,7 +140,7 @@ namespace Farbase
 
                 case EventType.BuildStationEvent:
                     BuildStationEvent bse = (BuildStationEvent)e;
-                    Engine.NetClient.Send(
+                    engine.NetClient.Send(
                         new NetMessage3(
                             NM3MessageType.station_create,
                             bse.Owner,
@@ -151,6 +153,11 @@ namespace Farbase
                 default:
                     throw new ArgumentException();
             }
+        }
+
+        public override void Push(Event e)
+        {
+            engine.QueueEvent(e);
         }
     }
 
@@ -174,7 +181,7 @@ namespace Farbase
                     Game.Log.Add(
                         string.Format(
                             "{0}<{2}> is now known as {1}<{2}>.",
-                            Game.World.Players[ne.ID].Name,
+                            Game.World.GetPlayer(ne.ID).Name,
                             ne.Name,
                             ne.ID
                         )
@@ -200,6 +207,11 @@ namespace Farbase
                 default:
                     throw new ArgumentException();
             }
+        }
+
+        public override void Push(Event e)
+        {
+            ui.Engine.QueueEvent(e);
         }
     }
 }
