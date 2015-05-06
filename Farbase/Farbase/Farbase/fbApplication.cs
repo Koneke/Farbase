@@ -46,9 +46,15 @@ namespace Farbase
                 "move-dingy",
                 "gfx/@/ui-move-dingy.png"
             );
+
             Engine.LoadTexture(
                 "strength-dingy",
                 "gfx/@/ui-strength-dingy.png"
+            );
+
+            Engine.LoadTexture(
+                "ui-attackborder",
+                "gfx/@/ui-attackborder.png"
             );
 
             Engine.LoadTexture("selection", "gfx/@/ui-selection.png");

@@ -208,6 +208,8 @@ namespace FarbaseServer
                     int totalStrength = attacker.Strength + target.Strength;
                     int roll = random.Next(totalStrength) + 1;
 
+                    attacker.Attacks -= 1;
+
                     Unit loser;
                     if (roll <= attacker.Strength)
                         loser = attacker;
@@ -215,6 +217,17 @@ namespace FarbaseServer
                         loser = target;
 
                     loser.Strength -= 1;
+
+                    if(attacker != loser)
+                        SendAll(
+                            new NetMessage3(
+                                NM3MessageType.unit_status,
+                                attacker.ID,
+                                attacker.Moves,
+                                attacker.Attacks,
+                                attacker.Strength
+                            )
+                        );
 
                     SendAll(
                         new NetMessage3(

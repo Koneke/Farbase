@@ -47,6 +47,31 @@ namespace Farbase
         {
             return (c >= '0' && c <= '9');
         }
+
+        public static char ToUpper(this char c)
+        {
+            if (c >= 'a' && c <= 'z')
+            {
+                int a = 'a';
+                int A = 'A';
+                return (char)(c - (a - A));
+            }
+            return c;
+        }
+
+        public static string Capitalize(
+            this string s,
+            bool lowerRest = true
+        ) {
+            string rest = s.Substring(1, s.Length - 1);
+            return string.Format(
+                "{0}{1}",
+                s[0].ToUpper(),
+                lowerRest
+                    ? rest.ToLower()
+                    : rest
+            );
+        }
     }
 
     public class Vector2i

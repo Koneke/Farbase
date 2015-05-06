@@ -144,21 +144,21 @@ namespace Farbase
                         Engine,
                         this,
                         2f
-                        )
-                        .Padding(2)
-                        .SetVisibleCondition(
-                            () =>
-                                SelectedUnit != null &&
-                                SelectedUnit.UnitType.Name == "worker"
-                        )
-                        .SetEnabledCondition( //enough money for station
-                            () =>
-                                SelectedTile != null &&
-                                SelectedTile.Station == null
-                        )
-                        .SetTooltip(
-                            "Build station - $"
-                        )
+                    )
+                    .Padding(2)
+                    .SetVisibleCondition(
+                        () =>
+                            SelectedUnit != null &&
+                            SelectedUnit.UnitType.Name == "worker"
+                    )
+                    .SetEnabledCondition( //enough money for station
+                        () =>
+                            SelectedTile != null &&
+                            SelectedTile.Station == null
+                    )
+                    .SetTooltip(
+                        "Build station - $"
+                    )
                 )
             ;
 
@@ -364,6 +364,11 @@ namespace Farbase
                             tileSize,
                             tileSize
                         )
+                    ),
+                    new Color(
+                        0.5f,
+                        0.5f,
+                        0.5f
                     )
                 );
             }
@@ -427,6 +432,13 @@ namespace Farbase
                         u.fPosition * tileSize,
                         new Vector2(tileSize)
                     )
+                );
+
+            if(u.Attacks > 0)
+                Engine.Draw(
+                    Engine.GetTexture("ui-attackborder"),
+                    destination,
+                    Color.White
                 );
 
             Engine.Draw(
@@ -573,6 +585,51 @@ namespace Farbase
             Input();
         }
 
+        public void GenerateTileTooltip(Tile t)
+        {
+            string unitTooltip = null;
+            string stationTooltip = null;
+            string planetTooltip = null;
+
+            if (t.Unit != null)
+                unitTooltip = string.Format(
+                    "{0} - {1}\n{2}/{3} moves\n{4}/{5} strength",
+                    t.Unit.UnitType.Name.Capitalize(),
+                    Game.World.GetPlayer(t.Unit.Owner).Name,
+                    t.Unit.Moves,
+                    t.Unit.UnitType.Moves,
+                    t.Unit.Strength,
+                    t.Unit.UnitType.Strength
+                );
+
+            if (t.Station != null)
+            {
+                stationTooltip =
+                    string.Format(
+                        "{0} ({1})",
+                        "Station",
+                        Game.World.GetPlayer(t.Station.Owner).Name
+                    );
+            }
+
+            if (t.Planet != null)
+                planetTooltip = "Planet";
+
+            string[] tooltips =
+                {
+                    unitTooltip,
+                    stationTooltip,
+                    planetTooltip
+                };
+
+            if(tooltips.Any(tt => tt != null))
+                tooltip = 
+                    string.Join(
+                        "\n\n",
+                        tooltips.Where(tt => tt != null)
+                    );
+        }
+
         public void UpdateUI()
         {
             tooltip = null;
@@ -586,45 +643,7 @@ namespace Farbase
             {
                 Vector2? hoveredSquare = ScreenToGrid(Engine.MousePosition);
                 if (hoveredSquare.HasValue)
-                {
-                    string unitTooltip = null;
-                    string stationTooltip = null;
-                    string planetTooltip = null;
-
-                    Tile t = Game.World.Map.At(hoveredSquare.Value);
-                    if (t.Unit != null)
-                        unitTooltip = string.Format(
-                            "{0} - {1}\n{2}/{3} moves\n{4}/{5} strength",
-                            t.Unit.UnitType.Name,
-                            Game.World.GetPlayer(t.Unit.Owner).Name,
-                            t.Unit.Moves,
-                            t.Unit.UnitType.Moves,
-                            t.Unit.Strength,
-                            t.Unit.UnitType.Strength
-                        );
-
-                    if (t.Station != null)
-                    {
-                        stationTooltip = "station";
-                    }
-
-                    if (t.Planet != null)
-                        planetTooltip = "planet";
-
-                    string[] tooltips =
-                        {
-                            unitTooltip,
-                            stationTooltip,
-                            planetTooltip
-                        };
-
-                    if(tooltips.Any(tt => tt != null))
-                        tooltip = 
-                            string.Join(
-                                "\n-\n",
-                                tooltips.Where(tt => tt != null)
-                            );
-                }
+                    GenerateTileTooltip(Game.World.Map.At(hoveredSquare.Value));
             }
         }
 

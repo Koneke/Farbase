@@ -138,6 +138,9 @@ namespace Farbase
 
         public bool CanAttack(Vector2i position)
         {
+            if (Attacks <= 0)
+                return false;
+
             Vector2i delta = Position - position;
             //only neighbours
             if (Math.Abs(delta.X) > 1 || Math.Abs(delta.Y) > 1)
