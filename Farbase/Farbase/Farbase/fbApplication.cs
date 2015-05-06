@@ -66,7 +66,7 @@ namespace Farbase
             NetMessage3.Setup();
             Game = new fbGame();
             Game.Ready = false;
-            Game.SubscribeToEvents(Engine);
+            Game.SetupClientSideEventHandler(Engine);
 
             //eugh
             fbNetClient.Game = Game;
