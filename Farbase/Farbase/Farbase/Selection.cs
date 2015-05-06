@@ -1,8 +1,15 @@
 namespace Farbase
 {
+    public enum SelectionType
+    {
+        Unit,
+        Tile
+    }
+
     public interface ISelection
     {
         Vector2i GetSelection();
+        SelectionType GetSelectionType();
     }
 
     public class TileSelection : ISelection
@@ -21,6 +28,11 @@ namespace Farbase
                 selected.Position.Y
             );
         }
+
+        public SelectionType GetSelectionType()
+        {
+            return SelectionType.Tile;
+        }
     }
 
     public class UnitSelection : ISelection
@@ -36,6 +48,10 @@ namespace Farbase
         {
             return selected.Position;
         }
-    }
 
+        public SelectionType GetSelectionType()
+        {
+            return SelectionType.Unit;
+        }
+    }
 }

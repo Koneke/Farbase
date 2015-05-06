@@ -124,5 +124,15 @@ namespace Farbase
 
             return rectangle;
         }
+
+        public Vector2 Scale(Vector2 scalee)
+        {
+            return scalee * (1f / cameraScaling);
+        }
+
+        public float Scale(float scalee)
+        {
+            return scalee * (1f / cameraScaling);
+        }
     }
 }

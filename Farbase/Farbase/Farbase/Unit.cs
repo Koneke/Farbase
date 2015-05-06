@@ -47,8 +47,23 @@ namespace Farbase
         public List<UnitAbilites> Abilities;
     }
 
-    public class Unit
+    public class Unit : IAnimateable
     {
+        // this is stuff we probably want in a sprite class
+        // or something like that later.
+        // this works for now, since the only animateable thing in
+        // the game is the units (at the moment).
+        // === === === === === === === === === ===
+
+        private Animateable animateable;
+        public Animateable GetAnimateable() { return animateable; }
+        public AnimationValues GetAnimationValues()
+        {
+            return new AnimationValues(fPosition);
+        }
+
+        // === === === === === === === === === ===
+
         private fbWorld World;
 
         public UnitType UnitType;
@@ -89,6 +104,8 @@ namespace Farbase
             int x,
             int y
         ) {
+            animateable = new Animateable(this);
+
             World = world;
             UnitType = unitType;
             Owner = owner;
@@ -98,22 +115,6 @@ namespace Farbase
             Moves = UnitType.Moves;
             Attacks = UnitType.Attacks;
             Strength = UnitType.Strength;
-        }
-
-        public Unit(
-            fbWorld world,
-            UnitType unitType,
-            int owner,
-            int id,
-            Vector2 position
-        ) : this(
-            world,
-            unitType,
-            owner,
-            id,
-            (int)position.X,
-            (int)position.Y
-        ) {
         }
 
         public void Recharge()

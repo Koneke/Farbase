@@ -9,7 +9,9 @@ namespace Farbase
         UnitMoveEvent,
         BuildUnitEvent,
         BuildStationEvent,
-        PlayerDisconnect
+        PlayerDisconnect,
+        CreateUnitEvent,
+        DestroyUnitEvent
     }
 
     public abstract class Event
@@ -110,6 +112,29 @@ namespace Farbase
         public PlayerDisconnectEvent(int id)
         {
             this.id = id;
+        }
+    }
+
+    public class CreateUnitEvent : Event
+    {
+        public const EventType Type = EventType.CreateUnitEvent;
+        public override EventType GetEventType() { return Type; }
+
+        public UnitType UnitType;
+        public int Owner, ID, x, y;
+
+        public CreateUnitEvent(
+            UnitType unitType,
+            int owner,
+            int id,
+            int x,
+            int y
+        ) {
+            UnitType = unitType;
+            Owner = owner;
+            ID = id;
+            this.x = x;
+            this.y = y;
         }
     }
 }

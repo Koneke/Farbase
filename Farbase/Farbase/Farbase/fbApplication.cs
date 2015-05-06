@@ -106,7 +106,7 @@ namespace Farbase
 
         protected override void Update(GameTime gameTime)
         {
-            Engine.Update();
+            Engine.Update(gameTime);
             UI.Update();
             Game.Update();
 

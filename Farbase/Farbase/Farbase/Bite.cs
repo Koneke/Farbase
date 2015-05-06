@@ -90,6 +90,11 @@ namespace Farbase
             X = Y = i;
         }
 
+        public Vector2 ToVector2()
+        {
+            return new Vector2(X, Y);
+        }
+
         public static Vector2i operator +(Vector2i a, Vector2i b)
         {
             return new Vector2i(a.X + b.X, a.Y + b.Y);
@@ -98,6 +103,11 @@ namespace Farbase
         public static Vector2i operator -(Vector2i a, Vector2i b)
         {
             return new Vector2i(a.X - b.X, a.Y - b.Y);
+        }
+
+        public static Vector2i operator *(Vector2i a, int scalar)
+        {
+            return new Vector2i(a.X * scalar, a.Y * scalar);
         }
     }
 
@@ -238,17 +248,41 @@ namespace Farbase
             Size = size;
         }
 
+        public fbRectangle(Vector2i position, Vector2 size)
+            : this(position.ToVector2(), size) { }
+
+        public fbRectangle(Vector2i position, Vector2i size)
+            : this(position.ToVector2(), size.ToVector2()) { }
+
+        public fbRectangle(Vector2 position, Vector2i size)
+            : this(position, size.ToVector2()) { }
+
+        public fbRectangle(Vector2 position, int size)
+        {
+            Position = position;
+            Size = new Vector2(size);
+        }
+
+        public fbRectangle(Vector2i position, int size)
+            : this(position.ToVector2(), size) { }
+
         public fbRectangle(Vector2 position, float width, float height)
         {
             Position = position;
             Size = new Vector2(width, height);
         }
 
+        public fbRectangle(Vector2i position, int width, int height)
+            : this(position.ToVector2(), width, height) { }
+
         public fbRectangle(float x, float y, Vector2 size)
         {
             Position = new Vector2(x, y);
             Size = size;
         }
+
+        public fbRectangle(float x, float y, Vector2i size)
+            : this(x, y, size.ToVector2()) { }
 
         public fbRectangle(float x, float y, float width, float height)
         {

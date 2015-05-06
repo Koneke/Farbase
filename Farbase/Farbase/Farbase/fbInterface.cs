@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
@@ -22,7 +23,6 @@ namespace Farbase
                 return Game.World.Map.At(Selection.GetSelection());
             }
         }
-
         public Unit SelectedUnit
         {
             get
@@ -413,28 +413,63 @@ namespace Farbase
 
             if (t.Unit != null)
                 DrawUnit(t.Unit);
+        }
 
-            if(
+        public void DrawSelection()
+        {
+            if (Selection == null) return;
+            Tile t = Game.World.Map.At(Selection.GetSelection());
+
+            if (
                 (SelectedUnit != null && t.Unit == SelectedUnit) ||
                 (SelectedTile == t && t.Station != null)
-            )
+            ) {
+                Vector2 position = t.Position.ToVector2();
+
+                if (Selection.GetSelectionType() == SelectionType.Unit)
+                {
+                    //no i'm not going to check if it's null, it's not null.
+                    //i'll fight you.
+                    Debug.Assert(SelectedUnit != null, "SelectedUnit != null");
+
+                    position =
+                        SelectedUnit
+                            .GetAnimateable()
+                            .ApplyAnimations()
+                            .Position;
+                }
+
+                fbRectangle destination =
+                    Camera.WorldToScreen(
+                        new fbRectangle(
+                            //t.Position * tileSize,
+                            position * tileSize,
+                            new Vector2(tileSize)
+                        )
+                    );
+
                 Engine.Draw(
                     Engine.GetTexture("selection"),
                     destination
                 );
+            }
         }
 
-        private void DrawUnit(Unit u)
+        private void DrawUnit(Unit unit)
         {
+            AnimationValues animationValues = unit
+                .GetAnimateable()
+                .ApplyAnimations();
+
             fbRectangle destination =
                 Camera.WorldToScreen(
                     new fbRectangle(
-                        u.fPosition * tileSize,
+                        animationValues.Position * tileSize,
                         new Vector2(tileSize)
                     )
                 );
 
-            if(u.Attacks > 0)
+            if(unit.Attacks > 0)
                 Engine.Draw(
                     Engine.GetTexture("ui-attackborder"),
                     destination,
@@ -442,41 +477,39 @@ namespace Farbase
                 );
 
             Engine.Draw(
-                Engine.GetTexture(u.UnitType.Texture),
+                Engine.GetTexture(unit.UnitType.Texture),
                 destination,
-                u.Owner == -1 //dc:ed
+                unit.Owner == -1 //dc:ed
                     ? Color.Gray
-                    : Game.World.GetPlayer(u.Owner).Color
+                    : Game.World.GetPlayer(unit.Owner).Color
             );
 
-            for (int i = 0; i < u.Moves; i++)
+            for (int i = 0; i < unit.Moves; i++)
             {
                 Vector2 dingySize = Engine.GetTextureSize("move-dingy");
+                Vector2 distancing = new Vector2(Camera.Scale(dingySize.X), 0);
 
                 Engine.Draw(
                     Engine.GetTexture("move-dingy"),
-                    Camera.WorldToScreen(
-                        new fbRectangle(
-                            u.fPosition * tileSize
-                                + new Vector2(dingySize.X * i, 0),
-                            dingySize
-                        )
+                    new fbRectangle(
+                        destination.Position + distancing * i,
+                        Camera.Scale(dingySize)
                     )
                 );
             }
 
-            for (int i = 0; i < u.Strength; i++)
+            for (int i = 0; i < unit.Strength; i++)
             {
                 Vector2 dingySize = Engine.GetTextureSize("strength-dingy");
+                Vector2 distancing = new Vector2(0, Camera.Scale(dingySize.Y));
 
                 Engine.Draw(
                     Engine.GetTexture("strength-dingy"),
-                    Camera.WorldToScreen(
-                        new fbRectangle(
-                            u.fPosition * tileSize + new Vector2(0, tileSize)
-                                - new Vector2(0, dingySize.Y * (i + 1)),
-                            dingySize
-                        )
+                    new fbRectangle(
+                        destination.Position
+                            + new Vector2(0, Camera.Scale(tileSize))
+                            - distancing * (i + 1),
+                        Camera.Scale(dingySize)
                     )
                 );
             }
@@ -490,8 +523,11 @@ namespace Farbase
                 DrawTile(x, y);
         }
 
+        //todo: clean this thing up
         private void DrawUI()
         {
+            DrawSelection();
+
             if (tooltip != null)
             {
                 Vector2 tooltipSize = Engine.DefaultFont.Measure(tooltip);
@@ -632,6 +668,8 @@ namespace Farbase
 
         public void UpdateUI()
         {
+            Animateable.UpdateAll(Engine.DeltaTime);
+
             tooltip = null;
 
             foreach(Widget w in widgets)

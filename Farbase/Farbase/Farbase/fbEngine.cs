@@ -20,6 +20,8 @@ namespace Farbase
         private KeyboardState? ks, oks;
         private MouseState? ms, oms;
 
+        public int DeltaTime;
+
         private List<Event> eventQueue;
 
         private Dictionary<EventType, List<fbEventHandler>> subscribers;
@@ -28,6 +30,8 @@ namespace Farbase
 
         public fbNetClient NetClient;
 
+        // === === === === === === === === === ===
+
         public fbEngine(fbApplication app)
         {
             this.app = app;
@@ -35,6 +39,8 @@ namespace Farbase
             eventQueue = new List<Event>();
             subscribers = new Dictionary<EventType, List<fbEventHandler>>();
         }
+
+        // === === === === === === === === === ===
 
         public void QueueEvent(Event e)
         {
@@ -137,8 +143,10 @@ namespace Farbase
             return new Vector2(texture.Width, texture.Height);
         }
 
-        public void Update()
+        public void Update(GameTime gameTime)
         {
+            DeltaTime = gameTime.ElapsedGameTime.Milliseconds;
+
             oms = ms;
             ms = Mouse.GetState();
 
