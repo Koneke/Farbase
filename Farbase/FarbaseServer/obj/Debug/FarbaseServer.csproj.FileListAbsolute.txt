@@ -29,3 +29,4 @@ C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\gfx\back
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\gfx\cross.png
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\gfx\font.png
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\gfx\16\sketch.psd
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\cfg\keybindings.cfg

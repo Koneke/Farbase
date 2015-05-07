@@ -594,10 +594,11 @@ namespace Farbase
         }
     }
 
-    public class Button : Widget
+    public class Button : Widget, IInputSubscriber
     {
         private SmartText label;
         private Action reaction;
+        private InputSubscriber subscriber;
 
         public Button(
             string label,
@@ -607,6 +608,9 @@ namespace Farbase
         ) : base(engine, ui) {
             this.label = new SmartText(label, ui);
             this.reaction = reaction;
+
+            subscriber = new InputSubscriber(this, engine);
+            subscriber.Register();
         }
 
         public override bool IsInteractive() { return true; }
@@ -643,6 +647,9 @@ namespace Farbase
             if (reaction == null) return;
             if (!Disabled) reaction();
         }
+
+        public void Pressed() { OnClick(); }
+        public void Subscribe(string s) { subscriber.Subscribe(s); }
     }
 
     public class Label : Widget
@@ -757,8 +764,9 @@ namespace Farbase
         }
     }
 
-    public class CheckBox : Widget
+    public class CheckBox : Widget, IInputSubscriber
     {
+        private InputSubscriber subscriber;
         public bool Checked;
 
         public CheckBox(
@@ -766,6 +774,8 @@ namespace Farbase
             fbInterface ui,
             int depth = -1
         ) : base(engine, ui, depth) {
+            subscriber = new InputSubscriber(this, engine);
+            subscriber.Register();
         }
 
         public override bool IsInteractive() { return true; }
@@ -801,8 +811,11 @@ namespace Farbase
 
         public override void OnClick()
         {
-            Checked = !Checked;
+            if(!Disabled) Checked = !Checked;
         }
+
+        public void Pressed() { OnClick(); }
+        public void Subscribe(string s) { subscriber.Subscribe(s); }
     }
 
     public class Image : Widget

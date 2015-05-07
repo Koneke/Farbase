@@ -207,18 +207,18 @@ namespace Farbase
                     );
             }
 
-            BuildCard
-                .AddChild(
-                    new TextureButton(
-                        "Scout",
-                        () =>
-                            SelectedStation.StartProject(
-                                ProjectType.TechProject,
-                                (int)TechID.FighterTech
+            TextureButton researchButton =
+                (TextureButton)
+                new TextureButton(
+                    "Scout",
+                    () =>
+                        SelectedStation.StartProject(
+                            ProjectType.TechProject,
+                            (int)TechID.FighterTech
                             ),
-                        Engine,
-                        this,
-                        2f
+                    Engine,
+                    this,
+                    2f
                     )
                     .Padding(2)
                     .SetEnabledCondition(
@@ -226,7 +226,7 @@ namespace Farbase
                             Game.LocalPlayer,
                             TechID.FighterTech,
                             SelectedStation
-                        )
+                            )
                     )
                     .SetTooltip(
                         String.Format(
@@ -235,9 +235,12 @@ namespace Farbase
                             Tech.Techs[TechID.FighterTech].Cost,
                             Tech.Techs[TechID.FighterTech].ResearchTime,
                             Tech.Techs[TechID.FighterTech].Description
-                        )
-                    )
-                );
+                            )
+                    );
+
+            researchButton.Subscribe("research-fighters");
+
+            BuildCard.AddChild(researchButton);
 
             CardBox.AddChild(BuildCard);
 
@@ -245,7 +248,8 @@ namespace Farbase
                 (ListBox)
                 new ListBox(Engine, this)
                     .Margins(20)
-                    .Padding(10);
+                    .Padding(10)
+                ;
 
             turnInfo.AddChild(
                 new Label(

@@ -9,6 +9,94 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Farbase
 {
+    public interface IInputSubscriber
+    {
+        void Pressed();
+        void Subscribe(string s);
+    }
+
+    public class InputSubscriber
+    {
+        public static List<InputSubscriber> Subscribers =
+            new List<InputSubscriber>();
+
+        private IInputSubscriber subscriber;
+        private string Subscription;
+        private fbEngine engine;
+
+        public InputSubscriber(IInputSubscriber sub, fbEngine engine)
+        {
+            subscriber = sub;
+            Subscription = null;
+            this.engine = engine;
+        }
+
+        public void Register()
+        {
+            if (!Subscribers.Contains(this))
+                Subscribers.Add(this);
+        }
+
+        public void Unregister()
+        {
+            Subscribers.Remove(this);
+        }
+
+        public void Update()
+        {
+            if (Subscription == null)
+                return;
+
+            if (engine.BindingPressed(Subscription))
+                //we could send 'this' through this function up to our
+                //parent, so technically parents with several subscribers
+                //could handle them separately.
+                //I'm not seeing any real use case for that right this exact
+                //moment, like, held/released support is probably more
+                //important, but it's something we could do.
+                //alternetaively, we just send the subscription-name string.
+                subscriber.Pressed();
+        }
+
+        public void Unsubscribe()
+        {
+            Subscription = null;
+        }
+
+        public void Subscribe(string s)
+        {
+            Subscription = s;
+        }
+    }
+
+    public class KeyBinding
+    {
+        //c:d - ctrl-d
+        //ac:s - ctrl-alt-s
+        //e - e
+        public string Name;
+        public bool Ctrl;
+        public bool Shift;
+        public bool Alt;
+        public Keys Key;
+
+        public bool Pressed;
+        public bool Held;
+        public bool Released;
+
+        public KeyBinding(
+            bool ctrl,
+            bool alt,
+            bool shift,
+            Keys key
+        ) {
+            Ctrl = ctrl;
+            Alt = alt;
+            Shift = shift;
+            Key = key;
+        }
+    }
+
     public class fbEngine
     {
         private fbApplication app;
@@ -17,8 +105,10 @@ namespace Farbase
 
         public Dictionary<string, Texture2D> Textures;
         public string GraphicsSet = "16";
+
         private KeyboardState? ks, oks;
         private MouseState? ms, oms;
+        private Dictionary<string, List<KeyBinding>> keyBindings;
 
         public int DeltaTime;
 
@@ -35,6 +125,8 @@ namespace Farbase
             this.app = app;
             drawCalls = new List<DrawCall>();
             subscribers = new Dictionary<EventType, List<fbEventHandler>>();
+            keyBindings = new Dictionary<string, List<KeyBinding>>();
+            ReadKeybindingsFromFile("cfg/keybindings.cfg");
         }
 
         // === === === === === === === === === ===
@@ -141,6 +233,48 @@ namespace Farbase
 
             oks = ks;
             ks = Keyboard.GetState();
+
+            if (oks == null)
+                return;
+
+            foreach (string bindName in keyBindings.Keys)
+            {
+                foreach (KeyBinding binding in keyBindings[bindName])
+                {
+                    bool lastFrame =
+                        binding.Ctrl ==
+                            (oks.Value.IsKeyDown(Keys.LeftControl) ||
+                            oks.Value.IsKeyDown(Keys.RightControl)) &&
+                        binding.Alt ==
+                            (oks.Value.IsKeyDown(Keys.LeftAlt) ||
+                            oks.Value.IsKeyDown(Keys.RightAlt)) &&
+                        binding.Shift ==
+                            (oks.Value.IsKeyDown(Keys.LeftShift) ||
+                            oks.Value.IsKeyDown(Keys.RightShift)) &&
+                        oks.Value.IsKeyDown(binding.Key);
+
+                    bool thisFrame =
+                        binding.Ctrl ==
+                            (ks.Value.IsKeyDown(Keys.LeftControl) ||
+                            ks.Value.IsKeyDown(Keys.RightControl)) &&
+                        binding.Alt ==
+                            (ks.Value.IsKeyDown(Keys.LeftAlt) ||
+                            ks.Value.IsKeyDown(Keys.RightAlt)) &&
+                        binding.Shift ==
+                            (ks.Value.IsKeyDown(Keys.LeftShift) ||
+                            ks.Value.IsKeyDown(Keys.RightShift)) &&
+                        ks.Value.IsKeyDown(binding.Key);
+
+                    binding.Pressed = !lastFrame && thisFrame;
+                    binding.Held = lastFrame && thisFrame;
+                    binding.Released = lastFrame && !thisFrame;
+                }
+            }
+
+            foreach (InputSubscriber subscriber in InputSubscriber.Subscribers)
+            {
+                subscriber.Update();
+            }
         }
 
         public void Draw(DrawCall dc)
@@ -291,6 +425,65 @@ namespace Farbase
         {
             if (ks == null || oks == null) return false;
             return ks.Value.IsKeyDown(key);
+        }
+
+        private void ReadKeybindingsFromFile(string path)
+        {
+            foreach(string ln in File.ReadLines(path))
+            {
+                if (ln == "") continue;
+
+                string line = ln.ToLower();
+
+                if (!line.Contains(',')) //we always need a name
+                    throw new FormatException();
+
+                List<string> split = line.Split(',').ToList();
+
+                string name = split[split.Count - 1];
+
+                if (!keyBindings.ContainsKey(name))
+                    keyBindings.Add(name, new List<KeyBinding>());
+
+                split.RemoveAt(split.Count - 1);
+                List<string> cmds = split;
+
+                foreach (string cmd in cmds) 
+                {
+                    string keyString;
+                    bool c, a, s;
+                    if (cmd.Contains(':'))
+                    {
+                        string modifiers = cmd.Split(':')[0];
+                        keyString = cmd.Split(':')[1];
+                        c = modifiers.Contains('c');
+                        a = modifiers.Contains('a');
+                        s = modifiers.Contains('s');
+                    }
+                    else
+                    {
+                        keyString = cmd;
+                        c = a = s = false;
+                    }
+
+                    Keys key = (Keys)Enum.Parse(typeof (Keys), keyString, true);
+
+                    keyBindings[name].Add(new KeyBinding(c, a, s, key));
+                }
+            }
+        }
+
+        public bool BindingPressed(string name)
+        {
+            return keyBindings[name.ToLower()].Any(kb => kb.Pressed);
+        }
+        public bool BindingHeld(string name)
+        {
+            return keyBindings[name.ToLower()].Any(kb => kb.Held);
+        }
+        public bool BindingReleased(string name)
+        {
+            return keyBindings[name.ToLower()].Any(kb => kb.Released);
         }
 
         public void Exit()
