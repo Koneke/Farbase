@@ -103,6 +103,13 @@ namespace Farbase
             worker.ConstructionTime = 5;
             worker.Abilities.Add(UnitAbilites.Mining);
 
+            new Tech( //self registers in constructor
+                TechID.FighterTech,
+                "fighters",
+                10,
+                1
+            );
+
             SetupProperties();
         }
 
@@ -151,6 +158,23 @@ namespace Farbase
             properties.Add(name.ToLower(), property);
         }
 
+        public bool CanResearch(
+            Player player,
+            TechID tech,
+            Station s
+        ) {
+            if (s == null) return false; //only build at stations
+            if (s.Owner != We) return false; //and only stations owed by us
+            if (player.Money < Tech.Techs[tech].Cost) return false;
+
+            return
+                !player.Tech.Contains(tech) &&
+                Tech.Techs[tech].Prerequisites
+                    .All(
+                        pr => player.Tech.Contains(pr)
+                    );
+        }
+
         public bool CanBuild(
             Player player,
             UnitType unitType,
@@ -160,6 +184,10 @@ namespace Farbase
             if (s.Owner != We) return false; //and only stations owed by us
             if (s.Tile.Unit != null) return false; //only empty tiles
             if (player.Money < unitType.Cost) return false;
+
+            //make sure we have the needed tech for the unit
+            if (!unitType.Prerequisites.All(pr => player.Tech.Contains(pr)))
+                return false;
 
             return true;
         }
@@ -250,6 +278,16 @@ namespace Farbase
                                     (UnitTypes)
                                     message.Get<int>("project")
                                 )
+                            );
+                            break;
+
+                        case ProjectType.TechProject:
+                            s.Project = new TechProject(
+                                this,
+                                message.Get<int>("owner"),
+                                s,
+                                message.Get<int>("length"),
+                                (TechID)message.Get<int>("project")
                             );
                             break;
 

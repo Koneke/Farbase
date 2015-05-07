@@ -16,15 +16,23 @@ namespace Farbase
         public TechID ID;
         public string Name;
         public string Description;
+        public int Cost;
+        public int ResearchTime;
+        public List<TechID> Prerequisites; 
 
         public Tech(
             TechID id,
-            string name
+            string name,
+            int cost,
+            int time
         ) {
             ID = id;
             Name = name;
             Description = "Lorem ipsum";
             Techs.Add(id, this);
+            Prerequisites = new List<TechID>();
+            Cost = cost;
+            ResearchTime = time;
         }
     }
 

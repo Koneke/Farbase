@@ -287,32 +287,43 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.station_set_project:
-                    switch ((ProjectType)message.Get<int>("projecttype"))
-                    {
+
+                    int cost;
+
+                    switch (
+                        (ProjectType)message.Get<int>("projecttype")
+                    ) {
                         case ProjectType.UnitProject:
                             UnitType type = UnitType.GetType(
-                                (UnitTypes)
-                                message.Get<int>("project")
+                                (UnitTypes)message.Get<int>("project")
                             );
 
-                            Player projectingPlayer = 
-                                Game.World.Players[message.Get<int>("owner")];
-                            projectingPlayer.Money -= type.Cost;
-
-                            SendAll(
-                                new NetMessage3(
-                                    NM3MessageType.player_status,
-                                    message.Get<int>("owner"),
-                                    projectingPlayer.Money
-                                )
-                            );
+                            cost = type.Cost;
                             break;
 
-                        //tech project here
+                        case ProjectType.TechProject:
+                            Tech tech = Tech.Techs[
+                                (TechID)message.Get<int>("project")
+                            ];
+
+                            cost = tech.Cost;
+                            break;
 
                         default:
                             throw new ArgumentException();
                     }
+
+                    Player projectingPlayer = 
+                        Game.World.Players[message.Get<int>("owner")];
+                    projectingPlayer.Money -= cost;
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.player_status,
+                            message.Get<int>("owner"),
+                            projectingPlayer.Money
+                        )
+                    );
 
                     SendAll(message);
                     break;

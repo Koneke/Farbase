@@ -93,14 +93,14 @@ namespace Farbase
 
     public class TechProject : Project
     {
-        private Tech tech;
+        private TechID tech;
 
         public TechProject(
             fbGame game,
             int owner,
             Station station,
             int length,
-            Tech tech
+            TechID tech
         ) : base(game, owner, station, length) {
             this.tech = tech;
         }
@@ -109,7 +109,7 @@ namespace Farbase
         {
             //tech.ID is an enum, but we can just cast it to int completely fine
             //like this. trust me.
-            return (int)tech.ID;
+            return (int)tech;
         }
 
         public override ProjectType GetProjectType()
@@ -119,7 +119,7 @@ namespace Farbase
 
         public override string GetProjectName()
         {
-            return "Researching " + tech.Name;
+            return "Researching " + Tech.Techs[tech].Name;
         }
     }
 }

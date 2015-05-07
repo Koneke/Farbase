@@ -198,13 +198,46 @@ namespace Farbase
                         )
                         .SetTooltip(
                             string.Format(
-                                "Build {0} - {1}$",
+                                "Build {0} - {1}$ ({2} turns)",
                                 ut.Name,
-                                ut.Cost
+                                ut.Cost,
+                                ut.ConstructionTime
                             )
                         )
                     );
             }
+
+            BuildCard
+                .AddChild(
+                    new TextureButton(
+                        "Scout",
+                        () =>
+                            SelectedStation.StartProject(
+                                ProjectType.TechProject,
+                                (int)TechID.FighterTech
+                            ),
+                        Engine,
+                        this,
+                        2f
+                    )
+                    .Padding(2)
+                    .SetEnabledCondition(
+                        () => Game.CanResearch(
+                            Game.LocalPlayer,
+                            TechID.FighterTech,
+                            SelectedStation
+                        )
+                    )
+                    .SetTooltip(
+                        String.Format(
+                            "Research {0} - {1}$ ({2} turns)\n{3}",
+                            Tech.Techs[TechID.FighterTech].Name,
+                            Tech.Techs[TechID.FighterTech].Cost,
+                            Tech.Techs[TechID.FighterTech].ResearchTime,
+                            Tech.Techs[TechID.FighterTech].Description
+                        )
+                    )
+                );
 
             CardBox.AddChild(BuildCard);
 

@@ -41,13 +41,13 @@ namespace Farbase
         public int Attacks;
         public int Strength;
         public List<UnitAbilites> Abilities;
-        public List<TechID> PreRequisites;
+        public List<TechID> Prerequisites;
 
         public UnitType(UnitTypes type)
         {
             Type = type;
             Abilities = new List<UnitAbilites>();
-            PreRequisites = new List<TechID>();
+            Prerequisites = new List<TechID>();
 
             types.Add(type, this);
         }

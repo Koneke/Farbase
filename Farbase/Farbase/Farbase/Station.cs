@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Farbase
+﻿namespace Farbase
 {
     public class Station
     {
@@ -31,22 +29,14 @@ namespace Farbase
             ProjectType projectType,
             int project
         ) {
-            switch (projectType)
-            {
-                case ProjectType.UnitProject:
-                    World.Game.EventHandler.Push(
-                        new SetProjectEvent(
-                            Owner,
-                            ID,
-                            projectType,
-                            project
-                        )
-                    );
-                    break;
-
-                default:
-                    throw new ArgumentException();
-            }
+            World.Game.EventHandler.Push(
+                new SetProjectEvent(
+                    Owner,
+                    ID,
+                    projectType,
+                    project
+                )
+            );
         }
     }
 }

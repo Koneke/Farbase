@@ -214,6 +214,8 @@ namespace Farbase
 
                     s = Game.World.Stations[spe.Station];
 
+                    int time;
+
                     switch (spe.ProjectType)
                     {
                         case ProjectType.UnitProject:
@@ -221,24 +223,30 @@ namespace Farbase
                                 (UnitTypes)spe.Project
                             );
 
-                            Game.World.Players[spe.Owner].Money -=
-                                type.Cost;
+                            time = type.ConstructionTime;
+                            break;
 
-                            engine.NetClient.Send(
-                                new NetMessage3(
-                                    NM3MessageType.station_set_project,
-                                    spe.Owner,
-                                    s.ID,
-                                    type.ConstructionTime,
-                                    (int)ProjectType.UnitProject,
-                                    spe.Project
-                                )
-                            );
+                        case ProjectType.TechProject:
+                            Tech tech = Tech.Techs[(TechID)spe.Project];
+
+                            time = tech.ResearchTime;
                             break;
 
                         default:
                             throw new ArgumentException();
                     }
+
+                    engine.NetClient.Send(
+                        new NetMessage3(
+                            NM3MessageType.station_set_project,
+                            spe.Owner,
+                            s.ID,
+                            time,
+                            (int)spe.ProjectType,
+                            spe.Project
+                        )
+                    );
+
                     break;
 
                 case EventType.ProjectFinishedEvent:
