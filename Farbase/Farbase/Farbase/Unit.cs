@@ -141,6 +141,8 @@ namespace Farbase
 
         public bool CanMoveTo(Vector2i position)
         {
+            if (Moves <= 0) return false;
+
             //only bad condition atm is collision
             if (World.Map.At(position).Unit == null)
                 return true;
@@ -149,8 +151,7 @@ namespace Farbase
 
         public bool CanAttack(Vector2i position)
         {
-            if (Attacks <= 0)
-                return false;
+            if (Attacks <= 0) return false;
 
             Vector2i delta = Position - position;
             //only neighbours

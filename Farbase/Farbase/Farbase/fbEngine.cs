@@ -11,8 +11,7 @@ namespace Farbase
 {
     public interface IInputSubscriber
     {
-        void Pressed();
-        void Subscribe(string s);
+        void ReceiveInput(string s);
     }
 
     public class InputSubscriber
@@ -21,14 +20,14 @@ namespace Farbase
             new List<InputSubscriber>();
 
         private IInputSubscriber subscriber;
-        private string Subscription;
-        private fbEngine engine;
+        private List<string> Subscription;
 
-        public InputSubscriber(IInputSubscriber sub, fbEngine engine)
+        //we can probably remove engine from this by simply
+        //supplying an engine reference in update
+        public InputSubscriber(IInputSubscriber sub)
         {
             subscriber = sub;
-            Subscription = null;
-            this.engine = engine;
+            Subscription = new List<string>();
         }
 
         public void Register()
@@ -42,30 +41,41 @@ namespace Farbase
             Subscribers.Remove(this);
         }
 
-        public void Update()
+        public void Update(fbEngine engine)
         {
             if (Subscription == null)
                 return;
 
-            if (engine.BindingPressed(Subscription))
-                //we could send 'this' through this function up to our
-                //parent, so technically parents with several subscribers
-                //could handle them separately.
-                //I'm not seeing any real use case for that right this exact
-                //moment, like, held/released support is probably more
-                //important, but it's something we could do.
-                //alternetaively, we just send the subscription-name string.
-                subscriber.Pressed();
+            foreach (string binding in Subscription)
+            {
+                if (binding[0] == '+')
+                {
+                    string _binding = binding.Substring(1, binding.Length - 1);
+                    if (engine.BindingHeld(_binding))
+                        subscriber.ReceiveInput(binding);
+                }
+                else
+                {
+                    if (engine.BindingPressed(binding))
+                        subscriber.ReceiveInput(binding);
+                }
+            }
         }
 
-        public void Unsubscribe()
+        public void UnsubscribeAll()
         {
-            Subscription = null;
+            Subscription.Clear();
         }
 
-        public void Subscribe(string s)
+        public void Unsubscribe(string s)
         {
-            Subscription = s;
+            Subscription.Remove(s.ToLower());
+        }
+
+        public InputSubscriber Subscribe(string s)
+        {
+            Subscription.Add(s.ToLower());
+            return this;
         }
     }
 
@@ -74,7 +84,6 @@ namespace Farbase
         //c:d - ctrl-d
         //ac:s - ctrl-alt-s
         //e - e
-        public string Name;
         public bool Ctrl;
         public bool Shift;
         public bool Alt;
@@ -273,7 +282,7 @@ namespace Farbase
 
             foreach (InputSubscriber subscriber in InputSubscriber.Subscribers)
             {
-                subscriber.Update();
+                subscriber.Update(this);
             }
         }
 
@@ -411,22 +420,6 @@ namespace Farbase
             }
         }
 
-        public bool KeyPressed(Keys key)
-        {
-            if (ks == null || oks == null) return false;
-            return ks.Value.IsKeyDown(key) && !oks.Value.IsKeyDown(key);
-        }
-        public bool KeyReleased(Keys key)
-        {
-            if (ks == null || oks == null) return false;
-            return oks.Value.IsKeyDown(key) && !ks.Value.IsKeyDown(key);
-        }
-        public bool KeyDown(Keys key)
-        {
-            if (ks == null || oks == null) return false;
-            return ks.Value.IsKeyDown(key);
-        }
-
         private void ReadKeybindingsFromFile(string path)
         {
             foreach(string ln in File.ReadLines(path))
@@ -441,6 +434,7 @@ namespace Farbase
                 List<string> split = line.Split(',').ToList();
 
                 string name = split[split.Count - 1];
+                name = name.Trim(new[] { '\t', ' ' });
 
                 if (!keyBindings.ContainsKey(name))
                     keyBindings.Add(name, new List<KeyBinding>());
@@ -448,7 +442,7 @@ namespace Farbase
                 split.RemoveAt(split.Count - 1);
                 List<string> cmds = split;
 
-                foreach (string cmd in cmds) 
+                foreach (string cmd in cmds)
                 {
                     string keyString;
                     bool c, a, s;
@@ -466,9 +460,12 @@ namespace Farbase
                         c = a = s = false;
                     }
 
+                    keyString = keyString.Trim(new[] { '\t', ' ' });
                     Keys key = (Keys)Enum.Parse(typeof (Keys), keyString, true);
 
-                    keyBindings[name].Add(new KeyBinding(c, a, s, key));
+                    keyBindings[name].Add(
+                        new KeyBinding(c, a, s, key)
+                    );
                 }
             }
         }

@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Farbase
 {
-    public class fbInterface
+    public class fbInterface : IInputSubscriber
     {
         public fbGame Game;
         public fbEngine Engine;
@@ -86,6 +86,29 @@ namespace Farbase
             InterfaceEventHandler ieh = new InterfaceEventHandler(game, this);
             engine.Subscribe(ieh, EventType.NameEvent);
             engine.Subscribe(ieh, EventType.BuildUnitEvent);
+
+            new InputSubscriber(this)
+                .Subscribe("move-nw")
+                .Subscribe("move-n")
+                .Subscribe("move-ne")
+                .Subscribe("move-e")
+                .Subscribe("move-se")
+                .Subscribe("move-s")
+                .Subscribe("move-sw")
+                .Subscribe("move-w")
+                .Subscribe("pass")
+                .Subscribe("dev-login")
+                .Subscribe("dev-test")
+                .Subscribe("select-next-idle")
+                .Subscribe("quit")
+                .Register();
+
+            //todo: should we really need to manually subscribe?
+            //      I mean, it's not convenient in any way shape or form?
+            //      minimal effort to do manually right now though, so I guess
+            //      it's in until further notice.
+            //      might want to unsubscribe/resub for different parts of the
+            //      game later..? like, other input in the main menu, or w/e?
         }
 
         public void SetupUI()
@@ -182,8 +205,7 @@ namespace Farbase
                                 SelectedStation.StartProject(
                                     ProjectType.UnitProject,
                                     (int)ut.Type
-                                )
-                            ,
+                                ),
                             Engine,
                             this,
                             2f
@@ -215,28 +237,28 @@ namespace Farbase
                         SelectedStation.StartProject(
                             ProjectType.TechProject,
                             (int)TechID.FighterTech
-                            ),
+                        ),
                     Engine,
                     this,
                     2f
+                )
+                .Padding(2)
+                .SetEnabledCondition(
+                    () => Game.CanResearch(
+                        Game.LocalPlayer,
+                        TechID.FighterTech,
+                        SelectedStation
                     )
-                    .Padding(2)
-                    .SetEnabledCondition(
-                        () => Game.CanResearch(
-                            Game.LocalPlayer,
-                            TechID.FighterTech,
-                            SelectedStation
-                            )
+                )
+                .SetTooltip(
+                    String.Format(
+                        "Research {0} - {1}$ ({2} turns)\n{3}",
+                        Tech.Techs[TechID.FighterTech].Name,
+                        Tech.Techs[TechID.FighterTech].Cost,
+                        Tech.Techs[TechID.FighterTech].ResearchTime,
+                        Tech.Techs[TechID.FighterTech].Description
                     )
-                    .SetTooltip(
-                        String.Format(
-                            "Research {0} - {1}$ ({2} turns)\n{3}",
-                            Tech.Techs[TechID.FighterTech].Name,
-                            Tech.Techs[TechID.FighterTech].Cost,
-                            Tech.Techs[TechID.FighterTech].ResearchTime,
-                            Tech.Techs[TechID.FighterTech].Description
-                            )
-                    );
+                );
 
             researchButton.Subscribe("research-fighters");
 
@@ -652,18 +674,12 @@ namespace Farbase
 
         public void Update()
         {
-            if (Engine.KeyPressed(Keys.Escape))
-            {
-                Engine.Exit();
-            }
-
             Camera.Update();
 
             //no (important) interaction if we're waiting for data.
             if (!Game.Ready) return;
 
             UpdateUI();
-
             Input();
         }
 
@@ -749,179 +765,6 @@ namespace Farbase
 
         public void Input()
         {
-            if (Engine.KeyPressed(Keys.Enter))
-            {
-                if (Game.OurTurn)
-                {
-                    Engine.NetClient.Send(
-                        new NetMessage3(NM3MessageType.client_pass)
-                    );
-                }
-                else
-                    Game.Log.Add("Not your turn!");
-            }
-
-            //todo: test command
-            //weird unsynced station project testing stuff
-            if (Engine.KeyPressed(Keys.Space))
-            {
-                Station s = Game.World.Stations[0];
-
-                Engine.NetClient.Send(
-                    new NetMessage3(
-                        NM3MessageType.station_set_project,
-                        Game.LocalPlayer.ID,
-                        s.ID,
-                        5,
-                        (int)ProjectType.UnitProject,
-                        "worker"
-                    )
-                );
-            }
-
-            if (Engine.KeyPressed(Keys.G))
-            {
-                List<string> names =
-                    new List<string>
-                    {
-                        "Captain Zorblax",
-                        "Commander Kneckers"
-                    };
-
-                List<Color> colors =
-                    new List<Color>
-                    {
-                        Color.Green,
-                        Color.CornflowerBlue
-                    };
-
-                Engine.NetClient.Send(
-                    new NetMessage3(
-                        NM3MessageType.player_name,
-                        Game.We,
-                        names[Game.We],
-                        ExtensionMethods.ColorToString(colors[Game.We])
-                    )
-                );
-            }
-
-            if (Engine.KeyPressed(Keys.H))
-            {
-                if (Game.OurTurn)
-                {
-                    Engine.NetClient.Send(
-                        new NetMessage3(
-                            NM3MessageType.dev_command,
-                            0
-                        )
-                    );
-                }
-            }
-
-            if (
-                Game.OurTurn &&
-                SelectedUnit != null &&
-                SelectedUnit.Owner == Game.World.CurrentID
-            ) {
-                Vector2i moveOrder = null;
-
-                if (Engine.KeyPressed(Keys.NumPad2))
-                    moveOrder = new Vector2i(0, 1);
-                else if (Engine.KeyPressed(Keys.NumPad4))
-                    moveOrder = new Vector2i(-1, 0);
-                else if (Engine.KeyPressed(Keys.NumPad8))
-                    moveOrder = new Vector2i(0, -1);
-                else if (Engine.KeyPressed(Keys.NumPad6))
-                    moveOrder = new Vector2i(1, 0);
-
-                else if (Engine.KeyPressed(Keys.NumPad1))
-                    moveOrder = new Vector2i(-1, 1);
-                else if (Engine.KeyPressed(Keys.NumPad7))
-                    moveOrder = new Vector2i(-1, -1);
-                else if (Engine.KeyPressed(Keys.NumPad9))
-                    moveOrder = new Vector2i(1, -1);
-                else if (Engine.KeyPressed(Keys.NumPad3))
-                    moveOrder = new Vector2i(1, 1);
-
-                if (moveOrder != null && SelectedUnit.Moves > 0)
-                {
-                    Unit u = SelectedUnit;
-
-                    if(u.CanMoveTo(u.Position + moveOrder))
-                    {
-                        int x = (u.Position + moveOrder).X;
-                        int y = (u.Position + moveOrder).Y;
-
-                        Engine.NetClient.Send(
-                            new NetMessage3(
-                                NM3MessageType.unit_move,
-                                u.ID,
-                                x,
-                                y
-                            )
-                        );
-
-                        u.Moves -= 1;
-                        Engine.Push(new UnitMoveEvent(u.ID, x, y));
-                    }
-                    else if (u.CanAttack(u.Position + moveOrder))
-                    {
-                        Vector2i targettile = u.Position + moveOrder;
-                        Unit target = Game.World.Map.At(
-                            targettile.X,
-                            targettile.Y
-                        ).Unit;
-
-                        Engine.NetClient.Send(
-                            new NetMessage3(
-                                NM3MessageType.unit_attack,
-                                u.ID, target.ID
-                            )
-                        );
-                    }
-                }
-            }
-
-            if (Engine.KeyPressed(Keys.OemPeriod))
-            {
-                List<Unit> selectable =
-                    Game.World.GetPlayerUnits(Game.LocalPlayer.ID)
-                    .Select(id => Game.World.Units[id])
-                    .Where(u => u.Attacks > 0 || u.Moves > 0)
-                    .ToList()
-                ;
-
-                if (selectable.Count > 0)
-                {
-                    if (SelectedUnit != null)
-                    {
-                        int index = selectable.IndexOf(SelectedUnit);
-                        //if the selected is not one of ours, we get -1
-                        //which still works with the code (because the
-                        //new selected index then becomes 0)
-                        //which is absolutely fine
-                        //only works with forward selection though.
-
-                        index = (index + 1) % selectable.Count;
-
-                        Select(selectable[index].Position);
-                    }
-                    else
-                    {
-                        Select(selectable[0].Position);
-                    }
-                }
-
-                /*if (engine.KeyPressed(Keys.A))
-                {
-                    SelectedUnit.MoveTo(
-                        SelectedUnit.Position +
-                        SelectedUnit.StepTowards(new Vector2(0))
-                    );
-                    SelectedUnit.Moves -= 1;
-                }*/
-            }
-
             //handled more gracefully in the future, hopefully...
             bool passClickToWorld = true;
 
@@ -971,6 +814,159 @@ namespace Farbase
                 return square;
 
             return null;
+        }
+
+        //see if we can somehow extract the input stuff out of this
+        //delegates..?
+        private void MovementInput(string s)
+        {
+            if (
+                !Game.OurTurn ||
+                SelectedUnit == null ||
+                SelectedUnit.Owner != Game.World.CurrentID
+            ) return;
+
+            Vector2i moveOrder;
+
+            switch (s)
+            {
+                case "move-nw": moveOrder = new Vector2i(-1, -1); break;
+                case "move-n":  moveOrder = new Vector2i( 0, -1); break;
+                case "move-ne": moveOrder = new Vector2i( 1, -1); break;
+                case "move-e":  moveOrder = new Vector2i( 1,  0); break;
+                case "move-se": moveOrder = new Vector2i( 1,  1); break;
+                case "move-s":  moveOrder = new Vector2i( 0,  1); break;
+                case "move-sw": moveOrder = new Vector2i(-1,  1); break;
+                case "move-w":  moveOrder = new Vector2i(-1,  0); break;
+                default: return;
+            }
+
+            Unit u = SelectedUnit;
+
+            if(u.CanMoveTo(u.Position + moveOrder))
+            {
+                int x = (u.Position + moveOrder).X;
+                int y = (u.Position + moveOrder).Y;
+
+                Engine.NetClient.Send(
+                    new NetMessage3(
+                        NM3MessageType.unit_move,
+                        u.ID,
+                        x, y
+                    )
+                );
+
+                u.Moves -= 1;
+                Engine.Push(new UnitMoveEvent(u.ID, x, y));
+            }
+
+            if (u.CanAttack(u.Position + moveOrder))
+            {
+                Vector2i targettile = u.Position + moveOrder;
+                Unit target = Game.World.Map.At(
+                    targettile.X,
+                    targettile.Y
+                ).Unit;
+
+                Engine.NetClient.Send(
+                    new NetMessage3(
+                        NM3MessageType.unit_attack,
+                        u.ID, target.ID
+                    )
+                );
+            }
+        }
+
+        public void ReceiveInput(string s)
+        {
+            MovementInput(s);
+
+            switch (s)
+            {
+                case "quit":
+                    Engine.Exit();
+                    break;
+
+                case "pass":
+                    if (Game.OurTurn)
+                    {
+                        Engine.NetClient.Send(
+                            new NetMessage3(NM3MessageType.client_pass)
+                        );
+                    }
+                    else
+                    {
+                        Game.Log.Add("Not your turn!");
+                    }
+                    break;
+                
+                case "dev-login":
+                    List<string> names =
+                        new List<string>
+                        {
+                            "Captain Zorblax",
+                            "Commander Kneckers"
+                        };
+
+                    List<Color> colors =
+                        new List<Color>
+                        {
+                            Color.Green,
+                            Color.CornflowerBlue
+                        };
+
+                    Engine.NetClient.Send(
+                        new NetMessage3(
+                            NM3MessageType.player_name,
+                            Game.We,
+                            names[Game.We],
+                            ExtensionMethods.ColorToString(colors[Game.We])
+                        )
+                    );
+                    break;
+
+                case "dev-test":
+                    if (Game.OurTurn)
+                    {
+                        Engine.NetClient.Send(
+                            new NetMessage3(
+                                NM3MessageType.dev_command,
+                                0
+                            )
+                        );
+                    }
+                    break;
+
+                case "select-next-idle":
+                    List<Unit> selectable =
+                        Game.World.GetPlayerUnits(Game.LocalPlayer.ID)
+                        .Select(id => Game.World.Units[id])
+                        .Where(u => u.Attacks > 0 || u.Moves > 0)
+                        .ToList()
+                    ;
+
+                    if (selectable.Count > 0)
+                    {
+                        if (SelectedUnit != null)
+                        {
+                            int index = selectable.IndexOf(SelectedUnit);
+                            //if the selected is not one of ours, we get -1
+                            //which still works with the code (because the
+                            //new selected index then becomes 0)
+                            //which is absolutely fine
+                            //only works with forward selection though.
+
+                            index = (index + 1) % selectable.Count;
+
+                            Select(selectable[index].Position);
+                        }
+                        else
+                        {
+                            Select(selectable[0].Position);
+                        }
+                    }
+                    break;
+            }
         }
     }
 }

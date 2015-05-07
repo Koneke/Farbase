@@ -1,10 +1,9 @@
 using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 
 namespace Farbase
 {
-    public class fbCamera
+    public class fbCamera : IInputSubscriber
     {
         public fbRectangle Camera;
         private fbEngine engine;
@@ -15,7 +14,14 @@ namespace Farbase
             Camera = new fbRectangle(
                 Vector2.Zero,
                 engine.GetSize()
-                );
+            );
+
+            new InputSubscriber(this)
+                .Subscribe("+camera-up")
+                .Subscribe("+camera-down")
+                .Subscribe("+camera-left")
+                .Subscribe("+camera-right")
+                .Register();
         }
 
         private float cameraScaling
@@ -60,21 +66,6 @@ namespace Farbase
 
         public void Update()
         {
-            if (engine.KeyPressed(Keys.OemPlus))
-                ZoomAt(engine.GetSize() / 2f, 100f);
-
-            if (engine.KeyPressed(Keys.OemMinus))
-                ZoomAt(engine.GetSize() / 2f, -100f);
-
-            Vector2 keyboardScroll = Vector2.Zero;
-            if (engine.KeyDown(Keys.Right)) keyboardScroll.X += 1;
-            if (engine.KeyDown(Keys.Left)) keyboardScroll.X -= 1;
-            if (engine.KeyDown(Keys.Up)) keyboardScroll.Y -= 1;
-            if (engine.KeyDown(Keys.Down)) keyboardScroll.Y += 1;
-
-            Camera.Position +=
-                keyboardScroll * keyboardScrollSpeed * cameraScaling;
-
             if(engine.MouseWheelDelta != 0)
                 ZoomAt(engine.MousePosition, engine.MouseWheelDelta * 1f);
 
@@ -133,6 +124,23 @@ namespace Farbase
         public float Scale(float scalee)
         {
             return scalee * (1f / cameraScaling);
+        }
+
+        public void ReceiveInput(string s)
+        {
+            Vector2 keyboardScroll = Vector2.Zero;
+
+            switch (s)
+            {
+                case "+camera-up": keyboardScroll.Y -= 1; break;
+                case "+camera-left": keyboardScroll.X -= 1; break;
+                case "+camera-down": keyboardScroll.Y += 1; break;
+                case "+camera-right": keyboardScroll.X += 1; break;
+                default: throw new ArgumentException();
+            }
+
+            Camera.Position +=
+                keyboardScroll * keyboardScrollSpeed * cameraScaling;
         }
     }
 }

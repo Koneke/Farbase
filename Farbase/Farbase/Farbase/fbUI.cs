@@ -609,7 +609,7 @@ namespace Farbase
             this.label = new SmartText(label, ui);
             this.reaction = reaction;
 
-            subscriber = new InputSubscriber(this, engine);
+            subscriber = new InputSubscriber(this);
             subscriber.Register();
         }
 
@@ -648,7 +648,9 @@ namespace Farbase
             if (!Disabled) reaction();
         }
 
-        public void Pressed() { OnClick(); }
+        //conciously ignoring the actual given keybind back,
+        //since we only subscribe to one anyways.
+        public void ReceiveInput(string s) { OnClick(); }
         public void Subscribe(string s) { subscriber.Subscribe(s); }
     }
 
@@ -774,7 +776,7 @@ namespace Farbase
             fbInterface ui,
             int depth = -1
         ) : base(engine, ui, depth) {
-            subscriber = new InputSubscriber(this, engine);
+            subscriber = new InputSubscriber(this);
             subscriber.Register();
         }
 
@@ -814,7 +816,7 @@ namespace Farbase
             if(!Disabled) Checked = !Checked;
         }
 
-        public void Pressed() { OnClick(); }
+        public void ReceiveInput(string s) { OnClick(); }
         public void Subscribe(string s) { subscriber.Subscribe(s); }
     }
 
