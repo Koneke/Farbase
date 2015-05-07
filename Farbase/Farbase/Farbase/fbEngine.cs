@@ -20,14 +20,14 @@ namespace Farbase
             new List<InputSubscriber>();
 
         private IInputSubscriber subscriber;
-        private List<string> Subscription;
+        private List<string> subscriptions;
 
         //we can probably remove engine from this by simply
         //supplying an engine reference in update
         public InputSubscriber(IInputSubscriber sub)
         {
             subscriber = sub;
-            Subscription = new List<string>();
+            subscriptions = new List<string>();
         }
 
         public void Register()
@@ -43,10 +43,10 @@ namespace Farbase
 
         public void Update(fbEngine engine)
         {
-            if (Subscription == null)
+            if (subscriptions == null)
                 return;
 
-            foreach (string binding in Subscription)
+            foreach (string binding in subscriptions)
             {
                 if (binding[0] == '+')
                 {
@@ -64,17 +64,17 @@ namespace Farbase
 
         public void UnsubscribeAll()
         {
-            Subscription.Clear();
+            subscriptions.Clear();
         }
 
         public void Unsubscribe(string s)
         {
-            Subscription.Remove(s.ToLower());
+            subscriptions.Remove(s.ToLower());
         }
 
         public InputSubscriber Subscribe(string s)
         {
-            Subscription.Add(s.ToLower());
+            subscriptions.Add(s.ToLower());
             return this;
         }
     }

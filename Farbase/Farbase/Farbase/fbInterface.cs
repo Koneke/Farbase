@@ -3,11 +3,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
 
 namespace Farbase
 {
-    public class fbInterface : IInputSubscriber
+    public class fbInterface
     {
         public fbGame Game;
         public fbEngine Engine;
@@ -87,7 +86,7 @@ namespace Farbase
             engine.Subscribe(ieh, EventType.NameEvent);
             engine.Subscribe(ieh, EventType.BuildUnitEvent);
 
-            new InputSubscriber(this)
+            new InputSubscriber(new InterfaceInputHandler(game, this))
                 .Subscribe("move-nw")
                 .Subscribe("move-n")
                 .Subscribe("move-ne")
@@ -102,13 +101,6 @@ namespace Farbase
                 .Subscribe("select-next-idle")
                 .Subscribe("quit")
                 .Register();
-
-            //todo: should we really need to manually subscribe?
-            //      I mean, it's not convenient in any way shape or form?
-            //      minimal effort to do manually right now though, so I guess
-            //      it's in until further notice.
-            //      might want to unsubscribe/resub for different parts of the
-            //      game later..? like, other input in the main menu, or w/e?
         }
 
         public void SetupUI()
@@ -814,159 +806,6 @@ namespace Farbase
                 return square;
 
             return null;
-        }
-
-        //see if we can somehow extract the input stuff out of this
-        //delegates..?
-        private void MovementInput(string s)
-        {
-            if (
-                !Game.OurTurn ||
-                SelectedUnit == null ||
-                SelectedUnit.Owner != Game.World.CurrentID
-            ) return;
-
-            Vector2i moveOrder;
-
-            switch (s)
-            {
-                case "move-nw": moveOrder = new Vector2i(-1, -1); break;
-                case "move-n":  moveOrder = new Vector2i( 0, -1); break;
-                case "move-ne": moveOrder = new Vector2i( 1, -1); break;
-                case "move-e":  moveOrder = new Vector2i( 1,  0); break;
-                case "move-se": moveOrder = new Vector2i( 1,  1); break;
-                case "move-s":  moveOrder = new Vector2i( 0,  1); break;
-                case "move-sw": moveOrder = new Vector2i(-1,  1); break;
-                case "move-w":  moveOrder = new Vector2i(-1,  0); break;
-                default: return;
-            }
-
-            Unit u = SelectedUnit;
-
-            if(u.CanMoveTo(u.Position + moveOrder))
-            {
-                int x = (u.Position + moveOrder).X;
-                int y = (u.Position + moveOrder).Y;
-
-                Engine.NetClient.Send(
-                    new NetMessage3(
-                        NM3MessageType.unit_move,
-                        u.ID,
-                        x, y
-                    )
-                );
-
-                u.Moves -= 1;
-                Engine.Push(new UnitMoveEvent(u.ID, x, y));
-            }
-
-            if (u.CanAttack(u.Position + moveOrder))
-            {
-                Vector2i targettile = u.Position + moveOrder;
-                Unit target = Game.World.Map.At(
-                    targettile.X,
-                    targettile.Y
-                ).Unit;
-
-                Engine.NetClient.Send(
-                    new NetMessage3(
-                        NM3MessageType.unit_attack,
-                        u.ID, target.ID
-                    )
-                );
-            }
-        }
-
-        public void ReceiveInput(string s)
-        {
-            MovementInput(s);
-
-            switch (s)
-            {
-                case "quit":
-                    Engine.Exit();
-                    break;
-
-                case "pass":
-                    if (Game.OurTurn)
-                    {
-                        Engine.NetClient.Send(
-                            new NetMessage3(NM3MessageType.client_pass)
-                        );
-                    }
-                    else
-                    {
-                        Game.Log.Add("Not your turn!");
-                    }
-                    break;
-                
-                case "dev-login":
-                    List<string> names =
-                        new List<string>
-                        {
-                            "Captain Zorblax",
-                            "Commander Kneckers"
-                        };
-
-                    List<Color> colors =
-                        new List<Color>
-                        {
-                            Color.Green,
-                            Color.CornflowerBlue
-                        };
-
-                    Engine.NetClient.Send(
-                        new NetMessage3(
-                            NM3MessageType.player_name,
-                            Game.We,
-                            names[Game.We],
-                            ExtensionMethods.ColorToString(colors[Game.We])
-                        )
-                    );
-                    break;
-
-                case "dev-test":
-                    if (Game.OurTurn)
-                    {
-                        Engine.NetClient.Send(
-                            new NetMessage3(
-                                NM3MessageType.dev_command,
-                                0
-                            )
-                        );
-                    }
-                    break;
-
-                case "select-next-idle":
-                    List<Unit> selectable =
-                        Game.World.GetPlayerUnits(Game.LocalPlayer.ID)
-                        .Select(id => Game.World.Units[id])
-                        .Where(u => u.Attacks > 0 || u.Moves > 0)
-                        .ToList()
-                    ;
-
-                    if (selectable.Count > 0)
-                    {
-                        if (SelectedUnit != null)
-                        {
-                            int index = selectable.IndexOf(SelectedUnit);
-                            //if the selected is not one of ours, we get -1
-                            //which still works with the code (because the
-                            //new selected index then becomes 0)
-                            //which is absolutely fine
-                            //only works with forward selection though.
-
-                            index = (index + 1) % selectable.Count;
-
-                            Select(selectable[index].Position);
-                        }
-                        else
-                        {
-                            Select(selectable[0].Position);
-                        }
-                    }
-                    break;
-            }
         }
     }
 }
