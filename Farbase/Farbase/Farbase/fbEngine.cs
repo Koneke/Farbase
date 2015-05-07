@@ -22,8 +22,6 @@ namespace Farbase
 
         public int DeltaTime;
 
-        private List<Event> eventQueue;
-
         private Dictionary<EventType, List<fbEventHandler>> subscribers;
 
         private List<DrawCall> drawCalls;
@@ -36,15 +34,22 @@ namespace Farbase
         {
             this.app = app;
             drawCalls = new List<DrawCall>();
-            eventQueue = new List<Event>();
             subscribers = new Dictionary<EventType, List<fbEventHandler>>();
         }
 
         // === === === === === === === === === ===
 
-        public void QueueEvent(Event e)
+        public void Push(Event e)
         {
-            eventQueue.Add(e);
+            if(!subscribers.ContainsKey(e.GetEventType()))
+                return;
+
+            foreach (
+                fbEventHandler handler in
+                subscribers[e.GetEventType()]
+            ) {
+                handler.Handle(e);
+            }
         }
 
         public void Subscribe(fbEventHandler handler, EventType eventType)
@@ -58,24 +63,6 @@ namespace Farbase
         public void Unsubscribe(fbEventHandler handler, EventType eventType)
         {
             subscribers[eventType].Remove(handler);
-        }
-
-        private void PushEvents()
-        {
-            foreach (Event e in eventQueue)
-            {
-                if(!subscribers.ContainsKey(e.GetEventType()))
-                    continue;
-
-                foreach (
-                    fbEventHandler handler in
-                    subscribers[e.GetEventType()]
-                ) {
-                    handler.Handle(e);
-                }
-            }
-
-            eventQueue.Clear();
         }
 
         public void StartNetClient()
@@ -152,8 +139,6 @@ namespace Farbase
 
             oks = ks;
             ks = Keyboard.GetState();
-
-            PushEvents();
         }
 
         public void Draw(DrawCall dc)

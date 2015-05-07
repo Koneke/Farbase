@@ -53,7 +53,7 @@ namespace Farbase
 
         public override void Push(Event e)
         {
-            ui.Engine.QueueEvent(e);
+            ui.Engine.Push(e);
         }
     }
 
@@ -203,7 +203,7 @@ namespace Farbase
 
         public override void Push(Event e)
         {
-            engine.QueueEvent(e);
+            engine.Push(e);
         }
     }
 

@@ -133,7 +133,7 @@ namespace Farbase
                     new TextureButton(
                         "station",
                         () =>
-                            Engine.QueueEvent(
+                            Engine.Push(
                                 new BuildStationEvent(
                                     Game.We,
                                     SelectedTile.Position.X,
@@ -644,7 +644,9 @@ namespace Farbase
                     string.Format(
                         "{0} ({1})",
                         "Station",
-                        Game.World.GetPlayer(t.Station.Owner).Name
+                        t.Station.Owner == 1
+                            ? "derelict"
+                            : Game.World.GetPlayer(t.Station.Owner).Name
                     );
             }
 
@@ -782,7 +784,7 @@ namespace Farbase
                         );
 
                         u.Moves -= 1;
-                        Engine.QueueEvent(new UnitMoveEvent(u.ID, x, y));
+                        Engine.Push(new UnitMoveEvent(u.ID, x, y));
                     }
                     else if (u.CanAttack(u.Position + moveOrder))
                     {
