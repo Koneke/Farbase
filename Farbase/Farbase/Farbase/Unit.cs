@@ -41,6 +41,7 @@ namespace Farbase
         public string Name;
         public string Texture;
         public int Cost;
+        public int ConstructionTime;
         public int Moves;
         public int Attacks;
         public int Strength;

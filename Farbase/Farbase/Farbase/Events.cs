@@ -11,7 +11,8 @@ namespace Farbase
         BuildStationEvent,
         PlayerDisconnect,
         CreateUnitEvent,
-        DestroyUnitEvent
+        DestroyUnitEvent,
+        SetProjectEvent
     }
 
     public abstract class Event
@@ -135,6 +136,28 @@ namespace Farbase
             ID = id;
             this.x = x;
             this.y = y;
+        }
+    }
+
+    public class SetProjectEvent : Event
+    {
+        public const EventType Type = EventType.SetProjectEvent;
+        public override EventType GetEventType() { return Type; }
+
+        public int Owner, Station;
+        public ProjectType ProjectType;
+        public string Project;
+
+        public SetProjectEvent(
+            int owner,
+            int station,
+            ProjectType projectType,
+            string project
+        ) {
+            Owner = owner;
+            Station = station;
+            ProjectType = projectType;
+            Project = project;
         }
     }
 }

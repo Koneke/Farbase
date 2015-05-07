@@ -56,6 +56,10 @@ namespace FarbaseServer
             NetMessage3 message,
             int except = -1
         ) {
+            Console.WriteLine(
+                "-> L: {0}", message.Format()
+            );
+
             //let our local world handle a copy of the same message
             Game.HandleNetMessage(message);
 
@@ -287,6 +291,30 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.station_set_project:
+                    switch ((ProjectType)message.Get<int>("projecttype"))
+                    {
+                        case ProjectType.UnitProject:
+                            UnitType type = UnitType.GetType(
+                                message.Get<string>("project")
+                            );
+
+                            Player projectingPlayer = 
+                                Game.World.Players[message.Get<int>("owner")];
+                            projectingPlayer.Money -= type.Cost;
+
+                            SendAll(
+                                new NetMessage3(
+                                    NM3MessageType.player_status,
+                                    message.Get<int>("owner"),
+                                    projectingPlayer.Money
+                                )
+                            );
+                            break;
+
+                        default:
+                            throw new ArgumentException();
+                    }
+
                     SendAll(message);
                     break;
 

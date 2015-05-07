@@ -74,6 +74,7 @@ namespace Farbase
             engine.Subscribe(EventHandler, EventType.BuildUnitEvent);
             engine.Subscribe(EventHandler, EventType.CreateUnitEvent);
             engine.Subscribe(EventHandler, EventType.PlayerDisconnect);
+            engine.Subscribe(EventHandler, EventType.SetProjectEvent);
         }
 
         public void Initialize()
@@ -87,6 +88,7 @@ namespace Farbase
             scout.Strength = 3;
             scout.Attacks = 1;
             scout.Cost = 10;
+            scout.ConstructionTime = 5;
             UnitType.RegisterType("scout", scout);
 
             UnitType worker = new UnitType();
@@ -94,6 +96,7 @@ namespace Farbase
             worker.Moves = 1;
             worker.Strength = 1;
             worker.Cost = 5;
+            worker.ConstructionTime = 5;
             worker.Abilities.Add(UnitAbilites.Mining);
             UnitType.RegisterType("worker", worker);
 
@@ -234,7 +237,7 @@ namespace Farbase
 
                     switch (type)
                     {
-                        case ProjectType.BuildingProject:
+                        case ProjectType.UnitProject:
                             s.Project = new BuildingProject(
                                 this,
                                 message.Get<int>("owner"),

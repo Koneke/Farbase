@@ -178,7 +178,12 @@ namespace Farbase
                     .AddChild(
                         new TextureButton(
                             ut.Name,
-                            () => Game.Build(unitType, SelectedStation),
+                            () =>
+                                SelectedStation.StartProject(
+                                    ProjectType.UnitProject,
+                                    ut.Name
+                                )
+                            ,
                             Engine,
                             this,
                             2f
@@ -731,7 +736,7 @@ namespace Farbase
                         Game.LocalPlayer.ID,
                         s.ID,
                         5,
-                        (int)ProjectType.BuildingProject,
+                        (int)ProjectType.UnitProject,
                         "worker"
                     )
                 );

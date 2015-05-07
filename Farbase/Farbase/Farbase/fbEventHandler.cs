@@ -204,6 +204,36 @@ namespace Farbase
                     Game.World.RemovePlayer(pde.id);
                     break;
 
+                case EventType.SetProjectEvent:
+                    SetProjectEvent spe = (SetProjectEvent)e;
+
+                    Station s = Game.World.Stations[spe.Station];
+
+                    switch (spe.ProjectType)
+                    {
+                        case ProjectType.UnitProject:
+                            UnitType type = UnitType.GetType(spe.Project);
+
+                            Game.World.Players[spe.Owner].Money -=
+                                type.Cost;
+
+                            engine.NetClient.Send(
+                                new NetMessage3(
+                                    NM3MessageType.station_set_project,
+                                    spe.Owner,
+                                    s.ID,
+                                    type.ConstructionTime,
+                                    (int)ProjectType.UnitProject,
+                                    spe.Project
+                                )
+                            );
+                            break;
+
+                        default:
+                            throw new ArgumentException();
+                    }
+                    break;
+
                 default:
                     throw new ArgumentException();
             }

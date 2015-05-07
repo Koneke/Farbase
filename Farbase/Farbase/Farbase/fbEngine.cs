@@ -41,8 +41,10 @@ namespace Farbase
 
         public void Push(Event e)
         {
-            if(!subscribers.ContainsKey(e.GetEventType()))
-                return;
+            if (!subscribers.ContainsKey(e.GetEventType()))
+            {
+                throw new Exception("No subscriber to event.");
+            }
 
             foreach (
                 fbEventHandler handler in
