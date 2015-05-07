@@ -76,24 +76,28 @@ namespace Farbase
 
     public class fbWorld
     {
+        public fbGame Game;
+        public Map Map;
+
         public Dictionary<int, Player> Players;
         public int CurrentID;
 
-        public Map Map;
+        private Dictionary<int, List<int>> PlayerUnits;
+        private Dictionary<int, List<int>> PlayerStations; 
 
-        //only needs to be serverside
-        public int UnitIDCounter;
+        public Dictionary<int, Unit> Units;
+        public Dictionary<int, Station> Stations;
 
-        public List<Unit> Units;
-        public Dictionary<int, Unit> UnitLookup; 
-
-        public fbWorld(int w, int h)
+        public fbWorld(fbGame game, int w, int h)
         {
+            Game = game;
             Map = new Map(w, h);
             Players = new Dictionary<int, Player>();
 
-            Units = new List<Unit>();
-            UnitLookup = new Dictionary<int, Unit>();
+            Units = new Dictionary<int, Unit>();
+            Stations = new Dictionary<int, Station>();
+            PlayerUnits = new Dictionary<int, List<int>>();
+            PlayerStations = new Dictionary<int, List<int>>();
         }
 
         public Player GetPlayer(int id)
@@ -103,15 +107,31 @@ namespace Farbase
             return null;
         }
 
+        public List<int> GetPlayerUnits(int id)
+        {
+            if (!PlayerUnits.ContainsKey(id))
+                PlayerUnits.Add(id, new List<int>());
+
+            return PlayerUnits[id];
+        }
+
+        public List<int> GetPlayerStations(int id)
+        {
+            if (!PlayerStations.ContainsKey(id))
+                PlayerStations.Add(id, new List<int>());
+
+            return PlayerStations[id];
+        }
+
         public void RemovePlayer(int id)
         {
-            List<int> ownedIDs =
-                new List<int>(
-                    Players[id].OwnedUnits
-                );
+            List<int> ownedIDs = new List<int>(GetPlayerUnits(id));
 
             foreach (int unitid in ownedIDs)
-                DespawnUnit(UnitLookup[unitid]);
+                DespawnUnit(Units[unitid]);
+
+            foreach (int stationid in GetPlayerStations(id))
+                Stations[stationid].Owner = -1;
 
             if (Players.Count == 1)
             {
@@ -137,12 +157,24 @@ namespace Farbase
                 Players.Remove(id);
         }
 
-        public void SpawnStation(int owner, int x, int y)
-        {
-            Station s = new Station();
+        public void SpawnStation(
+            int owner,
+            int id,
+            int x,
+            int y
+        ) {
+            Station s = new Station(this);
             s.Owner = owner;
+            s.ID = id;
             s.Position = new Vector2i(x, y);
+
             Map.At(x, y).Station = s;
+            Stations.Add(s.ID, s);
+
+            if (!PlayerStations.ContainsKey(s.Owner))
+                PlayerStations.Add(s.Owner, new List<int>());
+
+            PlayerStations[s.Owner].Add(s.ID);
         }
 
         public void SpawnPlanet(int x, int y)
@@ -154,19 +186,21 @@ namespace Farbase
 
         public Unit SpawnUnit(Unit u)
         {
-            Units.Add(u);
             Map.At(u.x, u.y).Unit = u;
-            UnitLookup.Add(u.ID, u);
-            GetPlayer(u.Owner).OwnedUnits.Add(u.ID);
+            Units.Add(u.ID, u);
+
+            if (!PlayerUnits.ContainsKey(u.Owner))
+                PlayerUnits.Add(u.Owner, new List<int>());
+
+            PlayerUnits[u.Owner].Add(u.ID);
             return u;
         }
 
         public void DespawnUnit(Unit u)
         {
-            Units.Remove(u);
             Map.At(u.Position).Unit = null;
-            UnitLookup.Remove(u.ID);
-            GetPlayer(u.Owner).OwnedUnits.Remove(u.ID);
+            Units.Remove(u.ID);
+            PlayerUnits[u.Owner].Remove(u.ID);
         }
 
         public void AddPlayer(Player p)
@@ -186,12 +220,23 @@ namespace Farbase
 
         public void PassTo(Player next)
         {
-            foreach (int id in next.OwnedUnits)
+            foreach (int id in GetPlayerUnits(next.ID))
             {
-                Unit u = UnitLookup[id];
+                Unit u = Units[id];
                 u.Recharge();
                 if(u.HasAbility(UnitAbilites.Mining) && u.Tile.Planet != null)
                     Players[u.Owner].Money += 10;
+            }
+
+            foreach (int id in GetPlayerStations(next.ID))
+            {
+                Station s = Stations[id];
+                if (s.Project != null)
+                {
+                    s.Project.Progress();
+                    if (s.Project.Finished)
+                        s.Project = null;
+                }
             }
         }
     }

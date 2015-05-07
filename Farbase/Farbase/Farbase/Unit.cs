@@ -56,7 +56,10 @@ namespace Farbase
         // === === === === === === === === === ===
 
         private Animateable animateable;
-        public Animateable GetAnimateable() { return animateable; }
+        public Animateable GetAnimateable()
+        {
+            return animateable;
+        }
         public AnimationValues GetAnimationValues()
         {
             return new AnimationValues(fPosition);
@@ -64,12 +67,13 @@ namespace Farbase
 
         // === === === === === === === === === ===
 
-        private fbWorld World;
+        public static int IDCounter = 0;
+
+        public fbWorld World;
 
         public UnitType UnitType;
         public int Owner;
         public int ID;
-
         public int x, y;
 
         public Vector2i Position

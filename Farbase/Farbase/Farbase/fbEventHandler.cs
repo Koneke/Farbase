@@ -38,6 +38,10 @@ namespace Farbase
                     //selected asap
 
                     BuildUnitEvent bue = (BuildUnitEvent)e;
+
+                    if (ui.Selection == null)
+                        break;
+
                     Vector2i selected = ui.Selection.GetSelection();
 
                     //reselect, so our tile selection -> unit selection
@@ -77,7 +81,7 @@ namespace Farbase
 
                 case EventType.UnitMoveEvent:
                     UnitMoveEvent ume = (UnitMoveEvent)e;
-                    Unit u = Game.World.UnitLookup[ume.ID];
+                    Unit u = Game.World.Units[ume.ID];
                     u.MoveTo(ume.x, ume.y);
                     break;
 
@@ -132,7 +136,7 @@ namespace Farbase
 
                 case EventType.UnitMoveEvent:
                     UnitMoveEvent ume = (UnitMoveEvent)e;
-                    Unit u = Game.World.UnitLookup[ume.ID];
+                    Unit u = Game.World.Units[ume.ID];
 
                     u.GetAnimateable().AddAnimation(
                         new PositionAnimation(
@@ -151,7 +155,11 @@ namespace Farbase
                     engine.NetClient.Send(
                         new NetMessage3(
                             NM3MessageType.station_create,
-                            bse.Owner,
+                            bse.Owner, //isn't this always us?
+                                       //oh, right, but since the same message
+                                       //is used server -> client,
+                                       //it provides owner as well.
+                            -1, //client doesn't give id, handled serverside
                             bse.x,
                             bse.y
                         )

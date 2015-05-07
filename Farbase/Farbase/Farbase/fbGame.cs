@@ -11,14 +11,12 @@ namespace Farbase
         public string Name;
         public Color Color;
         public int Money;
-        public List<int> OwnedUnits; 
 
         public Player(string name, int id, Color color)
         {
             Name = name;
             ID = id;
             Color = color;
-            OwnedUnits = new List<int>();
         }
     }
 
@@ -147,14 +145,15 @@ namespace Farbase
             properties.Add(name.ToLower(), property);
         }
 
-        public bool CanBuild(UnitType unitType, Station s)
-        {
+        public bool CanBuild(
+            Player player,
+            UnitType unitType,
+            Station s
+        ) {
             if (s == null) return false; //only build at stations
             if (s.Owner != We) return false; //and only stations owed by us
-            if (World.Map.At(s.Position).Unit != null) //only empty tiles
-                return false;
-            if (LocalPlayer.Money < unitType.Cost)
-                return false;
+            if (s.Tile.Unit != null) return false; //only empty tiles
+            if (player.Money < unitType.Cost) return false;
 
             return true;
         }
@@ -207,28 +206,54 @@ namespace Farbase
             switch (message.Signature.MessageType)
             {
                 case NM3MessageType.message:
-                    Log.Add((string)message.Get("message"));
+                    Log.Add(message.Get<string>("message"));
                     break;
 
                 case NM3MessageType.world_create:
                     World = new fbWorld(
-                        (int)message.Get("width"),
-                        (int)message.Get("height")
+                        this,
+                        message.Get<int>("width"),
+                        message.Get<int>("height")
                     );
                     break;
 
                 case NM3MessageType.station_create:
                     World.SpawnStation(
-                        (int)message.Get("owner"),
-                        (int)message.Get("x"),
-                        (int)message.Get("y")
+                        message.Get<int>("owner"),
+                        message.Get<int>("id"),
+                        message.Get<int>("x"),
+                        message.Get<int>("y")
                     );
+                    break;
+
+                case NM3MessageType.station_set_project:
+                    Station s = World.Stations[message.Get<int>("station-id")];
+
+                    ProjectType type =
+                        (ProjectType)message.Get<int>("projecttype");
+
+                    switch (type)
+                    {
+                        case ProjectType.BuildingProject:
+                            s.Project = new BuildingProject(
+                                this,
+                                message.Get<int>("owner"),
+                                s,
+                                message.Get<int>("length"),
+                                UnitType.GetType(message.Get<string>("project"))
+                            );
+                            break;
+
+                        default:
+                            throw new ArgumentException();
+                    }
+
                     break;
 
                 case NM3MessageType.planet_create:
                     World.SpawnPlanet(
-                        (int)message.Get("x"),
-                        (int)message.Get("y")
+                        message.Get<int>("x"),
+                        message.Get<int>("y")
                     );
                     break;
 
@@ -247,9 +272,9 @@ namespace Farbase
                 case NM3MessageType.unit_move:
                     EventHandler.Push(
                         new UnitMoveEvent(
-                            (int)message.Get("id"),
-                            (int)message.Get("x"),
-                            (int)message.Get("y")
+                            message.Get<int>("id"),
+                            message.Get<int>("x"),
+                            message.Get<int>("y")
                         )
                     );
                     break;
@@ -258,22 +283,22 @@ namespace Farbase
                     World.AddPlayer(
                         new Player(
                             "Unnamed player",
-                            (int)message.Get("id"),
+                            message.Get<int>("id"),
                             Color.White
                         )
                     );
                     break;
 
                 case NM3MessageType.player_assign_id:
-                    We = (int)message.Get("id");
+                    We = message.Get<int>("id");
                     break;
 
                 case NM3MessageType.player_name:
                     EventHandler.Push(
                         new NameEvent(
-                            (int)message.Get("id"),
-                            (string)message.Get("name"),
-                            (string)message.Get("color")
+                            message.Get<int>("id"),
+                            message.Get<string>("name"),
+                            message.Get<string>("color")
                         )
                     );
                     break;
@@ -291,7 +316,7 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.unit_status:
-                    Unit u = World.UnitLookup[message.Get<int>("id")];
+                    Unit u = World.Units[message.Get<int>("id")];
                     u.Moves = message.Get<int>("moves");
                     u.Attacks = message.Get<int>("attacks");
                     u.Strength = message.Get<int>("strength");
@@ -302,8 +327,8 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.player_status:
-                    World.GetPlayer((int)message.Get("id"))
-                        .Money = (int)message.Get("money");
+                    World.GetPlayer(message.Get<int>("id"))
+                        .Money = message.Get<int>("money");
                     break;
 
                 case NM3MessageType.client_disconnect:

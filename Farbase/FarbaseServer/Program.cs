@@ -116,7 +116,7 @@ namespace FarbaseServer
                     //lock necessary?
                     lock (Game)
                     {
-                        un = Game.World.UnitLookup
+                        un = Game.World.Units
                             [message.Get<int>("id")];
 
                         if (un.Moves > 0)
@@ -156,7 +156,7 @@ namespace FarbaseServer
                                     Game.World,
                                     UnitType.GetType("scout"),
                                     message.Sender,
-                                    Game.World.UnitIDCounter++,
+                                    Unit.IDCounter++,
                                     10, 10
                                 )
                             );
@@ -186,10 +186,10 @@ namespace FarbaseServer
                             new NetMessage3(NM3MessageType.client_unready)
                         );
 
-                    Unit attacker = Game.World.UnitLookup
+                    Unit attacker = Game.World.Units
                         [message.Get<int>("attackerid")];
 
-                    Unit target = Game.World.UnitLookup
+                    Unit target = Game.World.Units
                         [message.Get<int>("targetid")];
 
                     if(Verbose)
@@ -251,7 +251,7 @@ namespace FarbaseServer
                         Game.World,
                         UnitType.GetType(message.Get<string>("type")),
                         message.Sender,
-                        Game.World.UnitIDCounter++,
+                        Unit.IDCounter++,
                         message.Get<int>("x"),
                         message.Get<int>("y")
                     );
@@ -272,6 +272,21 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.station_create:
+                    //we don't just straight propagate the message,
+                    //since the client sends with an id of -1
+                    //(i.e. auto assign).
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.station_create,
+                            message.Get<int>("owner"),
+                            Station.IDCounter++,
+                            message.Get<int>("x"),
+                            message.Get<int>("y")
+                        )
+                    );
+                    break;
+
+                case NM3MessageType.station_set_project:
                     SendAll(message);
                     break;
 
@@ -318,8 +333,8 @@ namespace FarbaseServer
             Game = new fbGame();
             Game.EventHandler = new ServerGameEventHandler(Game);
 
-            Game.World = new fbWorld(80, 45);
-            Game.World.SpawnStation(0, 10, 12);
+            Game.World = new fbWorld(Game, 80, 45);
+            Game.World.SpawnStation(0, 0, 10, 12);
             Game.World.SpawnPlanet(14, 14);
 
             netStart();
@@ -388,14 +403,14 @@ namespace FarbaseServer
             p.SendMessage(
                 new NetMessage3(
                     NM3MessageType.message,
-                    "msg:Welcome to Farbase."
+                    "Welcome to Farbase."
                 )
             );
 
             p.SendMessage(
                 new NetMessage3(
                     NM3MessageType.message,
-                    "msg:Your ID is " + p.ID + "."
+                    "Your ID is " + p.ID + "."
                 )
             );
 
@@ -456,10 +471,26 @@ namespace FarbaseServer
                         new NetMessage3(
                             NM3MessageType.station_create,
                             t.Station.Owner,
+                            t.Station.ID,
                             x,
                             y
                         )
                     );
+
+                    if (t.Station.Project != null)
+                    {
+                        Station s = t.Station;
+                        p.SendMessage(
+                            new NetMessage3(
+                                NM3MessageType.station_set_project,
+                                s.Owner,
+                                s.ID,
+                                s.Project.Remaining,
+                                (int)s.Project.GetProjectType(),
+                                s.Project.GetProject()
+                            )
+                        );
+                    }
                 }
 
                 if (Game.World.Map.At(x, y).Planet != null)

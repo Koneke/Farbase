@@ -185,7 +185,11 @@ namespace Farbase
                         )
                         .Padding(2)
                         .SetEnabledCondition(
-                            () => Game.CanBuild(unitType, SelectedStation)
+                            () => Game.CanBuild(
+                                    Game.LocalPlayer,
+                                    unitType,
+                                    SelectedStation
+                                )
                         )
                         .SetTooltip(
                             string.Format(
@@ -640,13 +644,27 @@ namespace Farbase
 
             if (t.Station != null)
             {
+                string projectString;
+
+                if (t.Station.Project != null)
+                {
+                    projectString = string.Format(
+                        "{0} ({1} turns left)",
+                        t.Station.Project.GetProjectName(),
+                        t.Station.Project.Remaining
+                    );
+                }
+                else
+                    projectString = "No current project";
+
                 stationTooltip =
                     string.Format(
-                        "{0} ({1})",
+                        "{0} ({1})\n : {2}",
                         "Station",
                         t.Station.Owner == 1
                             ? "derelict"
-                            : Game.World.GetPlayer(t.Station.Owner).Name
+                            : Game.World.GetPlayer(t.Station.Owner).Name,
+                        projectString
                     );
             }
 
@@ -699,6 +717,24 @@ namespace Farbase
                 }
                 else
                     Game.Log.Add("Not your turn!");
+            }
+
+            //todo: test command
+            //weird unsynced station project testing stuff
+            if (Engine.KeyPressed(Keys.Space))
+            {
+                Station s = Game.World.Stations[0];
+
+                Engine.NetClient.Send(
+                    new NetMessage3(
+                        NM3MessageType.station_set_project,
+                        Game.LocalPlayer.ID,
+                        s.ID,
+                        5,
+                        (int)ProjectType.BuildingProject,
+                        "worker"
+                    )
+                );
             }
 
             if (Engine.KeyPressed(Keys.G))
@@ -807,8 +843,8 @@ namespace Farbase
             if (Engine.KeyPressed(Keys.OemPeriod))
             {
                 List<Unit> selectable =
-                    Game.LocalPlayer.OwnedUnits
-                    .Select(id => Game.World.UnitLookup[id])
+                    Game.World.GetPlayerUnits(Game.LocalPlayer.ID)
+                    .Select(id => Game.World.Units[id])
                     .Where(u => u.Attacks > 0 || u.Moves > 0)
                     .ToList()
                 ;

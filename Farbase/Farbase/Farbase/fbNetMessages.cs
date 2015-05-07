@@ -24,6 +24,7 @@ namespace Farbase
 
         station_build,
         station_create,
+        station_set_project,
 
         unit_attack,
         unit_build,
@@ -209,6 +210,7 @@ namespace Farbase
                 NM3MessageType.station_create
             )
                 .AddArgument<int>("owner")
+                .AddArgument<int>("id")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
@@ -220,6 +222,17 @@ namespace Farbase
                 .AddArgument<int>("owner")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
+            ;
+
+            SetupSignature(
+                "station-set-project",
+                NM3MessageType.station_set_project
+            )
+                .AddArgument<int>("owner")
+                .AddArgument<int>("station-id")
+                .AddArgument<int>("length")
+                .AddArgument<int>("projecttype")
+                .AddArgument<string>("project")
             ;
 
             //=== === === === === === === === === ===//
@@ -288,15 +301,10 @@ namespace Farbase
         private List<object> messageArguments;
         public int Sender;
 
-        public object Get(string key)
-        {
-            return messageArguments
-                [Signature.Arguments.IndexOf(key.ToLower())];
-        }
-
         public T Get<T>(string key)
         {
-            return (T)Get(key);
+            return (T)messageArguments
+                [Signature.Arguments.IndexOf(key.ToLower())];
         }
 
         //setup the netmessage from a formatted string,
@@ -334,7 +342,8 @@ namespace Farbase
             var handlers = new Dictionary<Type, Func<string, object>>
             {
                 { typeof(int), s => Int32.Parse(s) },
-                { typeof(string), s => s }
+                { typeof(string), s => s },
+                { typeof(bool), s => bool.Parse(s) },
             };
 
             for (int i = 0; i < arguments.Count; i++)
