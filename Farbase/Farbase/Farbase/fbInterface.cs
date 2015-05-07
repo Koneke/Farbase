@@ -181,7 +181,7 @@ namespace Farbase
                             () =>
                                 SelectedStation.StartProject(
                                     ProjectType.UnitProject,
-                                    ut.Name
+                                    (int)ut.Type
                                 )
                             ,
                             Engine,

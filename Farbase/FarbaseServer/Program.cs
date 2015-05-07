@@ -73,7 +73,7 @@ namespace FarbaseServer
             SendAll(
                 new NetMessage3(
                     NM3MessageType.unit_create,
-                    u.UnitType.Name,
+                    (int)u.UnitType.Type,
                     u.Owner,
                     u.ID,
                     u.Position.X,
@@ -96,6 +96,10 @@ namespace FarbaseServer
                     Console.WriteLine(
                         message.Get<string>("message")
                     );
+                    break;
+
+                case NM3MessageType.player_add_tech:
+                    SendAll(message);
                     break;
 
                 case NM3MessageType.player_name:
@@ -158,10 +162,11 @@ namespace FarbaseServer
                             BroadcastUnit(
                                 new Unit(
                                     Game.World,
-                                    UnitType.GetType("scout"),
+                                    UnitType.GetType(UnitTypes.Scout),
                                     message.Sender,
                                     Unit.IDCounter++,
-                                    10, 10
+                                    10,
+                                    10
                                 )
                             );
 
@@ -253,7 +258,10 @@ namespace FarbaseServer
                 case NM3MessageType.unit_build:
                     Unit unit = new Unit(
                         Game.World,
-                        UnitType.GetType(message.Get<string>("type")),
+                        UnitType.GetType(
+                            (UnitTypes)
+                            message.Get<int>("type")
+                        ),
                         message.Sender,
                         Unit.IDCounter++,
                         message.Get<int>("x"),
@@ -261,18 +269,6 @@ namespace FarbaseServer
                     );
 
                     BroadcastUnit(unit);
-
-                    int newMoney = Game.World
-                        .GetPlayer(message.Sender)
-                        .Money - unit.UnitType.Cost;
-
-                    SendAll(
-                        new NetMessage3(
-                            NM3MessageType.player_status,
-                            message.Sender,
-                            newMoney
-                        )
-                    );
                     break;
 
                 case NM3MessageType.station_create:
@@ -295,7 +291,8 @@ namespace FarbaseServer
                     {
                         case ProjectType.UnitProject:
                             UnitType type = UnitType.GetType(
-                                message.Get<string>("project")
+                                (UnitTypes)
+                                message.Get<int>("project")
                             );
 
                             Player projectingPlayer = 
@@ -310,6 +307,8 @@ namespace FarbaseServer
                                 )
                             );
                             break;
+
+                        //tech project here
 
                         default:
                             throw new ArgumentException();
@@ -539,7 +538,7 @@ namespace FarbaseServer
                     p.SendMessage(
                         new NetMessage3(
                             NM3MessageType.unit_create,
-                            u.UnitType.Name,
+                            (int)u.UnitType.Type,
                             u.Owner,
                             u.ID,
                             u.Position.X,

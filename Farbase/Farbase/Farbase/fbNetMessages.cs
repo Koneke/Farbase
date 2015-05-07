@@ -16,6 +16,7 @@ namespace Farbase
 
         planet_create,
 
+        player_add_tech,
         player_assign_id,
         player_current,
         player_name,
@@ -166,6 +167,14 @@ namespace Farbase
             //=== === === === === === === === === ===//
 
             SetupSignature(
+                "player-add-tech",
+                NM3MessageType.player_add_tech
+            )
+                .AddArgument<int>("id")
+                .AddArgument<int>("tech") //int -> enum
+            ;
+
+            SetupSignature(
                 "assign-id",
                 NM3MessageType.player_assign_id
             )
@@ -232,7 +241,7 @@ namespace Farbase
                 .AddArgument<int>("station-id")
                 .AddArgument<int>("length")
                 .AddArgument<int>("projecttype")
-                .AddArgument<string>("project")
+                .AddArgument<int>("project")
             ;
 
             //=== === === === === === === === === ===//
@@ -249,7 +258,7 @@ namespace Farbase
                 "build-unit",
                 NM3MessageType.unit_build
             )
-                .AddArgument<string>("type")
+                .AddArgument<int>("type")
                 .AddArgument<int>("x")
                 .AddArgument<int>("y")
             ;
@@ -258,7 +267,7 @@ namespace Farbase
                 "create-unit",
                 NM3MessageType.unit_create
             )
-                .AddArgument<string>("type")
+                .AddArgument<int>("type")
                 .AddArgument<int>("owner")
                 .AddArgument<int>("id")
                 .AddArgument<int>("x")

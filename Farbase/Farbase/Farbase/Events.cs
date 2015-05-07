@@ -12,7 +12,8 @@ namespace Farbase
         PlayerDisconnect,
         CreateUnitEvent,
         DestroyUnitEvent,
-        SetProjectEvent
+        SetProjectEvent,
+        ProjectFinishedEvent
     }
 
     public abstract class Event
@@ -86,12 +87,12 @@ namespace Farbase
         public const EventType Type = EventType.BuildUnitEvent;
         public override EventType GetEventType() { return Type; }
 
-        public string UnitType;
+        public UnitTypes UnitType;
         public int Owner;
         public int x, y;
 
         public BuildUnitEvent(
-            string unitType,
+            UnitTypes unitType,
             int owner,
             int x,
             int y
@@ -146,17 +147,31 @@ namespace Farbase
 
         public int Owner, Station;
         public ProjectType ProjectType;
-        public string Project;
+        //not really an int, just int form of a suitable enum
+        public int Project;
 
         public SetProjectEvent(
             int owner,
             int station,
             ProjectType projectType,
-            string project
+            int project
         ) {
             Owner = owner;
             Station = station;
             ProjectType = projectType;
+            Project = project;
+        }
+    }
+
+    public class ProjectFinishedEvent : Event
+    {
+        public const EventType Type = EventType.ProjectFinishedEvent;
+        public override EventType GetEventType() { return Type; }
+
+        public Project Project;
+
+        public ProjectFinishedEvent(Project project)
+        {
             Project = project;
         }
     }

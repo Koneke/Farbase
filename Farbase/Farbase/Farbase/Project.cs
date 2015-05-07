@@ -11,8 +11,8 @@ namespace Farbase
     public abstract class Project
     {
         protected fbGame Game;
-        protected int Owner;
-        protected Station Station;
+        public int Owner;
+        public Station Station;
         public int Length;
         public int Remaining;
 
@@ -42,15 +42,23 @@ namespace Farbase
             }
         }
 
-        public abstract void Finish();
+        public void Finish()
+        {
+            Game.EventHandler.Push(new ProjectFinishedEvent(this));
+        }
 
         //should probably not be a string in the future
         //we should do it as either an object (so we can cast depending on
         //project type) or as an int (so we can look it up in the correct enum).
-        public abstract string GetProject();
+        public abstract int GetProject();
         public abstract ProjectType GetProjectType();
 
         public abstract string GetProjectName();
+
+        public void SetFinished()
+        {
+            finished = true;
+        }
     }
 
     public class BuildingProject : Project
@@ -67,37 +75,9 @@ namespace Farbase
             this.unitType = unitType;
         }
 
-        public override void Finish()
+        public override int GetProject()
         {
-            //todo: this is a temporary hacky thing
-            //      just making sure that we're not spawning units on each
-            //      other. If we're about to do so, just postpone the finishing
-            //      of the project.
-            //      In the future we might want to do something like, spawn it
-            //      next to the station instead, but we'll take that when the
-            //      time is right.
-
-            if (Station.Tile.Unit == null) {
-                Game.Build(unitType, Station);
-                finished = true;
-            }
-            else
-            {
-                Game.Log.Add(
-                    string.Format(
-                        "Can't finish building {0}," +
-                            "there's a unit in the way! ({1},{2})",
-                        unitType.Name,
-                        Station.Position.X,
-                        Station.Position.Y
-                    )
-                );
-            }
-        }
-
-        public override string GetProject()
-        {
-            return unitType.Name;
+            return (int)unitType.Type;
         }
 
         public override ProjectType GetProjectType()
@@ -125,14 +105,11 @@ namespace Farbase
             this.tech = tech;
         }
 
-        public override void Finish()
+        public override int GetProject()
         {
-            throw new NotImplementedException();
-        }
-
-        public override string GetProject()
-        {
-            throw new NotImplementedException();
+            //tech.ID is an enum, but we can just cast it to int completely fine
+            //like this. trust me.
+            return (int)tech.ID;
         }
 
         public override ProjectType GetProjectType()
@@ -142,7 +119,7 @@ namespace Farbase
 
         public override string GetProjectName()
         {
-            throw new NotImplementedException();
+            return "Researching " + tech.Name;
         }
     }
 }

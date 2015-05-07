@@ -11,12 +11,14 @@ namespace Farbase
         public string Name;
         public Color Color;
         public int Money;
+        public List<TechID> Tech;
 
         public Player(string name, int id, Color color)
         {
             Name = name;
             ID = id;
             Color = color;
+            Tech = new List<TechID>();
         }
     }
 
@@ -75,30 +77,31 @@ namespace Farbase
             engine.Subscribe(EventHandler, EventType.CreateUnitEvent);
             engine.Subscribe(EventHandler, EventType.PlayerDisconnect);
             engine.Subscribe(EventHandler, EventType.SetProjectEvent);
+            engine.Subscribe(EventHandler, EventType.ProjectFinishedEvent);
         }
 
         public void Initialize()
         {
             //need to be centralized to somewhere
             //world sets the exact same stuff up, DRY
-            //we probably want to enum the types too
-            UnitType scout = new UnitType();
+
+            UnitType scout = new UnitType(UnitTypes.Scout);
+            scout.Name = "scout";
             scout.Texture = "scout";
             scout.Moves = 3;
             scout.Strength = 3;
             scout.Attacks = 1;
             scout.Cost = 10;
             scout.ConstructionTime = 5;
-            UnitType.RegisterType("scout", scout);
 
-            UnitType worker = new UnitType();
+            UnitType worker = new UnitType(UnitTypes.Fighter);
+            worker.Name = "worker";
             worker.Texture = "worker";
             worker.Moves = 1;
             worker.Strength = 1;
             worker.Cost = 5;
             worker.ConstructionTime = 5;
             worker.Abilities.Add(UnitAbilites.Mining);
-            UnitType.RegisterType("worker", worker);
 
             SetupProperties();
         }
@@ -165,7 +168,7 @@ namespace Farbase
         {
             EventHandler.Push(
                 new BuildUnitEvent(
-                    unitType.Name,
+                    unitType.Type,
                     We,
                     s.Position.X,
                     s.Position.Y
@@ -243,7 +246,10 @@ namespace Farbase
                                 message.Get<int>("owner"),
                                 s,
                                 message.Get<int>("length"),
-                                UnitType.GetType(message.Get<string>("project"))
+                                UnitType.GetType(
+                                    (UnitTypes)
+                                    message.Get<int>("project")
+                                )
                             );
                             break;
 
@@ -251,6 +257,11 @@ namespace Farbase
                             throw new ArgumentException();
                     }
 
+                    break;
+
+                case NM3MessageType.player_add_tech:
+                    World.Players[message.Get<int>("id")]
+                        .Tech.Add((TechID)message.Get<int>("tech"));
                     break;
 
                 case NM3MessageType.planet_create:
@@ -263,7 +274,10 @@ namespace Farbase
                 case NM3MessageType.unit_create:
                     EventHandler.Push(
                         new CreateUnitEvent(
-                            UnitType.GetType(message.Get<string>("type")),
+                            UnitType.GetType(
+                                (UnitTypes)
+                                message.Get<int>("type")
+                            ),
                             message.Get<int>("owner"),
                             message.Get<int>("id"),
                             message.Get<int>("x"),

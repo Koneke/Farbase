@@ -103,6 +103,10 @@ namespace Farbase
                     }
                     break;
 
+                case EventType.ProjectFinishedEvent:
+                    fallthrough.Handle(e);
+                    break;
+
                 default:
                     throw new ArgumentException();
             }
@@ -126,6 +130,7 @@ namespace Farbase
 
         public override void Handle(Event e)
         {
+            Station s;
             switch (e.GetEventType())
             {
                 case EventType.NameEvent:
@@ -171,7 +176,7 @@ namespace Farbase
                     engine.NetClient.Send(
                         new NetMessage3(
                             NM3MessageType.unit_build,
-                            bue.UnitType,
+                            (int)bue.UnitType,
                             bue.x,
                             bue.y
                         )
@@ -207,12 +212,14 @@ namespace Farbase
                 case EventType.SetProjectEvent:
                     SetProjectEvent spe = (SetProjectEvent)e;
 
-                    Station s = Game.World.Stations[spe.Station];
+                    s = Game.World.Stations[spe.Station];
 
                     switch (spe.ProjectType)
                     {
                         case ProjectType.UnitProject:
-                            UnitType type = UnitType.GetType(spe.Project);
+                            UnitType type = UnitType.GetType(
+                                (UnitTypes)spe.Project
+                            );
 
                             Game.World.Players[spe.Owner].Money -=
                                 type.Cost;
@@ -227,6 +234,51 @@ namespace Farbase
                                     spe.Project
                                 )
                             );
+                            break;
+
+                        default:
+                            throw new ArgumentException();
+                    }
+                    break;
+
+                case EventType.ProjectFinishedEvent:
+                    ProjectFinishedEvent pfe = (ProjectFinishedEvent)e;
+                    Project p = pfe.Project;
+                    switch (p.GetProjectType())
+                    {
+                        case ProjectType.UnitProject:
+                            //this is a bit hacky, but we specifically only
+                            //want to send this netmessage from the client
+                            //*OWNING* the project, whereas with techprojects
+                            //we can handle them just fine on our own side.
+                            //this is because we need to keep our unit ids
+                            //synchronized.
+                            if (p.Station.Tile.Unit == null)
+                            {
+                                if (
+                                    Game.LocalPlayer != null && //not serverside
+                                    p.Owner == Game.LocalPlayer.ID //and our
+                                ) {
+                                    Push(
+                                        new BuildUnitEvent(
+                                            (UnitTypes)p.GetProject(),
+                                            p.Owner,
+                                            p.Station.Position.X,
+                                            p.Station.Position.Y
+                                        )
+                                    );
+                                }
+
+                                p.SetFinished();
+                            }
+                            break;
+
+                        case ProjectType.TechProject:
+                            Game.World.Players[p.Owner].Tech.Add(
+                                (TechID)p.GetProject()
+                            );
+
+                            p.SetFinished();
                             break;
 
                         default:

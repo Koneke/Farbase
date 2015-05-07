@@ -29,7 +29,7 @@ namespace Farbase
 
         public void StartProject(
             ProjectType projectType,
-            string project
+            int project
         ) {
             switch (projectType)
             {

@@ -5,6 +5,13 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
+    public enum UnitTypes
+    {
+        Worker,
+        Scout,
+        Fighter
+    }
+
     public enum UnitAbilites
     {
         Mining
@@ -12,32 +19,20 @@ namespace Farbase
 
     public class UnitType
     {
-        private static Dictionary<string, UnitType> types =
-            new Dictionary<string, UnitType>();
+        private static Dictionary<UnitTypes, UnitType> types =
+            new Dictionary<UnitTypes, UnitType>();
 
         public static List<UnitType> UnitTypes
         {
             get { return types.Values.ToList(); }
         }
 
-        public UnitType()
+        public static UnitType GetType(UnitTypes type)
         {
-            Abilities = new List<UnitAbilites>();
+            return types[type];
         }
 
-        public static void RegisterType(string name, UnitType type)
-        {
-            name = name.ToLower();
-            types.Add(name, type);
-            type.Name = name;
-        }
-
-        public static UnitType GetType(string name)
-        {
-            name = name.ToLower();
-            return types[name];
-        }
-
+        public UnitTypes Type;
         public string Name;
         public string Texture;
         public int Cost;
@@ -46,6 +41,16 @@ namespace Farbase
         public int Attacks;
         public int Strength;
         public List<UnitAbilites> Abilities;
+        public List<TechID> PreRequisites;
+
+        public UnitType(UnitTypes type)
+        {
+            Type = type;
+            Abilities = new List<UnitAbilites>();
+            PreRequisites = new List<TechID>();
+
+            types.Add(type, this);
+        }
     }
 
     public class Unit : IAnimateable
