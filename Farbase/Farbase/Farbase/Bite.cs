@@ -84,7 +84,7 @@ namespace Farbase
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (obj.GetType() != GetType()) return false;
             return Equals((Vector2i)obj);
         }
         public override int GetHashCode()
@@ -153,14 +153,18 @@ namespace Farbase
         public fbRectangle Destination;
         public fbRectangle Source;
         public int Depth;
+        public float Rotation;
         public Color Coloring;
 
         public DrawCall(
             Texture2D texture,
             fbRectangle destination,
             int depth = 0,
-            Color coloring = default(Color)
-        ) : this(texture, destination, null, depth, coloring) { }
+            Color coloring = default(Color),
+            float rotation = 0f
+        ) : this(texture, destination, null, depth, coloring) {
+            Rotation = rotation;
+        }
 
         public DrawCall(
             Texture2D texture,

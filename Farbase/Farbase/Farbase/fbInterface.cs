@@ -350,6 +350,37 @@ namespace Farbase
             }
         }
 
+        private void DrawLine(
+            Vector2 start,
+            Vector2 end,
+            float width,
+            Color color
+        ) {
+            float length =
+                (start - end)
+                .Length();
+
+            float rot = (float)Math.Atan2(
+                end.Y - start.Y,
+                end.X - start.X
+            );
+
+            new DrawCall(
+                Engine.GetTexture("blank"),
+                new fbRectangle(
+                    start
+                        + new Vector2(Camera.Scale(tileSize / 2f)),
+                    new Vector2(
+                        length,
+                        Math.Max(1, Camera.Scale(width))
+                    )
+                ),
+                1,
+                color,
+                rot
+            ).Draw(Engine);
+        }
+
         private void DrawUnit(Unit unit)
         {
             AnimationValues animationValues = unit
@@ -381,15 +412,25 @@ namespace Farbase
 
             if (unit.WarpTarget != null)
             {
-                Engine.Draw(
-                    Engine.GetTexture("ui-warp-beacon"),
+                fbRectangle beaconDestination =
                     Camera.WorldToScreen(
                         new fbRectangle(
                             unit.WarpTarget * tileSize,
                             tileSize
                         )
-                    ),
+                    );
+
+                Engine.Draw(
+                    Engine.GetTexture("ui-warp-beacon"),
+                    beaconDestination,
                     Color.White
+                );
+
+                DrawLine(
+                    destination.Position,
+                    beaconDestination.Position,
+                    1f,
+                    new Color(0, 215, 255)
                 );
             }
 

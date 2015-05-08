@@ -266,13 +266,22 @@ namespace Farbase
                         dc.Texture,
                         FromfbRectangle(dc.Destination),
                         FromfbRectangle(dc.Source),
-                        dc.Coloring
+                        dc.Coloring,
+                        dc.Rotation,
+                        Vector2.Zero,
+                        SpriteEffects.None,
+                        0
                     );
                 else
                     app.SpriteBatch.Draw(
                         dc.Texture,
                         FromfbRectangle(dc.Destination),
-                        dc.Coloring
+                        null,
+                        dc.Coloring,
+                        dc.Rotation,
+                        Vector2.Zero,
+                        SpriteEffects.None,
+                        0
                     );
             }
 
