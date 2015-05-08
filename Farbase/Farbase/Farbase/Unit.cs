@@ -185,8 +185,13 @@ namespace Farbase
             int yDelta = Math.Abs(y - position.Y);
 
             return
-                (xDelta <= maxRange && xDelta >= minRange) ||
-                (yDelta <= maxRange && yDelta >= minRange);
+                (yDelta <= maxRange &&
+                 xDelta <= maxRange &&
+                 xDelta >= minRange) ||
+
+                (xDelta <= maxRange &&
+                 yDelta <= maxRange &&
+                 yDelta >= minRange);
         }
 
         public bool CanAttack(Vector2i position)
