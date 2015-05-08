@@ -269,6 +269,62 @@ namespace Farbase
             }
         }
 
+        private void DrawRange()
+        {
+            if (SelectedUnit == null) return;
+
+            int minRange;
+            int maxRange;
+            Color color;
+
+            switch (Mode)
+            {
+                case InterfaceMode.Normal:
+                    if (SelectedUnit.WarpTarget != null)
+                        return;
+                    minRange = 1;
+                    maxRange = SelectedUnit.Moves;
+                    color = Color.LimeGreen;
+                    break;
+
+                case InterfaceMode.TargettingWarp:
+                    minRange = SelectedUnit.UnitType.Moves * 5;
+                    maxRange = SelectedUnit.UnitType.Moves * 10;
+                    color = Color.CornflowerBlue;
+                    break;
+
+                default:
+                    throw new ArgumentException();
+            }
+
+            for (int x = -maxRange; x <= maxRange; x++)
+            for (int y = -maxRange; y <= maxRange; y++)
+            {
+                if (
+                    (x > -minRange && x < minRange) &&
+                    (y > -minRange && y < minRange)
+                )
+                    continue;
+
+                fbRectangle destination = Camera.WorldToScreen(
+                    new fbRectangle(
+                        new Vector2(
+                            SelectedUnit.x + x,
+                            SelectedUnit.y + y
+                        ) * tileSize,
+                        tileSize
+                    )
+                );
+
+                new DrawCall(
+                    Engine.GetTexture("blank"),
+                    destination,
+                    10,
+                    color * 0.6f
+                ).Draw(Engine);
+            }
+        }
+
         private void DrawTile(int x, int y)
         {
             Tile t = Game.World.Map.At(x, y);
@@ -470,13 +526,16 @@ namespace Farbase
             DrawGrid();
             for (int x = 0; x < Game.World.Map.Width; x++)
             for (int y = 0; y < Game.World.Map.Height; y++)
+            {
                 DrawTile(x, y);
+            }
         }
 
         //todo: clean this thing up
         private void DrawUI()
         {
             DrawSelection();
+            DrawRange();
 
             switch (Mode)
             {
@@ -713,13 +772,15 @@ namespace Farbase
             switch (Mode)
             {
                 case InterfaceMode.TargettingWarp:
-                    SelectedUnit.WarpTarget = square;
-                    SelectedUnit.WarpCountdown = 3;
-
                     if (square == SelectedUnit.Position)
                     {
                         SelectedUnit.WarpTarget = null;
                         SelectedUnit.WarpCountdown = -1;
+                    }
+                    else if (SelectedUnit.CanWarpTo(square))
+                    {
+                        SelectedUnit.WarpTarget = square;
+                        SelectedUnit.WarpCountdown = 3;
                     }
 
                     Mode = InterfaceMode.Normal;

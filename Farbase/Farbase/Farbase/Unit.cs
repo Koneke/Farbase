@@ -176,6 +176,19 @@ namespace Farbase
             return false;
         }
 
+        public bool CanWarpTo(Vector2i position)
+        {
+            int minRange = UnitType.Moves * 5;
+            int maxRange = UnitType.Moves * 10;
+
+            int xDelta = Math.Abs(x - position.X);
+            int yDelta = Math.Abs(y - position.Y);
+
+            return
+                (xDelta <= maxRange && xDelta >= minRange) ||
+                (yDelta <= maxRange && yDelta >= minRange);
+        }
+
         public bool CanAttack(Vector2i position)
         {
             if (Attacks <= 0) return false;
