@@ -355,11 +355,16 @@ namespace FarbaseServer
             );
         }
 
-        private void ReceiveMessage(Client source, string message)
+        private void ReceiveMessage(Client source, string fullmessage)
         {
-            NetMessage3 nm3 = new NetMessage3(message);
-            nm3.Sender = source.ID;
-            HandleMessage(nm3);
+            foreach (string message in fullmessage.Split(';'))
+            {
+                if (message == "") continue;
+
+                NetMessage3 nm3 = new NetMessage3(message);
+                nm3.Sender = source.ID;
+                HandleMessage(nm3);
+            }
         }
 
         public void Start()

@@ -24,6 +24,8 @@ namespace Farbase
                 .Subscribe("move-sw")
                 .Subscribe("move-w")
                 .Subscribe("pass")
+                .Subscribe("warp")
+                .Subscribe("bombard")
                 .Subscribe("dev-login")
                 .Subscribe("dev-test")
                 .Subscribe("select-next-idle")
@@ -58,19 +60,14 @@ namespace Farbase
 
             if(u.CanMoveTo(u.Position + moveOrder))
             {
-                int x = (u.Position + moveOrder).X;
-                int y = (u.Position + moveOrder).Y;
-
-                ui.Engine.NetClient.Send(
-                    new NetMessage3(
-                        NM3MessageType.unit_move,
+                u.Moves -= 1;
+                ui.Engine.Push(
+                    new UnitMoveEvent(
                         u.ID,
-                        x, y
+                        u.Position + moveOrder,
+                        true
                     )
                 );
-
-                u.Moves -= 1;
-                ui.Engine.Push(new UnitMoveEvent(u.ID, x, y));
             }
 
             if (u.CanAttack(u.Position + moveOrder))
@@ -79,14 +76,14 @@ namespace Farbase
                 Unit target = game.World.Map.At(
                     targettile.X,
                     targettile.Y
-                    ).Unit;
+                ).Unit;
 
                 ui.Engine.NetClient.Send(
                     new NetMessage3(
                         NM3MessageType.unit_attack,
                         u.ID, target.ID
-                        )
-                    );
+                    )
+                );
             }
         }
 
@@ -96,8 +93,19 @@ namespace Farbase
 
             switch (s)
             {
-                case "quit":
+                case "force-quit":
                     ui.Engine.Exit();
+                    break;
+
+                case "quit":
+                    if (ui.Mode == InterfaceMode.Normal)
+                        ui.Engine.Exit();
+                    else ui.Mode = InterfaceMode.Normal;
+                    break;
+
+                case "warp":
+                    if(ui.SelectedUnit != null)
+                        ui.Mode = InterfaceMode.TargettingWarp;
                     break;
 
                 case "pass":

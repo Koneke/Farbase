@@ -51,15 +51,29 @@ namespace Farbase
 
         public int ID;
         public int x, y;
+        public bool Local;
 
         public UnitMoveEvent(
             int id,
             int x,
-            int y
+            int y,
+            bool local
         ) {
             ID = id;
             this.x = x;
             this.y = y;
+            Local = local;
+        }
+
+        public UnitMoveEvent(
+            int id,
+            Vector2i pos,
+            bool local
+        ) {
+            ID = id;
+            x = pos.X;
+            y = pos.Y;
+            Local = local;
         }
     }
 

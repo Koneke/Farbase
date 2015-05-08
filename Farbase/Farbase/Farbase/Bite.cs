@@ -76,6 +76,25 @@ namespace Farbase
 
     public class Vector2i
     {
+        protected bool Equals(Vector2i other)
+        {
+            return X == other.X && Y == other.Y;
+        }
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Vector2i)obj);
+        }
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (X * 397) ^ Y;
+            }
+        }
+
         public int X;
         public int Y;
 
@@ -108,6 +127,23 @@ namespace Farbase
         public static Vector2i operator *(Vector2i a, int scalar)
         {
             return new Vector2i(a.X * scalar, a.Y * scalar);
+        }
+
+        public static Vector2i operator /(Vector2i a, int scalar)
+        {
+            return new Vector2i(a.X / scalar, a.Y / scalar);
+        }
+
+        public static bool operator ==(Vector2i a, Vector2i b)
+        {
+            if ((object)a == null && (object)b == null) return true;
+            if ((object)a == null ^ (object)b == null) return false;
+            return a.X == b.X && a.Y == b.Y;
+        }
+
+        public static bool operator !=(Vector2i a, Vector2i b)
+        {
+            return !(a == b);
         }
     }
 

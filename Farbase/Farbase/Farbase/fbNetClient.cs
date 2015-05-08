@@ -21,18 +21,23 @@ namespace Farbase
         public bool ShouldDie;
         private List<string> SendQueue;
 
-        private void ReceiveMessage(string message)
+        private void ReceiveMessage(string fullmessage)
         {
-            if (Verbose)
-                Game.Log.Add(
-                    string.Format(
-                        "<- s: {0}",
-                        message
-                    )
-                );
+            foreach (string message in fullmessage.Split(';'))
+            {
+                if (message == "") continue;
 
-            NetMessage3 nm3message = new NetMessage3(message);
-            Game.HandleNetMessage(nm3message);
+                if (Verbose)
+                    Game.Log.Add(
+                        string.Format(
+                            "<- s: {0}",
+                            message
+                        )
+                    );
+
+                NetMessage3 nm3message = new NetMessage3(message);
+                Game.HandleNetMessage(nm3message);
+            }
         }
 
         public void Start()

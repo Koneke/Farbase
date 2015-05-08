@@ -8,12 +8,20 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
+    public enum InterfaceMode
+    {
+        Normal,
+        TargettingWarp
+    }
+
     public class fbInterface
     {
         public fbGame Game;
         public fbEngine Engine;
 
         private const int tileSize = 16;
+
+        public InterfaceMode Mode = InterfaceMode.Normal;
 
         public ISelection Selection;
         private Tile SelectedTile
@@ -92,7 +100,7 @@ namespace Farbase
             engine.Subscribe(ieh, EventType.NameEvent);
             engine.Subscribe(ieh, EventType.BuildUnitEvent);
 
-            InterfaceInputHandler iih = new InterfaceInputHandler(game, this);
+            new InterfaceInputHandler(game, this);
         }
 
         public void LoadUIFromXml(string path)
@@ -371,6 +379,20 @@ namespace Farbase
                     : Game.World.GetPlayer(unit.Owner).Color
             );
 
+            if (unit.WarpTarget != null)
+            {
+                Engine.Draw(
+                    Engine.GetTexture("ui-warp-beacon"),
+                    Camera.WorldToScreen(
+                        new fbRectangle(
+                            unit.WarpTarget * tileSize,
+                            tileSize
+                        )
+                    ),
+                    Color.White
+                );
+            }
+
             for (int i = 0; i < unit.Moves; i++)
             {
                 Vector2 dingySize = Engine.GetTextureSize("ui-move-dingy");
@@ -415,14 +437,30 @@ namespace Farbase
         {
             DrawSelection();
 
-            new DrawCall(
-                Engine.GetTexture("ui-cursor"),
-                new fbRectangle(
-                    Engine.MousePosition,
-                    new Vector2(24)
-                ),
-                -2000
-            ).Draw(Engine);
+            switch (Mode)
+            {
+                case InterfaceMode.TargettingWarp:
+                    new DrawCall(
+                        Engine.GetTexture("ui-target-cursor"),
+                        new fbRectangle(
+                            Engine.MousePosition,
+                            Engine.GetTextureSize("ui-target-cursor")
+                        ).Center(),
+                        -2000
+                    ).Draw(Engine);
+                    break;
+
+                default:
+                    new DrawCall(
+                        Engine.GetTexture("ui-cursor"),
+                        new fbRectangle(
+                            Engine.MousePosition,
+                            new Vector2(24)
+                        ),
+                        -2000
+                    ).Draw(Engine);
+                    break;
+            }
 
             if (tooltip != null)
             {
@@ -518,6 +556,7 @@ namespace Farbase
             string planetTooltip = null;
 
             if (t.Unit != null)
+            {
                 unitTooltip = string.Format(
                     "{0} - {1}\n{2}/{3} moves\n{4}/{5} strength",
                     t.Unit.UnitType.Name.Capitalize(),
@@ -527,6 +566,15 @@ namespace Farbase
                     t.Unit.Strength,
                     t.Unit.UnitType.Strength
                 );
+
+                if (t.Unit.WarpTarget != null)
+                {
+                    unitTooltip += string.Format(
+                        "\n<<Warping in {0}...>>",
+                        t.Unit.WarpCountdown
+                    );
+                }
+            }
 
             if (t.Station != null)
             {
@@ -590,9 +638,9 @@ namespace Farbase
             //if (tooltip == null)
             if (worldTooltip)
             {
-                Vector2? hoveredSquare = ScreenToGrid(Engine.MousePosition);
-                if (hoveredSquare.HasValue)
-                    GenerateTileTooltip(Game.World.Map.At(hoveredSquare.Value));
+                Vector2i hoveredSquare = ScreenToGrid(Engine.MousePosition);
+                if (hoveredSquare != null)
+                    GenerateTileTooltip(Game.World.Map.At(hoveredSquare));
             }
         }
 
@@ -612,32 +660,44 @@ namespace Farbase
             }
 
             if (Engine.ButtonPressed(0) && passClickToWorld)
-            {
                 if (Engine.Active && Engine.MouseInside)
-                {
-                    Vector2? square = ScreenToGrid(Engine.MousePosition);
+                    OnClick();
+        }
 
-                    //null means we clicked on the screen, but outside the grid.
-                    if (square != null)
+        private void OnClick()
+        {
+            Vector2i square = ScreenToGrid(Engine.MousePosition);
+            if (square == null) return;
+
+            switch (Mode)
+            {
+                case InterfaceMode.TargettingWarp:
+                    SelectedUnit.WarpTarget = square;
+                    SelectedUnit.WarpCountdown = 3;
+
+                    if (square == SelectedUnit.Position)
                     {
-                        Select(
-                            new Vector2i(
-                                (int)square.Value.X,
-                                (int)square.Value.Y
-                            )
-                        );
+                        SelectedUnit.WarpTarget = null;
+                        SelectedUnit.WarpCountdown = -1;
                     }
-                }
+
+                    Mode = InterfaceMode.Normal;
+                    break;
+
+                default:
+                case InterfaceMode.Normal:
+                    Select(square);
+                    break;
             }
         }
 
-        private Vector2? ScreenToGrid(Vector2 position)
+        private Vector2i ScreenToGrid(Vector2 position)
         {
             Vector2 worldPoint = Camera.ScreenToWorld(position);
-            Vector2 square =
-                new Vector2(
-                    worldPoint.X - (worldPoint.X % tileSize),
-                    worldPoint.Y - (worldPoint.Y % tileSize)
+            Vector2i square =
+                new Vector2i(
+                    (int)(worldPoint.X - (worldPoint.X % tileSize)),
+                    (int)(worldPoint.Y - (worldPoint.Y % tileSize))
                 ) / tileSize;
 
             if(

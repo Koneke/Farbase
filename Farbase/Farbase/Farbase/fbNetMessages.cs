@@ -395,13 +395,13 @@ namespace Farbase
         {
             if(messageArguments.Count > 0)
                 return string.Format(
-                    "{0}:{1}",
+                    "{0}:{1};",
                     toString[Signature.MessageType],
                     string.Join(",", messageArguments)
                 );
 
             return string.Format(
-                "{0}",
+                "{0};",
                 toString[Signature.MessageType]
             );
         }

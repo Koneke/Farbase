@@ -3,6 +3,19 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
+    public abstract class fbEventHandler
+    {
+        protected fbGame Game;
+
+        protected fbEventHandler(fbGame game)
+        {
+            Game = game;
+        }
+
+        public abstract void Handle(Event e);
+        public abstract void Push(Event e);
+    }
+
     public class InterfaceEventHandler : fbEventHandler
     {
         private fbInterface ui;
@@ -145,7 +158,7 @@ namespace Farbase
 
                     u.GetAnimateable().AddAnimation(
                         new PositionAnimation(
-                            100,
+                            150,
                             CurveType.EaseOut,
                             u.fPosition,
                             new Vector2(ume.x, ume.y)
@@ -153,6 +166,17 @@ namespace Farbase
                     );
 
                     u.MoveTo(ume.x, ume.y);
+
+                    if (ume.Local)
+                    {
+                        engine.NetClient.Send(
+                            new NetMessage3(
+                                NM3MessageType.unit_move,
+                                u.ID,
+                                ume.x, ume.y
+                            )
+                        );
+                    }
                     break;
 
                 case EventType.BuildStationEvent:
@@ -303,18 +327,5 @@ namespace Farbase
         {
             engine.Push(e);
         }
-    }
-
-    public abstract class fbEventHandler
-    {
-        protected fbGame Game;
-
-        protected fbEventHandler(fbGame game)
-        {
-            Game = game;
-        }
-
-        public abstract void Handle(Event e);
-        public abstract void Push(Event e);
     }
 }

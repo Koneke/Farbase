@@ -120,6 +120,7 @@
     <Compile Include="fbUI.cs" />
     <Compile Include="fbWorld.cs" />
     <Compile Include="GameClasses.cs" />
+    <Compile Include="InputSubscriber.cs" />
     <Compile Include="InterfaceInputHandler.cs" />
     <Compile Include="Project.cs" />
     <Compile Include="Selection.cs" />

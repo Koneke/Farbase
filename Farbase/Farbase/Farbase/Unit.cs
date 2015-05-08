@@ -75,12 +75,17 @@ namespace Farbase
 
         public static int IDCounter = 0;
 
+        private fbGame game;
         public fbWorld World;
 
         public UnitType UnitType;
         public int Owner;
         public int ID;
+        //vector this?
         public int x, y;
+
+        public Vector2i WarpTarget;
+        public int WarpCountdown;
 
         public Vector2i Position
         {
@@ -117,6 +122,8 @@ namespace Farbase
             animateable = new Animateable(this);
 
             World = world;
+            game = World.Game;
+
             UnitType = unitType;
             Owner = owner;
             ID = id;
@@ -132,6 +139,25 @@ namespace Farbase
             Moves = UnitType.Moves;
             Attacks = UnitType.Attacks;
 
+            if (WarpTarget != null && WarpCountdown >= 0)
+            {
+                WarpCountdown = Math.Max(0, WarpCountdown - 1);
+
+                if (WarpCountdown == 0 && CanMoveTo(WarpTarget))
+                {
+                    game.EventHandler.Push(
+                        new UnitMoveEvent(
+                            ID,
+                            WarpTarget,
+                            true
+                        )
+                    );
+
+                    WarpTarget = null;
+                    WarpCountdown = -1;
+                }
+            }
+
             if (Tile.Station != null)
             {
                 if (Strength < UnitType.Strength)
@@ -141,6 +167,7 @@ namespace Farbase
 
         public bool CanMoveTo(Vector2i position)
         {
+            if (WarpTarget != null && WarpCountdown > 0) return false;
             if (Moves <= 0) return false;
 
             //only bad condition atm is collision

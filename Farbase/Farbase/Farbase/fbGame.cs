@@ -329,7 +329,8 @@ namespace Farbase
                         new UnitMoveEvent(
                             message.Get<int>("id"),
                             message.Get<int>("x"),
-                            message.Get<int>("y")
+                            message.Get<int>("y"),
+                            false
                         )
                     );
                     break;
