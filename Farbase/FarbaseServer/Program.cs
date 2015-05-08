@@ -90,6 +90,8 @@ namespace FarbaseServer
                 message.Format()
             );
 
+            Unit attacker, target;
+
             switch (message.Signature.MessageType)
             {
                 case NM3MessageType.message:
@@ -170,6 +172,17 @@ namespace FarbaseServer
                                 )
                             );
 
+                            BroadcastUnit(
+                                new Unit(
+                                    Game.World,
+                                    UnitType.GetType(UnitTypes.Catapult),
+                                    message.Sender,
+                                    Unit.IDCounter++,
+                                    20,
+                                    10
+                                )
+                            );
+
                             Game.World.GetPlayer(message.Sender).Money = 10;
 
                             //might make this a generic "update"
@@ -188,6 +201,47 @@ namespace FarbaseServer
                     }
                     break;
 
+                case NM3MessageType.unit_bombard:
+                    TcpPlayers[message.Sender]
+                        .SendMessage(
+                            new NetMessage3(NM3MessageType.client_unready)
+                        );
+
+                    attacker = Game.World.Units
+                        [message.Get<int>("attackerid")];
+
+                    target = Game.World.Units
+                        [message.Get<int>("targetid")];
+
+                    attacker.Attacks -= 1;
+                    target.Strength -= 1;
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.unit_status,
+                            attacker.ID,
+                            attacker.Moves,
+                            attacker.Attacks,
+                            attacker.Strength
+                        )
+                    );
+
+                    SendAll(
+                        new NetMessage3(
+                            NM3MessageType.unit_status,
+                            target.ID,
+                            target.Moves,
+                            target.Attacks,
+                            target.Strength
+                        )
+                    );
+
+                    TcpPlayers[message.Sender]
+                        .SendMessage(
+                            new NetMessage3(NM3MessageType.client_ready)
+                        );
+                    break;
+
                 case NM3MessageType.unit_attack:
                     //please don't do shit until we've resolved combat
                     TcpPlayers[message.Sender]
@@ -195,10 +249,10 @@ namespace FarbaseServer
                             new NetMessage3(NM3MessageType.client_unready)
                         );
 
-                    Unit attacker = Game.World.Units
+                    attacker = Game.World.Units
                         [message.Get<int>("attackerid")];
 
-                    Unit target = Game.World.Units
+                    target = Game.World.Units
                         [message.Get<int>("targetid")];
 
                     if(Verbose)

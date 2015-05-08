@@ -9,12 +9,16 @@ namespace Farbase
     {
         Worker,
         Scout,
-        Fighter
+        Fighter,
+        Catapult
     }
 
     public enum UnitAbilites
     {
-        Mining
+        CQB,
+        Mining,
+        //Warping,?
+        Bombarding
     }
 
     public class UnitType
@@ -42,6 +46,9 @@ namespace Farbase
         public int Strength;
         public List<UnitAbilites> Abilities;
         public List<TechID> Prerequisites;
+
+        public int BombardMinRange;
+        public int BombardMaxRange;
 
         public UnitType(UnitTypes type)
         {
@@ -178,9 +185,23 @@ namespace Farbase
 
         public bool CanWarpTo(Vector2i position)
         {
-            int minRange = UnitType.Moves * 5;
-            int maxRange = UnitType.Moves * 10;
+            return PositionInRange(
+                position,
+                UnitType.Moves * 5,
+                UnitType.Moves * 10
+            );
+        }
 
+        public bool CanBombard(Vector2i position)
+        {
+            return false;
+        }
+
+        public bool PositionInRange(
+            Vector2i position,
+            int minRange,
+            int maxRange
+        ) {
             int xDelta = Math.Abs(x - position.X);
             int yDelta = Math.Abs(y - position.Y);
 
@@ -194,8 +215,10 @@ namespace Farbase
                  yDelta >= minRange);
         }
 
+
         public bool CanAttack(Vector2i position)
         {
+            if (!HasAbility(UnitAbilites.CQB)) return false;
             if (Attacks <= 0) return false;
 
             Vector2i delta = Position - position;

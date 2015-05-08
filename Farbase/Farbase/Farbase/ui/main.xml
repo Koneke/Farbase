@@ -81,6 +81,12 @@
           </texturebutton>
 
           <texturebutton>
+            <id>build-catapult-button</id>
+            <content>unit-catapult</content>
+            <padding>2</padding>
+          </texturebutton>
+
+          <texturebutton>
             <id>research-fighters-button</id>
             <content>unit-scout</content>
             <padding>2</padding>

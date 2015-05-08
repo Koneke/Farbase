@@ -28,6 +28,7 @@ namespace Farbase
         station_set_project,
 
         unit_attack,
+        unit_bombard,
         unit_build,
         unit_create,
         unit_move,
@@ -247,8 +248,16 @@ namespace Farbase
             //=== === === === === === === === === ===//
 
             SetupSignature(
-                "attack",
+                "unit-attack",
                 NM3MessageType.unit_attack
+            )
+                .AddArgument<int>("attackerid")
+                .AddArgument<int>("targetid")
+            ;
+
+            SetupSignature(
+                "unit-bombard",
+                NM3MessageType.unit_bombard
             )
                 .AddArgument<int>("attackerid")
                 .AddArgument<int>("targetid")

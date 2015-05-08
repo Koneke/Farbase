@@ -11,7 +11,8 @@ namespace Farbase
     public enum InterfaceMode
     {
         Normal,
-        TargettingWarp
+        TargettingWarp,
+        TargettingBombard
     }
 
     public class fbInterface
@@ -293,6 +294,12 @@ namespace Farbase
                     color = Color.CornflowerBlue;
                     break;
 
+                case InterfaceMode.TargettingBombard:
+                    minRange = SelectedUnit.UnitType.BombardMinRange;
+                    maxRange = SelectedUnit.UnitType.BombardMaxRange;
+                    color = Color.Red;
+                    break;
+
                 default:
                     throw new ArgumentException();
             }
@@ -300,11 +307,12 @@ namespace Farbase
             for (int x = -maxRange; x <= maxRange; x++)
             for (int y = -maxRange; y <= maxRange; y++)
             {
-                if (
-                    (x > -minRange && x < minRange) &&
-                    (y > -minRange && y < minRange)
-                )
-                    continue;
+                if (!SelectedUnit.PositionInRange(
+                        SelectedUnit.Position + new Vector2i(x, y),
+                        minRange,
+                        maxRange
+                    )
+                ) continue;
 
                 fbRectangle destination = Camera.WorldToScreen(
                     new fbRectangle(
@@ -550,6 +558,17 @@ namespace Farbase
                     ).Draw(Engine);
                     break;
 
+                case InterfaceMode.TargettingBombard:
+                    new DrawCall(
+                        Engine.GetTexture("ui-target-hostile-cursor"),
+                        new fbRectangle(
+                            Engine.MousePosition,
+                            Engine.GetTextureSize("ui-target-hostile-cursor")
+                        ).Center(),
+                        -2000
+                    ).Draw(Engine);
+                    break;
+
                 default:
                     new DrawCall(
                         Engine.GetTexture("ui-cursor"),
@@ -759,12 +778,15 @@ namespace Farbase
                     }
             }
 
+            if (Engine.ButtonPressed(2))
+                Mode = InterfaceMode.Normal;
+
             if (Engine.ButtonPressed(0) && passClickToWorld)
                 if (Engine.Active && Engine.MouseInside)
-                    OnClick();
+                    Click();
         }
 
-        private void OnClick()
+        private void Click()
         {
             Vector2i square = ScreenToGrid(Engine.MousePosition);
             if (square == null) return;
@@ -781,6 +803,23 @@ namespace Farbase
                     {
                         SelectedUnit.WarpTarget = square;
                         SelectedUnit.WarpCountdown = 3;
+                    }
+
+                    Mode = InterfaceMode.Normal;
+                    break;
+
+                case InterfaceMode.TargettingBombard:
+                    //we can only get here if the selectedunit has bombard
+                    Unit target = Game.World.Map.At(square).Unit;
+                    if (target != null)
+                    {
+                        Engine.NetClient.Send(
+                            new NetMessage3(
+                                NM3MessageType.unit_bombard,
+                                SelectedUnit.ID,
+                                target.ID
+                            )
+                        );
                     }
 
                     Mode = InterfaceMode.Normal;

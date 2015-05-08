@@ -93,15 +93,28 @@ namespace Farbase
             scout.Attacks = 1;
             scout.Cost = 10;
             scout.ConstructionTime = 5;
+            scout.Abilities.Add(UnitAbilites.CQB);
 
-            UnitType worker = new UnitType(UnitTypes.Fighter);
+            UnitType worker = new UnitType(UnitTypes.Worker);
             worker.Name = "worker";
             worker.Texture = "unit-worker";
-            worker.Moves = 1;
+            worker.Moves = 2;
             worker.Strength = 1;
             worker.Cost = 5;
             worker.ConstructionTime = 5;
             worker.Abilities.Add(UnitAbilites.Mining);
+
+            UnitType catapult = new UnitType(UnitTypes.Catapult);
+            catapult.Name = "catapult";
+            catapult.Texture = "unit-catapult";
+            catapult.Moves = 1;
+            catapult.Strength = 1;
+            catapult.Attacks = 1;
+            catapult.Cost = 5;
+            catapult.ConstructionTime = 5;
+            catapult.BombardMinRange = 6;
+            catapult.BombardMaxRange = 10;
+            catapult.Abilities.Add(UnitAbilites.Bombarding);
 
             new Tech( //self registers in constructor
                 TechID.FighterTech,
@@ -211,12 +224,15 @@ namespace Farbase
             //works for the time being
             if (World == null) return;
 
-            GetProperty("player-names")
-                .SetValue(
-                    World.Players.Keys
-                        .Select(p => World.Players[p].Name)
-                        .ToList()
-                );
+            lock (World.Players)
+            {
+                GetProperty("player-names")
+                    .SetValue(
+                        World.Players.Keys
+                            .Select(p => World.Players[p].Name)
+                            .ToList()
+                    );
+            }
 
             GetProperty("current-player-name")
                 .SetValue(World.Players[World.CurrentID].Name);

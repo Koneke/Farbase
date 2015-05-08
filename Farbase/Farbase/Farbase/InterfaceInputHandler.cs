@@ -108,6 +108,16 @@ namespace Farbase
                         ui.Mode = InterfaceMode.TargettingWarp;
                     break;
 
+                case "bombard":
+                    if(ui.SelectedUnit != null)
+                        if(
+                            ui.SelectedUnit.HasAbility(
+                                UnitAbilites.Bombarding
+                            ) && ui.SelectedUnit.Attacks > 0
+                        )
+                            ui.Mode = InterfaceMode.TargettingBombard;
+                    break;
+
                 case "pass":
                     if (game.OurTurn)
                     {
@@ -159,6 +169,8 @@ namespace Farbase
                     break;
 
                 case "select-next-idle":
+                    ui.Mode = InterfaceMode.Normal;
+
                     List<Unit> selectable =
                         game.World.GetPlayerUnits(game.LocalPlayer.ID)
                             .Select(id => game.World.Units[id])
