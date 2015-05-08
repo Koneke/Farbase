@@ -87,7 +87,7 @@ namespace Farbase
 
             UnitType scout = new UnitType(UnitTypes.Scout);
             scout.Name = "scout";
-            scout.Texture = "scout";
+            scout.Texture = "unit-scout";
             scout.Moves = 3;
             scout.Strength = 3;
             scout.Attacks = 1;
@@ -96,7 +96,7 @@ namespace Farbase
 
             UnitType worker = new UnitType(UnitTypes.Fighter);
             worker.Name = "worker";
-            worker.Texture = "worker";
+            worker.Texture = "unit-worker";
             worker.Moves = 1;
             worker.Strength = 1;
             worker.Cost = 5;

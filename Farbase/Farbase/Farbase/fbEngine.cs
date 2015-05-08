@@ -253,25 +253,25 @@ namespace Farbase
                     bool lastFrame =
                         binding.Ctrl ==
                             (oks.Value.IsKeyDown(Keys.LeftControl) ||
-                            oks.Value.IsKeyDown(Keys.RightControl)) &&
+                             oks.Value.IsKeyDown(Keys.RightControl)) &&
                         binding.Alt ==
                             (oks.Value.IsKeyDown(Keys.LeftAlt) ||
-                            oks.Value.IsKeyDown(Keys.RightAlt)) &&
+                             oks.Value.IsKeyDown(Keys.RightAlt)) &&
                         binding.Shift ==
                             (oks.Value.IsKeyDown(Keys.LeftShift) ||
-                            oks.Value.IsKeyDown(Keys.RightShift)) &&
+                             oks.Value.IsKeyDown(Keys.RightShift)) &&
                         oks.Value.IsKeyDown(binding.Key);
 
                     bool thisFrame =
                         binding.Ctrl ==
                             (ks.Value.IsKeyDown(Keys.LeftControl) ||
-                            ks.Value.IsKeyDown(Keys.RightControl)) &&
+                             ks.Value.IsKeyDown(Keys.RightControl)) &&
                         binding.Alt ==
                             (ks.Value.IsKeyDown(Keys.LeftAlt) ||
-                            ks.Value.IsKeyDown(Keys.RightAlt)) &&
+                             ks.Value.IsKeyDown(Keys.RightAlt)) &&
                         binding.Shift ==
                             (ks.Value.IsKeyDown(Keys.LeftShift) ||
-                            ks.Value.IsKeyDown(Keys.RightShift)) &&
+                             ks.Value.IsKeyDown(Keys.RightShift)) &&
                         ks.Value.IsKeyDown(binding.Key);
 
                     binding.Pressed = !lastFrame && thisFrame;

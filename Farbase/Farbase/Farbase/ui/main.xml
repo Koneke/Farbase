@@ -70,21 +70,21 @@
 
           <texturebutton>
             <id>build-worker-button</id>
-            <content>worker</content>
+            <content>unit-worker</content>
             <scale>2</scale>
             <padding>2</padding>
           </texturebutton>
 
           <texturebutton>
             <id>build-scout-button</id>
-            <content>scout</content>
+            <content>unit-scout</content>
             <scale>2</scale>
             <padding>2</padding>
           </texturebutton>
 
           <texturebutton>
             <id>research-fighters-button</id>
-            <content>scout</content>
+            <content>unit-scout</content>
             <scale>2</scale>
             <padding>2</padding>
             <keybind>research-fighters</keybind>

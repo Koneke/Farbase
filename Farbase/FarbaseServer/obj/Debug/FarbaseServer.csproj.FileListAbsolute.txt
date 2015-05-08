@@ -31,5 +31,4 @@ C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\gfx\font
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\gfx\16\sketch.psd
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\cfg\keybindings.cfg
 C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\ui\main.xml
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\ui\test.xml
-C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\ui\test2.xml
+C:\Users\Lukas\Documents\GitHub\Farbase\Farbase\FarbaseServer\bin\Debug\cfg\textures.cfg

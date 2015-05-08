@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -24,52 +26,18 @@ namespace Farbase
         protected override void Initialize()
         {
             base.Initialize();
+            SpriteBatch = new SpriteBatch(GraphicsDevice);
 
             Engine = new fbEngine(this);
             Engine.SetSize(1280, 720);
-
-            //this shit needs to be moved...
-            Engine.Textures = new Dictionary<string, Texture2D>();
-            Engine.LoadTexture("grid", "gfx/@/grid.png");
-            Engine.LoadTexture("background", "gfx/background-dark.jpg");
-            Engine.LoadTexture("cross", "gfx/cross.png");
-
-            Engine.LoadTexture("scout", "gfx/@/scout.png");
-            Engine.LoadTexture("worker", "gfx/@/worker.png");
-
-            Engine.LoadTexture("station", "gfx/@/station.png");
-            Engine.LoadTexture("station-bg", "gfx/@/station-bg.png");
-            Engine.LoadTexture("planet", "gfx/@/planet.png");
-            Engine.LoadTexture("planet-bg", "gfx/@/planet-bg.png");
-
-            Engine.LoadTexture(
-                "move-dingy",
-                "gfx/@/ui-move-dingy.png"
-            );
-
-            Engine.LoadTexture(
-                "strength-dingy",
-                "gfx/@/ui-strength-dingy.png"
-            );
-
-            Engine.LoadTexture(
-                "ui-attackborder",
-                "gfx/@/ui-attackborder.png"
-            );
-
-            Engine.LoadTexture("selection", "gfx/@/ui-selection.png");
-
-            Engine.LoadTexture("blank", "gfx/@/blank.png");
-
-            Engine.LoadTexture("check", "gfx/@/ui-check.png");
-
-            Engine.LoadTexture("empty-portrait", "gfx/portrait.png");
+            LoadTexturesFromFile("cfg/textures.cfg");
 
             Engine.DefaultFont = new Font();
-            Engine.DefaultFont.FontSheet = Engine.LoadTexture("font", "gfx/font.png");
+            Engine.DefaultFont.FontSheet = Engine.GetTexture("font");
             Engine.DefaultFont.CharSize = new Vector2(8);
 
             NetMessage3.Setup();
+
             Game = new fbGame();
             Game.Ready = false;
             Game.SetupClientSideEventHandler(Engine);
@@ -82,13 +50,31 @@ namespace Farbase
             Engine.StartNetClient();
         }
 
-        protected override void LoadContent()
+        private void LoadTexturesFromFile(string path)
         {
-            SpriteBatch = new SpriteBatch(GraphicsDevice);
-        }
+            Engine.Textures = new Dictionary<string, Texture2D>();
 
-        protected override void UnloadContent()
-        {
+            foreach (string ln in File.ReadLines(path))
+            {
+                if (ln == "") continue;
+
+                string line = ln.ToLower();
+
+                if (!line.Contains(',')) //we always need a name
+                    throw new FormatException();
+
+                List<string> split = line.Split(',').ToList();
+                if (split.Count != 2)
+                    throw new FormatException();
+
+                string name = split[0]
+                    .Trim(new[] {'\t', ' '});
+
+                string trimmedpath = split[1]
+                    .Trim(new[] {'\t', ' '});
+
+                Engine.LoadTexture(name, trimmedpath);
+            }
         }
 
         protected override void OnExiting(object sender, EventArgs args)

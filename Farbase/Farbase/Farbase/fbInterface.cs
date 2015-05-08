@@ -350,7 +350,7 @@ namespace Farbase
                     );
 
                 Engine.Draw(
-                    Engine.GetTexture("selection"),
+                    Engine.GetTexture("ui-selection"),
                     destination
                 );
             }
@@ -387,11 +387,11 @@ namespace Farbase
 
             for (int i = 0; i < unit.Moves; i++)
             {
-                Vector2 dingySize = Engine.GetTextureSize("move-dingy");
+                Vector2 dingySize = Engine.GetTextureSize("ui-move-dingy");
                 Vector2 distancing = new Vector2(Camera.Scale(dingySize.X), 0);
 
                 Engine.Draw(
-                    Engine.GetTexture("move-dingy"),
+                    Engine.GetTexture("ui-move-dingy"),
                     new fbRectangle(
                         destination.Position + distancing * i,
                         Camera.Scale(dingySize)
@@ -401,11 +401,11 @@ namespace Farbase
 
             for (int i = 0; i < unit.Strength; i++)
             {
-                Vector2 dingySize = Engine.GetTextureSize("strength-dingy");
+                Vector2 dingySize = Engine.GetTextureSize("ui-strength-dingy");
                 Vector2 distancing = new Vector2(0, Camera.Scale(dingySize.Y));
 
                 Engine.Draw(
-                    Engine.GetTexture("strength-dingy"),
+                    Engine.GetTexture("ui-strength-dingy"),
                     new fbRectangle(
                         destination.Position
                             + new Vector2(0, Camera.Scale(tileSize))
