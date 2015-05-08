@@ -306,6 +306,27 @@ namespace Farbase
             );
         }
 
+        public fbRectangle Center()
+        {
+            return new fbRectangle(
+                Position - (Size / 2f),
+                Size
+            );
+        }
+
+        public fbRectangle Scale(float scalar, bool reposition = false)
+        {
+            Vector2 sizeDelta = Size * scalar - Size;
+            return new fbRectangle(
+                reposition
+                    ? Position - sizeDelta / 2f
+                    : Position
+                ,
+                Size + sizeDelta
+            );
+
+        }
+
         public bool Contains(Vector2 mousePosition)
         {
             Vector2 relativePosition = (mousePosition - Position);

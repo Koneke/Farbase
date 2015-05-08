@@ -13,10 +13,24 @@ namespace Farbase
         {
             this.game = game;
             this.ui = ui;
+
+            new InputSubscriber(this)
+                .Subscribe("move-nw")
+                .Subscribe("move-n")
+                .Subscribe("move-ne")
+                .Subscribe("move-e")
+                .Subscribe("move-se")
+                .Subscribe("move-s")
+                .Subscribe("move-sw")
+                .Subscribe("move-w")
+                .Subscribe("pass")
+                .Subscribe("dev-login")
+                .Subscribe("dev-test")
+                .Subscribe("select-next-idle")
+                .Subscribe("quit")
+                .Register();
         }
 
-        //see if we can somehow extract the input stuff out of this
-        //delegates..?
         private void MovementInput(string s)
         {
             if (

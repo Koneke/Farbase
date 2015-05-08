@@ -92,21 +92,7 @@ namespace Farbase
             engine.Subscribe(ieh, EventType.NameEvent);
             engine.Subscribe(ieh, EventType.BuildUnitEvent);
 
-            new InputSubscriber(new InterfaceInputHandler(game, this))
-                .Subscribe("move-nw")
-                .Subscribe("move-n")
-                .Subscribe("move-ne")
-                .Subscribe("move-e")
-                .Subscribe("move-se")
-                .Subscribe("move-s")
-                .Subscribe("move-sw")
-                .Subscribe("move-w")
-                .Subscribe("pass")
-                .Subscribe("dev-login")
-                .Subscribe("dev-test")
-                .Subscribe("select-next-idle")
-                .Subscribe("quit")
-                .Register();
+            InterfaceInputHandler iih = new InterfaceInputHandler(game, this);
         }
 
         public void LoadUIFromXml(string path)
@@ -428,6 +414,15 @@ namespace Farbase
         private void DrawUI()
         {
             DrawSelection();
+
+            new DrawCall(
+                Engine.GetTexture("ui-cursor"),
+                new fbRectangle(
+                    Engine.MousePosition,
+                    new Vector2(24)
+                ),
+                -2000
+            ).Draw(Engine);
 
             if (tooltip != null)
             {

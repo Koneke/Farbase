@@ -20,7 +20,8 @@ namespace Farbase
         {
             Graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            IsMouseVisible = true;
+            //IsMouseVisible = true;
+            IsFixedTimeStep = false;
         }
 
         protected override void Initialize()

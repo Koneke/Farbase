@@ -19,7 +19,7 @@ namespace Farbase
         public static List<InputSubscriber> Subscribers =
             new List<InputSubscriber>();
 
-        private IInputSubscriber subscriber;
+        protected IInputSubscriber subscriber;
         private List<string> subscriptions;
 
         //we can probably remove engine from this by simply
@@ -113,7 +113,7 @@ namespace Farbase
         public Font DefaultFont;
 
         public Dictionary<string, Texture2D> Textures;
-        public string GraphicsSet = "16";
+        public string GraphicsSet = "32";
 
         private KeyboardState? ks, oks;
         private MouseState? ms, oms;
