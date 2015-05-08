@@ -21,9 +21,9 @@ namespace Farbase
         {
             if (
                 !game.OurTurn ||
-                    ui.SelectedUnit == null ||
-                    ui.SelectedUnit.Owner != game.World.CurrentID
-                ) return;
+                ui.SelectedUnit == null ||
+                ui.SelectedUnit.Owner != game.World.CurrentID
+            ) return;
 
             Vector2i moveOrder;
 
@@ -52,8 +52,8 @@ namespace Farbase
                         NM3MessageType.unit_move,
                         u.ID,
                         x, y
-                        )
-                    );
+                    )
+                );
 
                 u.Moves -= 1;
                 ui.Engine.Push(new UnitMoveEvent(u.ID, x, y));

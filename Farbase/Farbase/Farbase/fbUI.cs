@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 
+//we could probably justify namespacing this to Farbase.UI
+//not sure on when exactly to split things into different namespaces?
 namespace Farbase
 {
     public enum HAlignment { Left, Right, Center }
@@ -136,17 +138,31 @@ namespace Farbase
         private Func<bool> enabledCondition;
         protected Func<bool> visibleCondition;
 
+        public bool IsHovered {
+            get
+            {
+                fbRectangle screenRectangle =
+                    new fbRectangle(
+                        GetScreenPosition() + TopLeftMargin,
+                        GetSizeInternal()
+                    );
+                return
+                    screenRectangle
+                    .Contains(engine.MousePosition);
+            }
+        }
+
         public abstract bool IsInteractive();
 
-        protected int TopMargin, RightMargin, BottomMargin, LeftMargin;
-        protected int TopPadding, RightPadding, BottomPadding, LeftPadding;
+        protected int MarginTop, MarginRight, MarginBottom, MarginLeft;
+        protected int PaddingTop, PaddingRight, PaddingBottom, PaddingLeft;
 
         protected Vector2 MarginSize
         {
             get {
                 return new Vector2(
-                    LeftMargin + RightMargin,
-                    TopMargin + BottomMargin
+                    MarginLeft + MarginRight,
+                    MarginTop + MarginBottom
                 );
             }
         }
@@ -154,21 +170,21 @@ namespace Farbase
         {
             get {
                 return new Vector2(
-                    LeftPadding + RightPadding,
-                    TopPadding + BottomPadding
+                    PaddingLeft + PaddingRight,
+                    PaddingTop + PaddingBottom
                 );
             }
         }
 
         protected Vector2 TopLeftMargin {
-            get { return new Vector2(LeftMargin, TopMargin); }
+            get { return new Vector2(MarginLeft, MarginTop); }
         }
         protected Vector2 TopLeftPadding {
-            get { return new Vector2(LeftPadding, TopPadding); }
+            get { return new Vector2(PaddingLeft, PaddingTop); }
         }
 
-        public HAlignment HAlignment;
-        public VAlignment VAlignment;
+        protected HAlignment HAlignment;
+        protected VAlignment VAlignment;
 
         private int borderWidth = 1;
         private float backgroundAlpha = 1f;
@@ -208,12 +224,14 @@ namespace Farbase
         public abstract Vector2 GetSizeInternal();
         public abstract void Render();
 
+        // === === === === === === === === === ===
+
         public Widget Margins(int t, int r, int b, int l)
         {
-            TopMargin = t;
-            RightMargin = r;
-            BottomMargin = b;
-            LeftMargin = l;
+            MarginTop = t;
+            MarginRight = r;
+            MarginBottom = b;
+            MarginLeft = l;
             return this;
         }
 
@@ -227,14 +245,7 @@ namespace Farbase
             return Margins(vamount, hamount, vamount, hamount);
         }
 
-        public Widget Padding(int t, int r, int b, int l)
-        {
-            TopPadding = t;
-            RightPadding = r;
-            BottomPadding = b;
-            LeftPadding = l;
-            return this;
-        }
+        // === === === === === === === === === ===
 
         public Widget Padding(int amount)
         {
@@ -245,6 +256,17 @@ namespace Farbase
         {
             return Padding(vamount, hamount, vamount, hamount);
         }
+
+        public Widget Padding(int t, int r, int b, int l)
+        {
+            PaddingTop = t;
+            PaddingRight = r;
+            PaddingBottom = b;
+            PaddingLeft = l;
+            return this;
+        }
+
+        // === === === === === === === === === ===
 
         public Widget SetAlign(HAlignment a)
         {
@@ -259,51 +281,45 @@ namespace Farbase
             return this;
         }
 
-        public Vector2 GetScreenPosition()
-        {
-            Vector2 ownPosition;
-
-            if (Parent != null)
-                ownPosition = Parent.GetChildPosition(this);
-            else
-            {
-                ownPosition = new Vector2(0);
-
-                if(HAlignment == HAlignment.Right)
-                    ownPosition.X = (engine.GetSize() - GetSize()).X;
-                else if (HAlignment == HAlignment.Center)
-                    ownPosition.X =
-                        (engine.GetSize() / 2f - GetSize() / 2f).X;
-
-                if(VAlignment == VAlignment.Bottom)
-                    ownPosition.Y = (engine.GetSize() - GetSize()).Y;
-                else if (VAlignment == VAlignment.Center)
-                    ownPosition.Y =
-                        (engine.GetSize() / 2f - GetSize() / 2f).Y;
-            }
-
-            return ownPosition;
-        }
-
-        public bool IsHovered {
-            get
-            {
-                fbRectangle screenRectangle =
-                    new fbRectangle(
-                        GetScreenPosition() + TopLeftMargin,
-                        GetSizeInternal()
-                    );
-                return
-                    screenRectangle
-                    .Contains(engine.MousePosition);
-            }
-        }
+        // === === === === === === === === === ===
 
         public Widget SetTheme(Theme cs)
         {
             theme = cs;
             return this;
         }
+
+        public Widget SetVisibleCondition(Func<bool> condition)
+        {
+            visibleCondition = condition;
+            return this;
+        }
+
+        public Widget SetEnabledCondition(Func<bool> condition)
+        {
+            enabledCondition = condition;
+            return this;
+        }
+
+        public Widget SetBorder(int thickness)
+        {
+            borderWidth = thickness;
+            return this;
+        }
+
+        public Widget SetBackgroundAlpha(float alpha)
+        {
+            backgroundAlpha = alpha;
+            return this;
+        }
+
+        public Widget SetTooltip(string tip)
+        {
+            tooltip = new SmartText(tip, ui);
+            return this;
+        }
+
+        // === === === === === === === === === ===
 
         protected Color GetColor()
         {
@@ -343,17 +359,12 @@ namespace Farbase
                 : Theme.Borders.Color;
         }
 
-        public Widget SetVisibleCondition(Func<bool> condition)
-        {
-            visibleCondition = condition;
-            return this;
-        }
+        // === === === === === === === === === ===
 
-        public Widget SetEnabledCondition(Func<bool> condition)
-        {
-            enabledCondition = condition;
-            return this;
-        }
+        public VAlignment GetVAlignment() { return VAlignment; }
+        public HAlignment GetHAlignment() { return HAlignment; }
+
+        // === === === === === === === === === ===
 
         public void DrawBackground()
         {
@@ -417,22 +428,32 @@ namespace Farbase
             ).Draw(engine);
         }
 
-        public Widget SetBorder(int thickness)
-        {
-            borderWidth = thickness;
-            return this;
-        }
+        // === === === === === === === === === ===
 
-        public Widget BackgroundAlpha(float alpha)
+        public Vector2 GetScreenPosition()
         {
-            backgroundAlpha = alpha;
-            return this;
-        }
+            Vector2 ownPosition;
 
-        public Widget SetTooltip(string tip)
-        {
-            tooltip = new SmartText(tip, ui);
-            return this;
+            if (Parent != null)
+                ownPosition = Parent.GetChildPosition(this);
+            else
+            {
+                ownPosition = new Vector2(0);
+
+                if(HAlignment == HAlignment.Right)
+                    ownPosition.X = (engine.GetSize() - GetSize()).X;
+                else if (HAlignment == HAlignment.Center)
+                    ownPosition.X =
+                        (engine.GetSize() / 2f - GetSize() / 2f).X;
+
+                if(VAlignment == VAlignment.Bottom)
+                    ownPosition.Y = (engine.GetSize() - GetSize()).Y;
+                else if (VAlignment == VAlignment.Center)
+                    ownPosition.Y =
+                        (engine.GetSize() / 2f - GetSize() / 2f).Y;
+            }
+
+            return ownPosition;
         }
 
         public virtual void OnClick() { }
@@ -536,8 +557,10 @@ namespace Farbase
                     size.X = childSize.X;
 
                 size.Y += childSize.Y;
-                size.Y += internalPadding;
             }
+
+            if(Children.Count > 0)
+                size.Y += internalPadding * (Children.Count - 1);
 
             return size + PaddingSize;
         }
@@ -564,14 +587,14 @@ namespace Farbase
                     position.Y += internalPadding;
                 }
 
-            if (child.HAlignment == HAlignment.Right)
+            if (child.GetHAlignment() == HAlignment.Right)
             {
                 position.X =
                     (GetScreenPosition() + GetSize() - child.GetSize()).X
-                        - (RightPadding + RightMargin);
+                        - (PaddingRight + MarginRight);
             }
 
-            else if (child.HAlignment == HAlignment.Center)
+            else if (child.GetHAlignment() == HAlignment.Center)
             {
                 position.X =
                     (GetScreenPosition() +
@@ -611,6 +634,12 @@ namespace Farbase
 
             subscriber = new InputSubscriber(this);
             subscriber.Register();
+        }
+
+        public Widget SetAction(Action action)
+        {
+            reaction = action;
+            return this;
         }
 
         public override bool IsInteractive() { return true; }
@@ -760,7 +789,7 @@ namespace Farbase
             //center vertically
             position.Y +=
                 GetSizeInternal().Y / 2 - child.GetSize().Y / 2
-                - TopPadding ;
+                - PaddingTop ;
 
             return position;
         }

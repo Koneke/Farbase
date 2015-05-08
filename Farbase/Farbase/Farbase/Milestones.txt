@@ -31,3 +31,7 @@ Prototype 5: REACHED.
 
 Interlude:
 	- FLOW CHARTS.
+
+Prototype 6:
+	- Bombard.
+	- Warping.

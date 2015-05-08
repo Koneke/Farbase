@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Xml;
 using Microsoft.Xna.Framework;
 
 namespace Farbase
@@ -43,12 +45,16 @@ namespace Farbase
 
         private fbCamera Camera;
 
-        private List<Widget> widgets;
-        public Theme DefaultTheme;
+        //tbh, these should probably not public
+        //but we'll keep it like this for now because
+        // 1. easier for us
+        // 2. it's not like anything at all in the entire program except
+        //    for the main app and parts of the interface is allowed to keep
+        //    a fbInterface reference anyways.
+        public Dictionary<string, Widget> NamedWidgets;
+        public List<Widget> Widgets;
 
-        private ListBox CardBox;
-        private SideBySideWidgets BuildCard;
-        private SideBySideWidgets CommandCard;
+        public Theme DefaultTheme;
 
         private string tooltip;
 
@@ -59,7 +65,8 @@ namespace Farbase
             Game = game;
             Engine = engine;
             Camera = new fbCamera(engine);
-            widgets = new List<Widget>();
+            Widgets = new List<Widget>();
+            NamedWidgets = new Dictionary<string, Widget>();
 
             DefaultTheme = new Theme(
                 new ColorSet(
@@ -79,8 +86,7 @@ namespace Farbase
                 )
             );
 
-            SetupUI();
-            //SetupTestUI();
+            LoadUIFromXml("ui/main.xml");
 
             InterfaceEventHandler ieh = new InterfaceEventHandler(game, this);
             engine.Subscribe(ieh, EventType.NameEvent);
@@ -103,138 +109,93 @@ namespace Farbase
                 .Register();
         }
 
-        public void SetupUI()
+        public void LoadUIFromXml(string path)
         {
-            SideBySideWidgets portrait =
-                (SideBySideWidgets)
-                    new SideBySideWidgets(Engine, this, 5)
-                    .AddChild(
-                        new Image("empty-portrait", Engine, this)
-                            //automatically check the current player property
-                            .SetTooltip("@local-player-name")
-                    )
-                    .AddChild(new Label("@local-player-name", Engine, this))
-                    .SetBorder(0)
-                    .Margins(2, 0);
-
-            widgets.Add(
-                new ListBox(Engine, this)
-                    .AddChild(portrait)
-                    .AddChild(new Label("$: @local-player-money", Engine, this))
-                    .Padding(10)
-                    .Margins(60, 40)
-            );
-
-            CardBox =
-                (ListBox)
-                new ListBox(Engine, this, 5)
-                    .Margins(40)
-                    .SetBorder(0)
-                    .BackgroundAlpha(0f)
-                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
-                ;
-
-            widgets.Add(CardBox);
-
-            CommandCard =
-                (SideBySideWidgets)
-                new SideBySideWidgets(Engine, this, 5)
-                    .Padding(5)
-                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
-                ;
-
-            CommandCard
-                .AddChild(
-                    new TextureButton(
-                        "station",
-                        () =>
-                            Engine.Push(
-                                new BuildStationEvent(
-                                    Game.We,
-                                    SelectedTile.Position.X,
-                                    SelectedTile.Position.Y
-                                )
-                            )
-                        ,
-                        Engine,
-                        this,
-                        2f
-                    )
-                    .Padding(2)
-                    .SetVisibleCondition(
-                        () =>
-                            SelectedUnit != null &&
-                            SelectedUnit.UnitType.Name == "worker"
-                    )
-                    .SetEnabledCondition( //enough money for station
-                        () =>
-                            SelectedTile != null &&
-                            SelectedTile.Station == null
-                    )
-                    .SetTooltip(
-                        "Build station - $"
-                    )
-                )
-            ;
-
-            CardBox.AddChild(CommandCard);
-
-            BuildCard =
-                (SideBySideWidgets)
-                new SideBySideWidgets(Engine, this, 5)
-                    .Padding(5)
-                    .SetVisibleCondition(() => SelectedStation != null)
-                ;
-
-            foreach (UnitType ut in UnitType.UnitTypes)
+            XmlDocument document = new XmlDocument();
+            using (FileStream stream = File.OpenRead(path))
             {
-                UnitType unitType = ut;
-                BuildCard
-                    .AddChild(
-                        new TextureButton(
-                            ut.Name,
-                            () =>
-                                SelectedStation.StartProject(
-                                    ProjectType.UnitProject,
-                                    (int)ut.Type
-                                ),
-                            Engine,
-                            this,
-                            2f
-                        )
-                        .Padding(2)
-                        .SetEnabledCondition(
-                            () => Game.CanBuild(
-                                    Game.LocalPlayer,
-                                    unitType,
-                                    SelectedStation
-                                )
-                        )
-                        .SetTooltip(
-                            string.Format(
-                                "Build {0} - {1}$ ({2} turns)",
-                                ut.Name,
-                                ut.Cost,
-                                ut.ConstructionTime
-                            )
-                        )
-                    );
+                document.Load(stream);
             }
 
-            TextureButton researchButton =
-                (TextureButton)
-                new TextureButton(
-                    "Scout",
+            foreach (XmlNode n in document.FirstChild.ChildNodes)
+            {
+                Widgets.Add(new fbXmlLoader(this).WidgetFromXml(n));
+            }
+
+            UIXmlPostLoad();
+        }
+
+        public void UIXmlPostLoad()
+        {
+            ((Button)NamedWidgets["build-station-button"])
+                .SetAction(
                     () =>
-                        SelectedStation.StartProject(
-                            ProjectType.TechProject,
-                            (int)TechID.FighterTech
-                        ),
-                    Engine,
-                    this,
-                    2f
+                        Engine.Push(
+                            new BuildStationEvent(
+                                Game.We,
+                                SelectedTile.Position.X,
+                                SelectedTile.Position.Y
+                            )
+                        )
                 )
-                .Padding(2)
+                .SetVisibleCondition(
+                    () =>
+                        SelectedUnit != null &&
+                        SelectedUnit.UnitType.Name == "worker"
+                )
+                .SetEnabledCondition( //enough money for station
+                    () =>
+                        SelectedTile != null &&
+                        SelectedTile.Station == null
+                )
+                .SetTooltip("Build station - X$")
+            ;
+
+            //Notice!
+            //the way we're automating this (because we're fat and lazy)
+            //we need to have a build button for each unit type, at least at
+            //the moment.
+            //we probably want that anyways atm, but it's worth keeping in mind.
+            foreach (UnitType ut in UnitType.UnitTypes)
+            {
+                string widgetName =
+                    string.Format(
+                        "build-{0}-button",
+                        ut.Name.ToLower()
+                    );
+
+                ((Button)NamedWidgets[widgetName])
+                    .SetAction(
+                        () => SelectedStation.StartProject(
+                            ProjectType.UnitProject,
+                            (int)ut.Type
+                        )
+                    )
+                    .SetEnabledCondition(
+                        () => Game.CanBuild(
+                            Game.LocalPlayer,
+                            ut,
+                            SelectedStation
+                        )
+                    )
+                    .SetTooltip(
+                        string.Format(
+                            "Build {0} - {1}$ ({2} turns)",
+                            ut.Name,
+                            ut.Cost,
+                            ut.ConstructionTime
+                        )
+                    )
+                ;
+            }
+
+            ((Button)NamedWidgets["research-fighters-button"])
+                .SetAction(
+                    () => SelectedStation.StartProject(
+                        ProjectType.TechProject,
+                        (int)TechID.FighterTech
+                    )
+                )
                 .SetEnabledCondition(
                     () => Game.CanResearch(
                         Game.LocalPlayer,
@@ -250,128 +211,8 @@ namespace Farbase
                         Tech.Techs[TechID.FighterTech].ResearchTime,
                         Tech.Techs[TechID.FighterTech].Description
                     )
-                );
-
-            researchButton.Subscribe("research-fighters");
-
-            BuildCard.AddChild(researchButton);
-
-            CardBox.AddChild(BuildCard);
-
-            ListBox turnInfo =
-                (ListBox)
-                new ListBox(Engine, this)
-                    .Margins(20)
-                    .Padding(10)
-                ;
-
-            turnInfo.AddChild(
-                new Label(
-                    "Current player: @current-player-name<@current-player-id>",
-                    Engine,
-                    this
                 )
-            );
-
-            widgets.Add(turnInfo);
-        }
-
-        public void SetupTestUI()
-        {
-            ListBox b =
-                (ListBox)
-                new ListBox(Engine, this)
-                    .Margins(40)
-                    .Padding(10)
-                    .SetAlign(HAlignment.Right)
             ;
-
-            b.AddChild(
-                new Label(" == test\nlabel == ", Engine, this)
-                    .Margins(2)
-                    .SetAlign(HAlignment.Center)
-            );
-
-            b.AddChild(
-                new Button("alignment!", null, Engine, this)
-                    .Margins(2)
-                    .Padding(5)
-                    .SetAlign(HAlignment.Right)
-                    .SetTooltip(
-                        "I'M A VERY\nLONG AND COMPLEX\nTOOLTIP"
-                    )
-            );
-
-            b.AddChild(
-                new Button("greyed out", null, Engine, this)
-                    .Margins(2)
-                    .Padding(5)
-                    .SetEnabledCondition(() => false)
-            );
-
-            b.AddChild(
-                new Button("lots and lots of text", null, Engine, this)
-                    .Margins(2)
-                    .Padding(5)
-            );
-
-            b.AddChild(
-                new SideBySideWidgets(Engine, this, 7)
-                    .AddChild(new Button("foo", null, Engine, this).Padding(5))
-                    .AddChild(new Button("bar", null, Engine, this).Padding(5))
-                    .Margins(2)
-                    .SetAlign(HAlignment.Center)
-                    .SetBorder(0)
-            );
-
-            b.AddChild(
-                new SideBySideWidgets(Engine, this, 7)
-                    .AddChild(new CheckBox(Engine, this).Padding(2))
-                    .AddChild(new Label("test", Engine, this))
-                    .Margins(2)
-                    .SetAlign(HAlignment.Left)
-                    .SetBorder(0)
-            );
-
-            b.AddChild(
-                new SideBySideWidgets(Engine, this, 7)
-                    .AddChild(new CheckBox(Engine, this).Padding(2))
-                    .AddChild(new Label("some other option", Engine, this))
-                    .Margins(2)
-                    .SetAlign(HAlignment.Left)
-                    .SetBorder(0)
-            );
-
-            widgets.Add(b);
-
-            ListBox foo =
-                (ListBox)
-                new ListBox(Engine, this)
-                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
-                    .Margins(40)
-                    .Padding(10)
-            ;
-
-            foo.AddChild(
-                new Label(" - Another label - ", Engine, this)
-                    .SetAlign(HAlignment.Center)
-            );
-
-            foo.AddChild(
-                new Button(
-                    "I'm aligned to the bottom!",
-                    () => {
-                        Game.Log.Add("foo!");
-                    },
-                    Engine,
-                    this
-                )
-                    .Margins(2)
-                    .Padding(5)
-                    .SetAlign(HAlignment.Right, VAlignment.Bottom)
-            );
-
-            widgets.Add(foo);
         }
 
         public void Select(Vector2i position)
@@ -659,7 +500,7 @@ namespace Farbase
 
         private void DrawWidgets()
         {
-            foreach (Widget w in widgets)
+            foreach (Widget w in Widgets)
                 if (w.IsVisible())
                     w.Render();
         }
@@ -711,7 +552,7 @@ namespace Farbase
                     string.Format(
                         "{0} ({1})\n : {2}",
                         "Station",
-                        t.Station.Owner == 1
+                        t.Station.Owner == -1
                             ? "derelict"
                             : Game.World.GetPlayer(t.Station.Owner).Name,
                         projectString
@@ -741,13 +582,18 @@ namespace Farbase
             Animateable.UpdateAll(Engine.DeltaTime);
 
             tooltip = null;
+            bool worldTooltip = true;
 
-            foreach(Widget w in widgets)
+            foreach(Widget w in Widgets)
                 if (w.IsHovered)
+                {
+                    worldTooltip = false;
                     tooltip = w.GetHovered().Tooltip;
+                }
 
             //if no tooltip from widgets
-            if (tooltip == null)
+            //if (tooltip == null)
+            if (worldTooltip)
             {
                 Vector2? hoveredSquare = ScreenToGrid(Engine.MousePosition);
                 if (hoveredSquare.HasValue)
@@ -762,7 +608,7 @@ namespace Farbase
 
             if (Engine.ButtonPressed(0))
             {
-                foreach(Widget w in widgets)
+                foreach(Widget w in Widgets)
                     if (w.IsHovered)
                     {
                         w.OnClick();

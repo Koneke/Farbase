@@ -129,6 +129,7 @@
     <Compile Include="Property.cs" />
     <Compile Include="Station.cs" />
     <Compile Include="Unit.cs" />
+    <Compile Include="fbXmlLoader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Game.ico" />
@@ -183,6 +184,15 @@
     </Content>
     <Content Include="Longterm.txt" />
     <Content Include="Milestones.txt" />
+    <Content Include="ui\main.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ui\test.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ui\test2.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FarbaseContent\FarbaseContent.contentproj">

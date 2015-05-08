@@ -1,0 +1,115 @@
+<root>
+
+  <listbox>
+    <padding>10</padding>
+    <margins>60, 40</margins>
+
+    <children>
+
+      <sidebyside>
+        <borderwidth>0</borderwidth>
+        <margins>2,0</margins>
+        <internalpadding>5</internalpadding>
+
+        <children>
+
+          <image>
+            <content>empty-portrait</content>
+            <tooltip>@local-player-name(@local-player-id)</tooltip>
+          </image>
+
+          <label>
+            <content>@local-player-name(@local-player-id)</content>
+          </label>
+
+        </children>
+
+      </sidebyside>
+
+      <label>
+        <content>$: @local-player-money</content>
+      </label>
+
+    </children>
+
+  </listbox>
+
+  <listbox> <!-- cardbox -->
+    <margins>40</margins>
+    <borderwidth>0</borderwidth>
+    <backgroundalpha>0</backgroundalpha>
+    <alignment>right,bottom</alignment>
+    <internalpadding>5</internalpadding>
+
+    <children>
+
+      <sidebyside> <!-- commandcard -->
+        <padding>5</padding>
+        <internalpadding>5</internalpadding>
+        <alignment>right,top</alignment>
+
+        <children>
+
+          <texturebutton>
+            <id>build-station-button</id>
+            <content>station</content>
+            <padding>2</padding>
+            <scale>2</scale>
+          </texturebutton>
+
+        </children>
+        
+      </sidebyside>
+
+      <sidebyside> <!-- buildcard -->
+        <id>buildcard</id>
+        <padding>5</padding>
+        <internalpadding>5</internalpadding>
+
+        <children>
+
+          <texturebutton>
+            <id>build-worker-button</id>
+            <content>worker</content>
+            <scale>2</scale>
+            <padding>2</padding>
+          </texturebutton>
+
+          <texturebutton>
+            <id>build-scout-button</id>
+            <content>scout</content>
+            <scale>2</scale>
+            <padding>2</padding>
+          </texturebutton>
+
+          <texturebutton>
+            <id>research-fighters-button</id>
+            <content>scout</content>
+            <scale>2</scale>
+            <padding>2</padding>
+            <keybind>research-fighters</keybind>
+          </texturebutton>
+          
+        </children>
+      
+      </sidebyside>
+
+    </children>
+  
+  </listbox>
+
+  <listbox>
+    <margins>20</margins>
+    <padding>10</padding>
+
+    <children>
+
+      <label>
+        <content>Current player: @current-player-name(@current-player-id)</content>
+      </label>
+    
+    </children>
+
+  </listbox>
+
+</root>
