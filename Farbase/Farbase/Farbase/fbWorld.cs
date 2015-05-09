@@ -4,54 +4,15 @@ using Microsoft.Xna.Framework;
 
 namespace Farbase
 {
-    public class Map
-    {
-        private Tile[,] map;
-
-        public Map(int w, int h)
-        {
-            Width = w;
-            Height = h;
-
-            map = new Tile[w, h];
-            for (int x = 0; x < w; x++)
-                for (int y = 0; y < h; y++)
-                    map[x, y] = new Tile(this, x, y);
-        }
-
-        public int Width;
-        public int Height;
-
-        public Tile At(int x, int y)
-        {
-            if (x < 0 || y < 0 || x >= Width || y >= Height)
-                return null;
-            return map[x, y];
-        }
-
-        public Tile At(Vector2i p)
-        {
-            return At(p.X, p.Y);
-        }
-
-        public Tile At(Vector2 position)
-        {
-            return At(
-                (int)position.X,
-                (int)position.Y
-            );
-        }
-    }
-
     public class Tile
     {
-        private Map map;
+        private fbMap map;
         public Unit Unit;
         public Station Station;
         public Planet Planet;
         public Vector2i Position;
 
-        public Tile(Map map, int x, int y)
+        public Tile(fbMap map, int x, int y)
         {
             this.map = map;
             Position = new Vector2i(x, y);
@@ -77,7 +38,7 @@ namespace Farbase
     public class fbWorld
     {
         public fbGame Game;
-        public Map Map;
+        public fbMap Map;
 
         public Dictionary<int, Player> Players;
         public int CurrentID;
@@ -86,18 +47,19 @@ namespace Farbase
         private Dictionary<int, List<int>> PlayerStations; 
 
         public Dictionary<int, Unit> Units;
-        public Dictionary<int, Station> Stations;
+
+        public List<Vector2i> PlayerStarts; 
 
         public fbWorld(fbGame game, int w, int h)
         {
             Game = game;
-            Map = new Map(w, h);
+            Map = new fbMap(w, h);
             Players = new Dictionary<int, Player>();
 
             Units = new Dictionary<int, Unit>();
-            Stations = new Dictionary<int, Station>();
             PlayerUnits = new Dictionary<int, List<int>>();
             PlayerStations = new Dictionary<int, List<int>>();
+            PlayerStarts = new List<Vector2i>();
         }
 
         public Player GetPlayer(int id)
@@ -131,7 +93,7 @@ namespace Farbase
                 DespawnUnit(Units[unitid]);
 
             foreach (int stationid in GetPlayerStations(id))
-                Stations[stationid].Owner = -1;
+                Map.Stations[stationid].Owner = -1;
 
             if (Players.Count == 1)
             {
@@ -169,7 +131,7 @@ namespace Farbase
             s.Position = new Vector2i(x, y);
 
             Map.At(x, y).Station = s;
-            Stations.Add(s.ID, s);
+            Map.Stations.Add(s.ID, s);
 
             if (!PlayerStations.ContainsKey(s.Owner))
                 PlayerStations.Add(s.Owner, new List<int>());
@@ -230,7 +192,7 @@ namespace Farbase
 
             foreach (int id in GetPlayerStations(next.ID))
             {
-                Station s = Stations[id];
+                Station s = Map.Stations[id];
                 if (s.Project != null)
                 {
                     s.Project.Progress();

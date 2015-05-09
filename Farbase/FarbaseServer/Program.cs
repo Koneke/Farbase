@@ -333,7 +333,7 @@ namespace FarbaseServer
                         new NetMessage3(
                             NM3MessageType.station_create,
                             message.Get<int>("owner"),
-                            Station.IDCounter++,
+                            Structure.IDCounter++,
                             message.Get<int>("x"),
                             message.Get<int>("y")
                         )
@@ -341,7 +341,6 @@ namespace FarbaseServer
                     break;
 
                 case NM3MessageType.station_set_project:
-
                     int cost;
 
                     switch (
@@ -395,6 +394,10 @@ namespace FarbaseServer
 
                     break;
 
+                case NM3MessageType.world_playerstart:
+                    SendAll(message);
+                    break;
+
                 default:
                     throw new ArgumentException();
             }
@@ -431,7 +434,7 @@ namespace FarbaseServer
             Game.EventHandler = new ServerGameEventHandler(Game);
 
             Game.World = new fbWorld(Game, 80, 45);
-            Game.World.SpawnStation(0, 0, 10, 12);
+            Game.World.SpawnStation(0, Structure.IDCounter++, 10, 12);
             Game.World.SpawnPlanet(14, 14);
 
             netStart();

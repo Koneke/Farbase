@@ -14,6 +14,12 @@ namespace Farbase
 
         public abstract void Handle(Event e);
         public abstract void Push(Event e);
+
+        public fbEventHandler Subscribe(fbEngine engine, EventType type)
+        {
+            engine.Subscribe(this, type);
+            return this;
+        }
     }
 
     public class InterfaceEventHandler : fbEventHandler
@@ -236,7 +242,7 @@ namespace Farbase
                 case EventType.SetProjectEvent:
                     SetProjectEvent spe = (SetProjectEvent)e;
 
-                    s = Game.World.Stations[spe.Station];
+                    s = Game.World.Map.Stations[spe.Station];
 
                     int time;
 

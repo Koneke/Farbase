@@ -36,13 +36,13 @@ namespace Farbase
         //our ID
         public int We = -1;
 
-        public bool OurTurn {
-            get {
-                return World.CurrentID == We;
-            }
+        public bool OurTurn
+        {
+            get { return World.CurrentID == We; }
         }
 
-        public Player LocalPlayer {
+        public Player LocalPlayer
+        {
             get
             {
                 return We == -1
@@ -69,16 +69,18 @@ namespace Farbase
         //only difference is that we give it another eventhandler.
         public void SetupClientSideEventHandler(fbEngine engine)
         {
-            EventHandler = new GameEventHandler(this, engine);
-            engine.Subscribe(EventHandler, EventType.NameEvent);
-            engine.Subscribe(EventHandler, EventType.UnitMoveEvent);
-            engine.Subscribe(EventHandler, EventType.BuildStationEvent);
-            engine.Subscribe(EventHandler, EventType.BuildUnitEvent);
-            engine.Subscribe(EventHandler, EventType.CreateUnitEvent);
-            engine.Subscribe(EventHandler, EventType.PlayerDisconnect);
-            engine.Subscribe(EventHandler, EventType.SetProjectEvent);
-            engine.Subscribe(EventHandler, EventType.ProjectFinishedEvent);
+            EventHandler = new GameEventHandler(this, engine)
+                .Subscribe(engine, EventType.NameEvent)
+                .Subscribe(engine, EventType.UnitMoveEvent)
+                .Subscribe(engine, EventType.BuildStationEvent)
+                .Subscribe(engine, EventType.BuildUnitEvent)
+                .Subscribe(engine, EventType.CreateUnitEvent)
+                .Subscribe(engine, EventType.PlayerDisconnect)
+                .Subscribe(engine, EventType.SetProjectEvent)
+                .Subscribe(engine, EventType.ProjectFinishedEvent);
         }
+
+        // === === === === === === === === === ===
 
         public void Initialize()
         {
@@ -114,6 +116,7 @@ namespace Farbase
             catapult.ConstructionTime = 5;
             catapult.BombardMinRange = 6;
             catapult.BombardMaxRange = 10;
+            catapult.Prerequisites.Add(TechID.FighterTech);
             catapult.Abilities.Add(UnitAbilites.Bombarding);
 
             new Tech( //self registers in constructor
@@ -171,69 +174,25 @@ namespace Farbase
             properties.Add(name.ToLower(), property);
         }
 
-        public bool CanResearch(
-            Player player,
-            TechID tech,
-            Station s
+        // === === === === === === === === === ===
+
+        public void StationStartProject(
+            Station s,
+            ProjectType type,
+            int projectCode
         ) {
-            if (s == null) return false; //only build at stations
-            if (s.Owner != We) return false; //and only stations owed by us
-            if (player.Money < Tech.Techs[tech].Cost) return false;
-
-            return
-                !player.Tech.Contains(tech) &&
-                Tech.Techs[tech].Prerequisites
-                    .All(
-                        pr => player.Tech.Contains(pr)
-                    );
-        }
-
-        public bool CanBuild(
-            Player player,
-            UnitType unitType,
-            Station s
-        ) {
-            if (s == null) return false; //only build at stations
-            if (s.Owner != We) return false; //and only stations owed by us
-            if (s.Tile.Unit != null) return false; //only empty tiles
-            if (player.Money < unitType.Cost) return false;
-
-            //make sure we have the needed tech for the unit
-            if (!unitType.Prerequisites.All(pr => player.Tech.Contains(pr)))
-                return false;
-
-            return true;
-        }
-
-        public void Build(UnitType unitType, Station s)
-        {
             EventHandler.Push(
-                new BuildUnitEvent(
-                    unitType.Type,
-                    We,
-                    s.Position.X,
-                    s.Position.Y
+                new SetProjectEvent(
+                    s.Owner,
+                    s.ID,
+                    type,
+                    projectCode
                 )
             );
         }
 
-        public void Update()
+        private void UpdateProperties()
         {
-            //have yet to get map data from server
-            //this is a pretty clumpsy way of doing shit, but it
-            //works for the time being
-            if (World == null) return;
-
-            lock (World.Players)
-            {
-                GetProperty("player-names")
-                    .SetValue(
-                        World.Players.Keys
-                            .Select(p => World.Players[p].Name)
-                            .ToList()
-                    );
-            }
-
             GetProperty("current-player-name")
                 .SetValue(World.Players[World.CurrentID].Name);
 
@@ -249,6 +208,25 @@ namespace Farbase
             GetProperty("local-player-money")
                 .SetValue(LocalPlayer.Money);
 
+            lock (World.Players)
+            {
+                GetProperty("player-names")
+                    .SetValue(
+                        World.Players.Keys
+                            .Select(p => World.Players[p].Name)
+                            .ToList()
+                    );
+            }
+        }
+
+        public void Update()
+        {
+            //have yet to get map data from server
+            //this is a pretty clumpsy way of doing shit, but it
+            //works for the time being
+            if (World == null) return;
+
+            UpdateProperties();
         }
 
         public void HandleNetMessage(NetMessage3 message)
@@ -267,6 +245,17 @@ namespace Farbase
                     );
                     break;
 
+                case NM3MessageType.world_playerstart:
+                    int x = message.Get<int>("x");
+                    int y = message.Get<int>("y");
+
+                    if(!World.PlayerStarts
+                        .Any(v2 => v2.X == x && v2.Y == y))
+                    {
+                        World.PlayerStarts.Add(new Vector2i(x, y));
+                    }
+                    break;
+
                 case NM3MessageType.station_create:
                     World.SpawnStation(
                         message.Get<int>("owner"),
@@ -277,7 +266,8 @@ namespace Farbase
                     break;
 
                 case NM3MessageType.station_set_project:
-                    Station s = World.Stations[message.Get<int>("station-id")];
+                    Station s = World.Map.Stations
+                        [message.Get<int>("station-id")];
 
                     ProjectType type =
                         (ProjectType)message.Get<int>("projecttype");

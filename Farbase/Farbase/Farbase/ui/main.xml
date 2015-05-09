@@ -44,6 +44,7 @@
     <children>
 
       <sidebyside> <!-- commandcard -->
+        <id>command-card</id>
         <padding>5</padding>
         <internalpadding>5</internalpadding>
         <alignment>right,top</alignment>
@@ -54,7 +55,6 @@
             <id>build-station-button</id>
             <content>station</content>
             <padding>2</padding>
-            <scale>2</scale>
           </texturebutton>
 
         </children>
@@ -62,7 +62,7 @@
       </sidebyside>
 
       <sidebyside> <!-- buildcard -->
-        <id>buildcard</id>
+        <id>build-card</id>
         <padding>5</padding>
         <internalpadding>5</internalpadding>
 

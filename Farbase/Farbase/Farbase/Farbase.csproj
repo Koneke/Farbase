@@ -111,6 +111,7 @@
     <Compile Include="Bite.cs" />
     <Compile Include="Events.cs" />
     <Compile Include="fbCamera.cs" />
+    <Compile Include="fbDiskIO.cs" />
     <Compile Include="fbEngine.cs" />
     <Compile Include="fbEventHandler.cs" />
     <Compile Include="fbGame.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="GameClasses.cs" />
     <Compile Include="InputSubscriber.cs" />
     <Compile Include="InterfaceInputHandler.cs" />
+    <Compile Include="fbMap.cs" />
     <Compile Include="Project.cs" />
     <Compile Include="Selection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -130,7 +132,6 @@
     <Compile Include="Property.cs" />
     <Compile Include="Station.cs" />
     <Compile Include="Unit.cs" />
-    <Compile Include="fbXmlLoader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Game.ico" />
@@ -187,6 +188,7 @@
     <Content Include="Milestones.txt" />
     <Content Include="ui\main.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
   </ItemGroup>
   <ItemGroup>

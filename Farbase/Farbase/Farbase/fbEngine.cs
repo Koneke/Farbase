@@ -242,10 +242,10 @@ namespace Farbase
         private Rectangle FromfbRectangle(fbRectangle rectangle)
         {
             return new Rectangle(
-                (int)Math.Floor(rectangle.Position.X),
-                (int)Math.Floor(rectangle.Position.Y),
-                (int)Math.Floor(rectangle.Size.X),
-                (int)Math.Floor(rectangle.Size.Y)
+                (int)Math.Round(rectangle.Position.X),
+                (int)Math.Round(rectangle.Position.Y),
+                (int)Math.Round(rectangle.Size.X),
+                (int)Math.Round(rectangle.Size.Y)
             );
         }
 
@@ -254,35 +254,38 @@ namespace Farbase
             app.SpriteBatch.Begin(
                 SpriteSortMode.Deferred,
                 BlendState.NonPremultiplied,
-                SamplerState.PointClamp,
+                SamplerState.LinearClamp,
                 DepthStencilState.Default,
                 RasterizerState.CullCounterClockwise
             );
 
             foreach(DrawCall dc in drawCalls.OrderByDescending(dc => dc.Depth))
             {
-                if(dc.Source != null)
-                    app.SpriteBatch.Draw(
-                        dc.Texture,
-                        FromfbRectangle(dc.Destination),
-                        FromfbRectangle(dc.Source),
-                        dc.Coloring,
-                        dc.Rotation,
-                        Vector2.Zero,
-                        SpriteEffects.None,
-                        0
-                    );
-                else
-                    app.SpriteBatch.Draw(
-                        dc.Texture,
-                        FromfbRectangle(dc.Destination),
-                        null,
-                        dc.Coloring,
-                        dc.Rotation,
-                        Vector2.Zero,
-                        SpriteEffects.None,
-                        0
-                    );
+                Rectangle? source =
+                    dc.Source == null
+                        ? (Rectangle?)null
+                        : FromfbRectangle(dc.Source)
+                    ;
+
+                Vector2 size = source == null
+                    ? new Vector2(dc.Texture.Width, dc.Texture.Height)
+                    : new Vector2(source.Value.Width, source.Value.Height)
+                ;
+
+                Vector2 scaling = dc.Destination.Size / size;
+
+                app.SpriteBatch.Draw(
+                    dc.Texture,
+                    dc.Destination.Position,
+                    //null,
+                    source,
+                    dc.Coloring,
+                    dc.Rotation,
+                    Vector2.Zero,
+                    scaling,
+                    SpriteEffects.None,
+                    0
+                );
             }
 
             drawCalls.Clear();

@@ -35,6 +35,7 @@ namespace Farbase
         unit_status,
 
         world_create,
+        world_playerstart,
     }
 
     public class NM3Sig
@@ -129,6 +130,14 @@ namespace Farbase
                 NM3MessageType.message
             )
                 .AddArgument<string>("message")
+            ;
+
+            SetupSignature(
+                "add-playerstart",
+                NM3MessageType.world_playerstart
+            )
+                .AddArgument<int>("x")
+                .AddArgument<int>("y")
             ;
 
             //=== === === === === === === === === ===//

@@ -7,6 +7,20 @@ using Microsoft.Xna.Framework;
 //not sure on when exactly to split things into different namespaces?
 namespace Farbase
 {
+    public class fbCondition
+    {
+        public string Error;
+        public Func<bool> Condition;
+
+        public fbCondition(
+            string error,
+            Func<bool> condition
+        ) {
+            Error = error;
+            Condition = condition;
+        }
+    }
+
     public enum HAlignment { Left, Right, Center }
     public enum VAlignment { Top, Bottom, Center }
 
@@ -122,7 +136,9 @@ namespace Farbase
 
         public ContainerWidget Parent;
 
-        public virtual bool IsVisible() {
+        public virtual bool IsVisible()
+        {
+            if (Parent != null && !Parent.IsVisible()) return false;
             if (visibleCondition == null)
                 return true;
             return visibleCondition();
@@ -130,12 +146,13 @@ namespace Farbase
 
         public bool Disabled
         {
-            get {
-                return enabledCondition != null && !enabledCondition();
+            get
+            {
+                if (!IsVisible()) return true;
+                return !Conditions.All(c => c.Condition());
             }
         }
 
-        private Func<bool> enabledCondition;
         protected Func<bool> visibleCondition;
 
         public bool IsHovered {
@@ -200,14 +217,24 @@ namespace Farbase
         }
 
         private SmartText tooltip;
+        private List<fbCondition> Conditions;
 
-        public string Tooltip
+        public string GetTooltip()
         {
-            get
+            string maintip;
+
+            if (tooltip == null)
+                return null;
+
+            maintip = tooltip.ToString();
+
+            foreach (fbCondition c in Conditions)
             {
-                if (tooltip == null) return null;
-                return tooltip.ToString();
+                if (!c.Condition())
+                    maintip += "\n" + c.Error;
             }
+
+            return maintip;
         }
 
         protected Widget(
@@ -218,6 +245,7 @@ namespace Farbase
             this.engine = engine;
             this.ui = ui;
             this.depth = depth;
+            Conditions = new List<fbCondition>();
         }
 
         public abstract Vector2 GetSize();
@@ -295,9 +323,9 @@ namespace Farbase
             return this;
         }
 
-        public Widget SetEnabledCondition(Func<bool> condition)
+        public Widget AddCondition(fbCondition condition)
         {
-            enabledCondition = condition;
+            Conditions.Add(condition);
             return this;
         }
 
@@ -477,13 +505,6 @@ namespace Farbase
             Children = new List<Widget>();
         }
 
-        public override bool IsVisible()
-        {
-            if (visibleCondition == null)
-                return AnyChildVisible;
-            return visibleCondition() && AnyChildVisible;
-        }
-
         public List<Widget> GetChildren()
         {
             return Children;
@@ -522,11 +543,6 @@ namespace Farbase
                 if (c.IsVisible() && c.IsHovered)
                     return c.GetHovered();
             return this;
-        }
-
-        private bool AnyChildVisible
-        {
-            get { return Children.Any(c => c.IsVisible() ); }
         }
     }
 

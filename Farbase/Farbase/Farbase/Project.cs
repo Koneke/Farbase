@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Farbase
 {
@@ -13,8 +14,11 @@ namespace Farbase
         protected fbGame Game;
         public int Owner;
         public Station Station;
+        public int Cost;
         public int Length;
         public int Remaining;
+
+        public List<TechID> Prerequisites; 
 
         protected bool finished;
         public bool Finished { get { return finished; } }
@@ -23,13 +27,16 @@ namespace Farbase
             fbGame game,
             int owner,
             Station station,
+            int cost,
             int length
         ) {
             Game = game;
             Owner = owner;
             Station = station;
+            Cost = cost;
             Remaining = Length = length;
             finished = false;
+            Prerequisites = new List<TechID>();
         }
 
         public void Progress()
@@ -71,8 +78,15 @@ namespace Farbase
             Station station,
             int length,
             UnitType unitType
-        ) : base(game, owner, station, length) {
+        ) : base(
+            game,
+            owner,
+            station,
+            unitType.Cost,
+            length
+        ) {
             this.unitType = unitType;
+            Prerequisites.AddRange(unitType.Prerequisites);
         }
 
         public override int GetProject()
@@ -101,8 +115,9 @@ namespace Farbase
             Station station,
             int length,
             TechID tech
-        ) : base(game, owner, station, length) {
+        ) : base(game, owner, station, Tech.Techs[tech].Cost, length) {
             this.tech = tech;
+            Prerequisites.AddRange(Tech.Techs[tech].Prerequisites);
         }
 
         public override int GetProject()

@@ -263,9 +263,9 @@ namespace Farbase
                                 Font.CharSize * new Vector2(col++, row),
                             Font.CharSize
                         ),
-                    new fbRectangle(fontSpot, Font.CharSize),
-                    Depth,
-                    Coloring
+                        new fbRectangle(fontSpot, Font.CharSize),
+                        Depth,
+                        Coloring
                     )
                 );
             }

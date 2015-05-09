@@ -1,18 +1,12 @@
 ﻿namespace Farbase
 {
-    public class Station
+    public abstract class Structure
     {
-        //I don't really like having this as public, but it does make
-        //it a bit easier to work with.
-        //Just looks a bit ugly, is all.
         public fbWorld World;
 
-        public Tile Tile
-        {
-            get { return World.Map.At(Position); }
-        }
+        public Tile Tile { get { return World.Map.At(Position); } }
 
-        public Station(
+        protected Structure(
             fbWorld world
         ) {
             World = world;
@@ -23,20 +17,16 @@
         public int Owner;
         public int ID;
         public Vector2i Position;
-        public Project Project;
+    }
 
-        public void StartProject(
-            ProjectType projectType,
-            int project
-        ) {
-            World.Game.EventHandler.Push(
-                new SetProjectEvent(
-                    Owner,
-                    ID,
-                    projectType,
-                    project
-                )
-            );
+    public class Station : Structure
+    {
+        public Station(fbWorld world) : base(world)
+        {
+            Texture = "station";
         }
+
+        public Project Project;
+        public string Texture;
     }
 }

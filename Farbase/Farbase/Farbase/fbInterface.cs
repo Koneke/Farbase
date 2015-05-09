@@ -20,7 +20,7 @@ namespace Farbase
         public fbGame Game;
         public fbEngine Engine;
 
-        private const int tileSize = 16;
+        private const int tileSize = 32;
 
         public InterfaceMode Mode = InterfaceMode.Normal;
 
@@ -67,6 +67,8 @@ namespace Farbase
 
         private string tooltip;
 
+        private InterfaceEventHandler EventHandler;
+
         public fbInterface(
             fbGame game,
             fbEngine engine
@@ -97,11 +99,12 @@ namespace Farbase
 
             LoadUIFromXml("ui/main.xml");
 
-            InterfaceEventHandler ieh = new InterfaceEventHandler(game, this);
-            engine.Subscribe(ieh, EventType.NameEvent);
-            engine.Subscribe(ieh, EventType.BuildUnitEvent);
+            EventHandler = (InterfaceEventHandler)
+                new InterfaceEventHandler(game, this)
+                    .Subscribe(engine, EventType.NameEvent)
+                    .Subscribe(engine, EventType.BuildUnitEvent);
 
-            new InterfaceInputHandler(game, this);
+            new InterfaceInputHandler(this);
         }
 
         public void LoadUIFromXml(string path)
@@ -114,14 +117,145 @@ namespace Farbase
 
             foreach (XmlNode n in document.FirstChild.ChildNodes)
             {
-                Widgets.Add(new fbXmlLoader(this).WidgetFromXml(n));
+                Widgets.Add(fbDiskIO.WidgetFromXml(n, this, Engine));
             }
 
             UIXmlPostLoad();
         }
 
-        public void UIXmlPostLoad()
+        private void SetupUnitButtons()
         {
+            //Notice!
+            //the way we're automating this (because we're fat and lazy)
+            //we need to have a build button for each unit type, at least at
+            //the moment.
+            //we probably want that anyways atm, but it's worth keeping in mind.
+            foreach (UnitType ut in UnitType.UnitTypes)
+            {
+                string widgetName =
+                    string.Format(
+                        "build-{0}-button",
+                        ut.Name.ToLower()
+                    );
+
+                Button b = ((Button)NamedWidgets[widgetName]);
+
+                b
+                    .SetAction(
+                        () => Game.StationStartProject(
+                            SelectedStation,
+                            ProjectType.UnitProject,
+                            (int)ut.Type
+                        )
+                    )
+                    .SetVisibleCondition(() => SelectedStation != null)
+                    .AddCondition(
+                        new fbCondition(
+                            "Can only be constructed at own stations.",
+                            () => SelectedStation.Owner == Game.We
+                        )
+                    )
+                    .AddCondition(
+                        new fbCondition(
+                            "Not enough credits.",
+                            () =>
+                                Game.LocalPlayer.Money >=
+                                ut.Cost
+                        )
+                    )
+                    .SetTooltip(
+                        string.Format(
+                            "Build {0} - {1}$ ({2} turns)",
+                            ut.Name,
+                            ut.Cost,
+                            ut.ConstructionTime
+                        )
+                    )
+                ;
+
+                foreach (TechID tech in ut.Prerequisites)
+                {
+                    b.AddCondition(
+                        new fbCondition(
+                            string.Format(
+                                "Requires tech: {0}.",
+                                Tech.Techs[tech].Name
+                            ),
+                            () =>
+                                Game.LocalPlayer.Tech.Contains(tech)
+                        )
+                    );
+                }
+            }
+        }
+
+        private void SetupTechButtons()
+        {
+            foreach (Tech t in Tech.Techs.Values)
+            {
+                Button b = ((Button)NamedWidgets["research-fighters-button"]);
+
+                b
+                    .SetAction(
+                        () => Game.StationStartProject(
+                            SelectedStation,
+                            ProjectType.TechProject,
+                            (int)t.ID
+                        )
+                    )
+                    .AddCondition(
+                        new fbCondition(
+                            "Can only be researched at own stations.",
+                            () => SelectedStation.Owner == Game.We
+                        )
+                    )
+                    .AddCondition(
+                        new fbCondition(
+                            "Not enough credits.",
+                            () =>
+                                Game.LocalPlayer.Money >=
+                                t.Cost
+                        )
+                    )
+                    .SetTooltip(
+                        String.Format(
+                            "Research {0} - {1}$ ({2} turns)\n{3}",
+                            t.Name,
+                            t.Cost,
+                            t.ResearchTime,
+                            t.Description
+                        )
+                    )
+                ;
+
+                foreach (TechID tech in t.Prerequisites)
+                {
+                    b.AddCondition(
+                        new fbCondition(
+                            string.Format(
+                                "Requires tech: {0}.",
+                                Tech.Techs[tech].Name
+                            ),
+                            () => SelectedStation.Owner == Game.We
+                        )
+                    );
+                }
+            }
+        }
+
+        private void UIXmlPostLoad()
+        {
+
+            (NamedWidgets["command-card"])
+                .SetVisibleCondition(
+                    () => SelectedUnit != null
+                );
+
+            (NamedWidgets["build-card"])
+                .SetVisibleCondition(
+                    () => SelectedStation != null
+                );
+
             ((Button)NamedWidgets["build-station-button"])
                 .SetAction(
                     () =>
@@ -138,76 +272,17 @@ namespace Farbase
                         SelectedUnit != null &&
                         SelectedUnit.UnitType.Name == "worker"
                 )
-                .SetEnabledCondition( //enough money for station
-                    () =>
-                        SelectedTile != null &&
-                        SelectedTile.Station == null
+                .AddCondition(
+                    new fbCondition(
+                        "Can only be built on empty tiles",
+                        () => SelectedTile.Station == null
+                    )
                 )
                 .SetTooltip("Build station - X$")
             ;
 
-            //Notice!
-            //the way we're automating this (because we're fat and lazy)
-            //we need to have a build button for each unit type, at least at
-            //the moment.
-            //we probably want that anyways atm, but it's worth keeping in mind.
-            foreach (UnitType ut in UnitType.UnitTypes)
-            {
-                string widgetName =
-                    string.Format(
-                        "build-{0}-button",
-                        ut.Name.ToLower()
-                    );
-
-                ((Button)NamedWidgets[widgetName])
-                    .SetAction(
-                        () => SelectedStation.StartProject(
-                            ProjectType.UnitProject,
-                            (int)ut.Type
-                        )
-                    )
-                    .SetEnabledCondition(
-                        () => Game.CanBuild(
-                            Game.LocalPlayer,
-                            ut,
-                            SelectedStation
-                        )
-                    )
-                    .SetTooltip(
-                        string.Format(
-                            "Build {0} - {1}$ ({2} turns)",
-                            ut.Name,
-                            ut.Cost,
-                            ut.ConstructionTime
-                        )
-                    )
-                ;
-            }
-
-            ((Button)NamedWidgets["research-fighters-button"])
-                .SetAction(
-                    () => SelectedStation.StartProject(
-                        ProjectType.TechProject,
-                        (int)TechID.FighterTech
-                    )
-                )
-                .SetEnabledCondition(
-                    () => Game.CanResearch(
-                        Game.LocalPlayer,
-                        TechID.FighterTech,
-                        SelectedStation
-                    )
-                )
-                .SetTooltip(
-                    String.Format(
-                        "Research {0} - {1}$ ({2} turns)\n{3}",
-                        Tech.Techs[TechID.FighterTech].Name,
-                        Tech.Techs[TechID.FighterTech].Cost,
-                        Tech.Techs[TechID.FighterTech].ResearchTime,
-                        Tech.Techs[TechID.FighterTech].Description
-                    )
-                )
-            ;
+            SetupUnitButtons();
+            SetupTechButtons();
         }
 
         public void Select(Vector2i position)
@@ -372,6 +447,14 @@ namespace Farbase
 
             if (t.Unit != null)
                 DrawUnit(t.Unit);
+
+            if (Game.World.PlayerStarts.Any(v2 => v2.X == x && v2.Y == y))
+            {
+                new DrawCall(
+                    Engine.GetTexture("cross"),
+                    destination
+                ).Draw(Engine);
+            }
         }
 
         public void DrawSelection()
@@ -750,7 +833,7 @@ namespace Farbase
                 if (w.IsHovered)
                 {
                     worldTooltip = false;
-                    tooltip = w.GetHovered().Tooltip;
+                    tooltip = w.GetHovered().GetTooltip();
                 }
 
             //if no tooltip from widgets
@@ -767,6 +850,7 @@ namespace Farbase
         {
             //handled more gracefully in the future, hopefully...
             bool passClickToWorld = true;
+            Vector2i hovered = ScreenToGrid(Engine.MousePosition);
 
             if (Engine.ButtonPressed(0))
             {
@@ -779,7 +863,26 @@ namespace Farbase
             }
 
             if (Engine.ButtonPressed(2))
-                Mode = InterfaceMode.Normal;
+            {
+                if (Mode != InterfaceMode.Normal)
+                {
+                    Mode = InterfaceMode.Normal;
+                }
+                else if(SelectedUnit != null && hovered != null)
+                {
+                    if (SelectedUnit.CanMoveTo(hovered))
+                    {
+                        EventHandler.Push(
+                            new UnitMoveEvent(
+                                SelectedUnit.ID,
+                                hovered.X,
+                                hovered.Y,
+                                true //local, we generated it
+                            )
+                        );
+                    }
+                }
+            }
 
             if (Engine.ButtonPressed(0) && passClickToWorld)
                 if (Engine.Active && Engine.MouseInside)
@@ -832,7 +935,7 @@ namespace Farbase
             }
         }
 
-        private Vector2i ScreenToGrid(Vector2 position)
+        public Vector2i ScreenToGrid(Vector2 position)
         {
             Vector2 worldPoint = Camera.ScreenToWorld(position);
             Vector2i square =

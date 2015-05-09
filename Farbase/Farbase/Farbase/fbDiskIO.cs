@@ -1,22 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Xml;
 
 namespace Farbase
 {
-    class fbXmlLoader
+    class fbDiskIO
     {
-        private fbEngine engine;
-        private fbInterface ui;
-        public fbXmlLoader(fbInterface ui)
-        {
-            this.ui = ui;
-            engine = ui.Engine;
-        }
-
-        public Widget WidgetFromXml(XmlNode xml)
-        {
+        public static Widget WidgetFromXml(
+            XmlNode xml,
+            fbInterface ui,
+            fbEngine engine
+        ) {
             Dictionary<string, XmlNode> nodes
                 = new Dictionary<string, XmlNode>();
 
@@ -260,7 +256,8 @@ namespace Farbase
             {
                 foreach (XmlNode child in nodes["children"].ChildNodes)
                 {
-                    ((ContainerWidget)w).AddChild(WidgetFromXml(child));
+                    ((ContainerWidget)w)
+                        .AddChild(WidgetFromXml(child, ui, engine));
                 }
 
                 nodes.Remove("children");
@@ -283,5 +280,77 @@ namespace Farbase
             return w;
         }
 
+        public static void SaveMap(fbMap map, string path)
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+
+            using (FileStream stream = File.OpenWrite(path))
+            {
+                string output = "";
+
+                output += string.Format(
+                    "{0},{1};",
+                    map.Width,
+                    map.Height
+                );
+
+                output += "\n";
+
+                foreach (Station s in map.Stations.Values)
+                {
+                    output +=
+                        string.Format(
+                        "{0},{1},{2},{3};",
+                        s.ID,
+                        s.Owner,
+                        s.Position.X,
+                        s.Position.Y
+                    );
+                }
+
+                output += "\n";
+
+                foreach (Planet p in map.Planets)
+                {
+                    output +=
+                        string.Format(
+                        "{0},{1};",
+                        p.Position.X,
+                        p.Position.Y
+                    );
+                }
+
+                output += "\n";
+
+                StreamWriter sw = new StreamWriter(stream);
+                sw.Write(output);
+                sw.Flush();
+            }
+        }
+
+        public static void LoadMap(ref fbMap map, string path)
+        {
+            using (FileStream stream = File.OpenRead(path))
+            {
+                StreamReader reader = new StreamReader(stream);
+
+                string header = reader.ReadLine();
+                if (header == null) throw new FormatException();
+
+                string size = header.Split(';')[0];
+                int w = Int32.Parse(size.Split(',')[0]);
+                int h = Int32.Parse(size.Split(',')[1]);
+                map = new fbMap(w, h);
+
+                string stations = reader.ReadLine();
+                if (stations == null) throw new FormatException();
+
+                foreach (string stationString in stations.Split(';'))
+                {
+                    if (stationString == "") continue;
+                }
+            }
+        }
     }
 }
